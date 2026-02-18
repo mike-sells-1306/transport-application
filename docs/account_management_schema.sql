@@ -29,3 +29,21 @@ CREATE TABLE Saves (
     FOREIGN KEY (userID) REFERENCES User(userID) ON DELETE CASCADE,
     FOREIGN KEY (routeID) REFERENCES Route(routeID) ON DELETE CASCADE
 );
+
+# Notification Table (User-specific notifications/alerts)
+CREATE TABLE Notification (
+    notificationID INT AUTO_INCREMENT PRIMARY KEY,
+    userID INT NOT NULL,
+    message TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_read BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (userID) REFERENCES User(userID) ON DELETE CASCADE
+);
+
+# UserWeather Table (Tracks weather locations for each user)
+CREATE TABLE UserWeather (
+    userID INT NOT NULL,
+    location VARCHAR(100) NOT NULL,
+    PRIMARY KEY (userID, location),
+    FOREIGN KEY (userID) REFERENCES User(userID) ON DELETE CASCADE
+);
