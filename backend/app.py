@@ -5,6 +5,8 @@ from functools import wraps
 from flask import Flask, g, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+from services.data_translator import DataTranslator
+from services.transport_service import TransportService
 from sqlalchemy import UniqueConstraint
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -13,6 +15,9 @@ app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-change-me")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///transport.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["AUTH_TOKEN_MAX_AGE_SECONDS"] = int(os.getenv("AUTH_TOKEN_MAX_AGE_SECONDS", "86400"))
+
+transport_service = TransportService()
+data_translator = DataTranslator()
 
 db = SQLAlchemy(app)
 token_serializer = URLSafeTimedSerializer(app.config["SECRET_KEY"], salt="auth-token")
@@ -413,6 +418,68 @@ def remove_weather_location(location: str):
     db.session.delete(item)
     db.session.commit()
     return jsonify({"message": "Location removed"})
+
+
+@app.route('/api/gazetteer')
+def gazetteer():
+    try:
+        data = transport_service.get_gazetteer()
+        return jsonify(data)
+    except Exception as e:
+        app.logger.error(f"Gazetteer error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/naptan')
+def naptan():
+    try:
+        full = request.args.get('full', 'false').lower() == 'true'
+        data = transport_service.get_naptan(full=full)
+        return jsonify(data)
+    except Exception as e:
+        app.logger.error(f"NaPTAN error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/bus/timetable/<bus_code>')
+def bus_timetable(bus_code):
+    try:
+        data = transport_service.get_bus_timetable(bus_code)
+        return jsonify(data)
+    except Exception as e:
+        app.logger.error(f"Bus timetable error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/bus/live/<bus_code>')
+def bus_live(bus_code):
+    try:
+        data = transport_service.get_bus_live(bus_code)
+        return jsonify(data)
+    except Exception as e:
+        app.logger.error(f"Bus live error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/rail/corpus')
+def rail_corpus():
+    try:
+        data = transport_service.get_rail_corpus()
+        return jsonify(data)
+    except Exception as e:
+        app.logger.error(f"Rail corpus error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/translate/train_event', methods=['POST'])
+def translate_train_event():
+    try:
+        event = request.json
+        translated = data_translator.translate_train_event(event)
+        return jsonify(translated)
+    except Exception as e:
+        app.logger.error(f"Translate train event error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 with app.app_context():
