@@ -1,0 +1,7 @@
+server:
+  host: 0.0.0.0
+  port: 5000
+
+adapters:
+  transport_api_url: http://example
+  weather_api_url: http://example
