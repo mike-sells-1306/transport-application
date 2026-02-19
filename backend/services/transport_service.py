@@ -1,4 +1,5 @@
 from adapters.transport_adapters import NPTGAdapter, NaPTANAdapter, BusAdapter, RailAdapter
+from adapters.weather_adapter import WeatherAdapter
 
 class TransportService:
     def __init__(self):
@@ -6,6 +7,7 @@ class TransportService:
         self.naptan = NaPTANAdapter()
         self.bus = BusAdapter()
         self.rail = RailAdapter()
+        self.weather = WeatherAdapter()
 
     def get_gazetteer(self):
         xml_data = self.nptg.fetch_nptg()
@@ -23,3 +25,7 @@ class TransportService:
 
     def get_rail_corpus(self):
         return self.rail.fetch_corpus()
+
+    def get_weather(self, latitude: float, longitude: float):
+        raw_data = self.weather.fetch_weather(latitude, longitude)
+        return self.weather.parse_weather(raw_data)
