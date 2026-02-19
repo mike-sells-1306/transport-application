@@ -1,12 +1,35 @@
 version: '3.8'
 services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: transport
+      MYSQL_USER: transport_user
+      MYSQL_PASSWORD: transport_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
   backend:
     build: ./backend
     ports:
       - "5000:5000"
     env_file:
       - .env
+    environment:
+      DATABASE_URL: mysql+pymysql://transport_user:transport_password@mysql:3306/transport
+      SECRET_KEY: change-me-in-env
+      AUTH_TOKEN_MAX_AGE_SECONDS: 86400
+    depends_on:
+      - mysql
+
   frontend:
     build: ./frontend
     ports:
       - "3000:3000"
+
+volumes:
+  mysql_data:

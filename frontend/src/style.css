@@ -515,6 +515,74 @@ body {
   background: #a31515;
 }
 
+.secondary-btn {
+  background: #e0e0e0;
+  color: #333;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-modal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 65;
+  width: 520px;
+  background: var(--grey-light);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-modal-header {
+  background: var(--red-main);
+  color: var(--white);
+  border-radius: var(--radius) var(--radius) 0 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  padding: 24px 28px 14px 28px;
+}
+
+.auth-modal-body {
+  padding: 20px 28px 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-help {
+  margin: 0;
+  color: #555;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f7f7f7;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+
+.auth-form h3 {
+  margin: 0 0 4px 0;
+  color: var(--red-main);
+  font-size: 1rem;
+}
+
+.auth-form input {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 0.95rem;
+}
+
 /* Utility */
 .hidden {
   display: none !important;

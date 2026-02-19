@@ -31,7 +31,7 @@
       <input id="to-input" type="text" placeholder="to" />
     </div>
     <nav class="sidebar-links">
-      <a href="#account">Account</a>
+      <a href="#account" id="account-link">Account</a>
       <a href="#faq">FAQ</a>
       <a href="#support">Customer Support</a>
     </nav>
@@ -124,27 +124,48 @@
       </div>
     </section>
 
+    <!-- Authentication Modal (hidden by default) -->
+    <section class="auth-modal hidden" id="auth-modal">
+      <div class="auth-modal-header">Account Login</div>
+      <div class="auth-modal-body">
+        <p class="auth-help">Sign in or create an account to save routes and manage preferences.</p>
+        <form id="login-form" class="auth-form">
+          <h3>Login</h3>
+          <input id="login-email" type="email" placeholder="Email" required />
+          <input id="login-password" type="password" placeholder="Password" required />
+          <button type="submit" class="action-btn">Log In</button>
+        </form>
+        <form id="register-form" class="auth-form">
+          <h3>Create Account</h3>
+          <input id="register-username" type="text" placeholder="Username" required />
+          <input id="register-email" type="email" placeholder="Email" required />
+          <input id="register-password" type="password" placeholder="Password (8+ chars)" required />
+          <button type="submit" class="action-btn">Register</button>
+        </form>
+        <button id="close-auth-modal" class="secondary-btn" type="button">Close</button>
+      </div>
+    </section>
+
     <!-- Account Settings Modal (hidden by default) -->
-    <section class="account-modal hidden">
+    <section class="account-modal hidden" id="account-modal">
       <div class="account-modal-header">Account Settings</div>
       <div class="account-modal-body">
         <div class="account-avatar"></div>
         <div class="account-info">
-          <div class="account-username">Username: <span>testing123</span></div>
+          <div class="account-username">Username: <span id="account-username-value">-</span></div>
         </div>
         <div class="account-content">
           <div class="saved-routes">
             <h3>Saved Routes</h3>
-            <ul>
-              <li><span class="icon-bus"></span> Preston → Blackpool</li>
-              <li><span class="icon-train"></span> Lancaster → Barrow</li>
-              <li><span class="icon-bus"></span> Blackburn → Preston</li>
+            <ul id="saved-routes-list">
+              <li>No saved routes yet.</li>
             </ul>
           </div>
           <div class="account-actions">
-            <button class="action-btn">Update Password</button>
-            <button class="action-btn">Log Out</button>
-            <button class="action-btn danger">Delete Account</button>
+            <button class="action-btn" id="update-password-btn" type="button">Update Password</button>
+            <button class="action-btn" id="logout-btn" type="button">Log Out</button>
+            <button class="action-btn danger" id="delete-account-btn" type="button">Delete Account</button>
+            <button class="secondary-btn" id="close-account-modal" type="button">Close</button>
           </div>
         </div>
       </div>
