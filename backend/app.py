@@ -482,6 +482,90 @@ def translate_train_event():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/api/weather')
+def weather():
+    try:
+        lat = request.args.get('lat', type=float)
+        lon = request.args.get('lon', type=float)
+        
+        if lat is None or lon is None:
+            return jsonify({"error": "Missing latitude and/or longitude parameters"}), 400
+        
+        data = transport_service.get_weather(lat, lon)
+        return jsonify(data)
+    except ValueError:
+        return jsonify({"error": "Invalid latitude or longitude format"}), 400
+    except Exception as e:
+        app.logger.error(f"Weather error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/weather/route', methods=['POST'])
+@auth_required
+def weather_for_route():
+    """
+    Get weather data for multiple locations along a route.
+    
+    Input: {
+        "route_points": [
+            {"latitude": 54.05, "longitude": -2.80, "name": "Lancaster"},
+            {"latitude": 53.48, "longitude": -2.24, "name": "Manchester"},
+            ...
+        ]
+    }
+    
+    Returns: Array of weather data for each point
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        route_points = data.get("route_points", [])
+        
+        if not route_points or not isinstance(route_points, list):
+            return jsonify({"error": "Missing or invalid route_points array"}), 400
+        
+        weather_for_route = []
+        for point in route_points:
+            lat = point.get("latitude")
+            lon = point.get("longitude")
+            name = point.get("name", f"({lat}, {lon})")
+            
+            if lat is None or lon is None:
+                weather_for_route.append({
+                    "name": name,
+                    "error": "Missing latitude/longitude"
+                })
+                continue
+            
+            weather_data = transport_service.get_weather(lat, lon)
+            weather_for_route.append({
+                "location_name": name,
+                "weather": weather_data
+            })
+        
+        return jsonify({
+            "user_id": g.current_user.id,
+            "weather_along_route": weather_for_route,
+            "note": "Weather data is binned by area due to API rate limits. Multiple nearby points may return identical data."
+        }), 200
+    except ValueError:
+        return jsonify({"error": "Invalid latitude or longitude format"}), 400
+    except Exception as e:
+        app.logger.error(f"Weather for route error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/weather/icon/<icon_code>')
+def weather_icon(icon_code: str):
+    try:
+        icon_data = transport_service.weather.get_weather_icon(icon_code)
+        if not icon_data:
+            return jsonify({"error": "Icon not found"}), 404
+        return icon_data, 200, {"Content-Type": "image/png"}
+    except Exception as e:
+        app.logger.error(f"Weather icon error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 with app.app_context():
     db.create_all()
 

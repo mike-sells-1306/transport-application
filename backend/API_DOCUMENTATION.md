@@ -40,6 +40,32 @@ This backend provides unified API endpoints for regional transport datasets and 
   - Input: JSON train event object
   - Output: Translated event with human-readable fields (uses appendix mappings).
 
+### Weather
+- `GET /api/weather?lat=<latitude>&lon=<longitude>`
+  - Returns current weather data for the specified coordinates
+  - Parameters: latitude (float), longitude (float)
+  - Output: Weather object with temperature, humidity, pressure, wind, visibility, cloud coverage, conditions, and icon code
+  - Example: `/api/weather?lat=54.05&lon=-2.80`
+  - Note: Data updated every few minutes, locations binned into areas due to API rate limits
+
+- `POST /api/weather/route` (Requires Auth Token)
+  - Get weather for all waypoints along a multi-modal route
+  - Input: 
+    ```json
+    {
+      "route_points": [
+        {"latitude": 54.05, "longitude": -2.80, "name": "Lancaster Station"},
+        {"latitude": 53.48, "longitude": -2.24, "name": "Manchester Piccadilly"}
+      ]
+    }
+    ```
+  - Output: Array of weather objects for each route point with location names
+
+- `GET /api/weather/icon/<icon_code>`
+  - Returns weather icon image in PNG format
+  - Parameters: icon_code (e.g., '04n', '01d')
+  - Output: PNG image file
+
 ### Account Management
 - `POST /api/account/create`
   - Input: `{email, password, name}`
