@@ -2,7 +2,7 @@
   Transport for North West - Main Webpage
   Author: [Your Name]
   Date: 2026-02-19
-  Description: Desktop-style web application UI for a regional travel service.
+  Description: Desktop-style web application UI for a regional travel service with interactive OpenStreetMap.
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -10,6 +10,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Transport for North West</title>
+  <!-- Leaflet CSS for interactive map -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -37,22 +39,9 @@
 
   <!-- Main Map Area -->
   <main class="map-area">
-    <!-- Map background (SVG for demo) -->
-    <div class="map-bg">
-      <!-- Simple SVG map illustration -->
-      <svg viewBox="0 0 800 600" class="map-svg">
-        <rect x="0" y="0" width="800" height="600" fill="#bfe6ff" /> <!-- Sea -->
-        <ellipse cx="400" cy="300" rx="350" ry="250" fill="#d6f5d0" /> <!-- Land -->
-        <!-- Roads -->
-        <polyline points="100,500 200,400 400,300 600,200 700,100" stroke="#bbb" stroke-width="4" fill="none" />
-        <polyline points="200,400 300,350 500,250 600,200" stroke="#ffe066" stroke-width="3" fill="none" />
-        <!-- Town markers -->
-        <circle cx="600" cy="200" r="10" fill="#d32f2f" /> <!-- Blackpool -->
-        <circle cx="400" cy="300" r="10" fill="#d32f2f" /> <!-- Lancaster -->
-        <circle cx="200" cy="400" r="10" fill="#d32f2f" /> <!-- Preston -->
-        <circle cx="700" cy="100" r="10" fill="#d32f2f" /> <!-- Barrow -->
-        <circle cx="300" cy="350" r="10" fill="#d32f2f" /> <!-- Blackburn -->
-      </svg>
+    <!-- Interactive OpenStreetMap container -->
+    <div id="map" class="leaflet-map">
+      <!-- Map will be rendered here by Leaflet JS -->
     </div>
 
     <!-- Top-right icon buttons -->
@@ -162,18 +151,9 @@
     </section>
   </main>
 
-  <!-- Minimal JS for demo panel toggling -->
-  <script>
-    // Toggle weather panel
-    document.getElementById('weather-btn').onclick = function() {
-      document.querySelector('.weather-panel').classList.toggle('hidden');
-      document.querySelector('.notif-panel').classList.add('hidden');
-    };
-    // Toggle notifications panel
-    document.getElementById('notif-btn').onclick = function() {
-      document.querySelector('.notif-panel').classList.toggle('hidden');
-      document.querySelector('.weather-panel').classList.add('hidden');
-    };
-  </script>
+  <!-- Leaflet JS library for interactive mapping -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <!-- Main application script -->
+  <script src="main.js"></script>
 </body>
 </html>
