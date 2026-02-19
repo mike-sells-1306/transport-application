@@ -2,9 +2,11 @@
 
 ## Account Management – Next Steps
 
-- [ ] Stabilize runtime dependencies
-  - Add/confirm frontend dependencies in [frontend/package.json](frontend/package.json).
-  - Remove masked install failures (`|| true`) in [frontend/Dockerfile](frontend/Dockerfile).
+- [x] Stabilize runtime dependencies
+  - Added `express` to [frontend/package.json](frontend/package.json).
+  - Fixed [frontend/Dockerfile](frontend/Dockerfile): removed `|| true`, copies `server.js` explicitly.
+  - Pinned `itsdangerous`, `SQLAlchemy`, `Werkzeug` in [backend/requirements.txt](backend/requirements.txt).
+  - Added missing `.env` file and `depends_on` chain in [docker-compose.yml](docker-compose.yml).
 
 - [ ] Finalize database migration workflow
   - Replace ad-hoc `db.create_all()` usage in [backend/app.py](backend/app.py) with versioned migrations.
