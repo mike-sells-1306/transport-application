@@ -8,6 +8,9 @@ const authState = {
   user: null,
 };
 
+// Track which marker has an open popup
+let currentOpenPopup = null;
+
 // Initialize Leaflet map focused on North West England (Preston, Blackpool, Fylde, Wyre)
 function initializeMap() {
   // Center coordinates: Between Preston and Blackpool, spanning the Fylde and Wyre coastline
@@ -28,57 +31,162 @@ function initializeMap() {
   // Define key towns and locations in the North West region
   const locations = [
     {
+      name: 'Liverpool',
+      lat: 53.4072,
+      lng: -2.9917,
+      description: 'Liverpool - Historic port city and cultural center on the Irish Sea coast.',
+      image: '',
+    },
+    {
+      name: 'Manchester',
+      lat: 53.4795,
+      lng: -2.2451,
+      description: 'Manchester - Major industrial and commercial city in the heart of Greater Manchester.',
+      image: '',
+    },
+    {
       name: 'Preston',
-      lat: 53.7578,
-      lng: -2.7059,
+      lat: 53.7593,
+      lng: -2.6993,
       description: 'Preston - England\'s newest city, cultural hub of Lancashire.',
       image: '../../docs/software-design-doc-source/Assets/preston.png',
     },
     {
+      name: 'Blackburn',
+      lat: 53.7493,
+      lng: -2.4841,
+      description: 'Blackburn - Historic textile town, home to the cathedral.',
+      image: '../../docs/software-design-doc-source/Assets/blackburn.png',
+    },
+    {
+      name: 'Lytham-St-Annes',
+      lat: 53.7485,
+      lng: -2.9991,
+      description: 'Lytham-St-Annes - Seaside town on the Fylde coast.',
+      image: '',
+    },
+    {
+      name: 'Kirkham',
+      lat: 53.7827,
+      lng: -2.8715,
+      description: 'Kirkham - Market town in the heart of the Fylde.',
+      image: '',
+    },
+    {
+      name: 'Poulton-le-Fylde',
+      lat: 53.8461,
+      lng: -2.9905,
+      description: 'Poulton-le-Fylde - Market town in the heart of the Fylde.',
+      image: '../../docs/software-design-doc-source/Assets/poulton_le_fylde.png',
+    },
+    {
+      name: 'Fleetwood',
+      lat: 53.9220,
+      lng: -3.0327,
+      description: 'Fleetwood - Coastal town at the mouth of the River Wyre and historic fishing port.',
+      image: '',
+    },
+    {
       name: 'Blackpool',
-      lat: 53.8160,
-      lng: -3.0500,
+      lat: 53.8179,
+      lng: -3.0510,
       description: 'Blackpool - Iconic seaside resort with the famous Blackpool Tower.',
       image: '../../docs/software-design-doc-source/Assets/blackpool.png',
     },
     {
+      name: 'Garstang',
+      lat: 53.9016,
+      lng: -2.7735,
+      description: 'Garstang - Historic market town on the River Wyre.',
+      image: '',
+    },
+    {
       name: 'Lancaster',
-      lat: 54.0466,
-      lng: -2.8015,
+      lat: 54.0488,
+      lng: -2.8013,
       description: 'Lancaster - Historic city with a medieval castle and university.',
       image: '../../docs/software-design-doc-source/Assets/lancaster.png',
     },
     {
       name: 'Morecambe',
-      lat: 54.0740,
-      lng: -2.8650,
+      lat: 54.0721,
+      lng: -2.8651,
       description: 'Morecambe - Seaside town known for its promenade and bay views.',
       image: '../../docs/software-design-doc-source/Assets/morecambe.png',
     },
     {
-      name: 'Fleetwood',
-      lat: 53.9176,
-      lng: -3.0102,
-      description: 'Fleetwood - Coastal town at the mouth of the River Wyre and historic fishing port.',
+      name: 'Heysham',
+      lat: 54.0495,
+      lng: -2.8903,
+      description: 'Heysham - Coastal village with nuclear power station and maritime heritage.',
       image: '',
     },
     {
-      name: 'Wyre Coast',
-      lat: 53.8820,
-      lng: -3.0380,
-      description: 'Wyre Coast - Coastal stretch covering Cleveleys and the Wyre estuary shoreline.',
+      name: 'Carnforth',
+      lat: 54.1282,
+      lng: -2.7701,
+      description: 'Carnforth - Village known for its railway heritage.',
       image: '',
     },
     {
-      name: 'Poulton-le-Fylde',
-      lat: 53.8468,
-      lng: -2.9920,
-      description: 'Poulton-le-Fylde - Market town in the heart of the Fylde.',
-      image: '../../docs/software-design-doc-source/Assets/poulton_le_fylde.png',
+      name: 'Kirkby-Lonsdale',
+      lat: 54.2018,
+      lng: -2.5967,
+      description: 'Kirkby-Lonsdale - Picturesque village in the Lune Valley.',
+      image: '',
+    },
+    {
+      name: 'Grange-Over-Sands',
+      lat: 54.1931,
+      lng: -2.9095,
+      description: 'Grange-Over-Sands - Charming coastal resort on Morecambe Bay.',
+      image: '',
+    },
+    {
+      name: 'Cartmel',
+      lat: 54.2009,
+      lng: -2.9529,
+      description: 'Cartmel - Picturesque village famous for its Priory and steeplechase racecourse.',
+      image: '',
+    },
+    {
+      name: 'Kendal',
+      lat: 54.3290,
+      lng: -2.7472,
+      description: 'Kendal - Gateway to the Lake District, historic market town.',
+      image: '',
+    },
+    {
+      name: 'Windermere',
+      lat: 54.3792,
+      lng: -2.9063,
+      description: 'Windermere - Heart of the Lake District with England\'s largest lake.',
+      image: '',
+    },
+    {
+      name: 'Ambleside',
+      lat: 54.4316,
+      lng: -2.9622,
+      description: 'Ambleside - Picturesque Lake District town on the shores of Lake Windermere.',
+      image: '',
+    },
+    {
+      name: 'Barrow-in-Furness',
+      lat: 54.1289,
+      lng: -3.2269,
+      description: 'Barrow-in-Furness - Industrial town on the Irish Sea coast.',
+      image: '',
+    },
+    {
+      name: 'Keswick',
+      lat: 54.6010,
+      lng: -3.1376,
+      description: 'Keswick - Historic market town in the northern Lake District.',
+      image: '',
     },
   ];
 
-  // Add markers for each location with popups
+  // Add markers for each location with popups and toggle functionality
   locations.forEach(location => {
     const marker = L.circleMarker([location.lat, location.lng], {
       radius: 8,
@@ -102,14 +210,47 @@ function initializeMap() {
         <p style="margin: 0; font-size: 0.95rem; color: #333;">${location.description}</p>
       </div>
     `);
+
+    // Handle popup toggle: close old popup if different marker clicked,
+    // or close current popup if same marker clicked again
+    marker.on('click', function() {
+      if (currentOpenPopup === this) {
+        // Same marker clicked again - close it
+        this.closePopup();
+        currentOpenPopup = null;
+      } else {
+        // Different marker or no popup open
+        if (currentOpenPopup) {
+          // Close the previously open popup
+          currentOpenPopup.closePopup();
+        }
+        // Open the new popup
+        this.openPopup();
+        currentOpenPopup = this;
+      }
+    });
   });
 
-  // Set max bounds to prevent panning too far from region
+  // Set max bounds with edges at: far right Manchester (east), bottom Liverpool (south), 
+  // most western coast (west), top Keswick (north). Prevent viewing beyond these limits.
   const bounds = L.latLngBounds(
-    L.latLng(53.68, -3.28),  // Southwest
-    L.latLng(54.12, -2.62)   // Northeast
+    L.latLng(53.3665, -3.5),      // Southwest: bottom of Liverpool, most western coast
+    L.latLng(54.6200, -2.211)     // Northeast: top of Keswick, far right of Manchester
   );
   map.setMaxBounds(bounds);
+  
+  // Fit map to bounds with padding to ensure bounds are visible
+  map.fitBounds(bounds, { padding: [50, 50] });
+  
+  // Set zoom constraints to prevent seeing beyond bounds at any zoom level
+  map.setMinZoom(9);
+  map.setMaxZoom(19);
+  
+  // Add responsive zoom: when window is resized (including fullscreen), 
+  // adjust zoom to maintain the same geographic bounds visibility
+  window.addEventListener('resize', function() {
+    map.fitBounds(bounds, { padding: [50, 50] });
+  });
 
   return map;
 }
