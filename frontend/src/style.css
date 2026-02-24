@@ -122,11 +122,15 @@ body {
   text-decoration: none;
   font-size: 1.05rem;
   opacity: 0.85;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, background-color 0.2s, border-radius 0.2s;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  margin: 0 -12px;
 }
 .sidebar-links a:hover {
   opacity: 1;
-  text-decoration: underline;
+  background-color: rgba(255, 255, 255, 0.15);
+  text-decoration: none;
 }
 
 /* Main Map Area */
@@ -178,6 +182,26 @@ body {
   background: var(--white);
 }
 
+/* Leaflet circle marker hover styling */
+.leaflet-map .leaflet-circle-marker:hover {
+  filter: drop-shadow(0 0 10px rgba(139, 28, 28, 0.8));
+  cursor: pointer;
+}
+
+.leaflet-map .leaflet-circle-marker:hover path {
+  fill: #ff5252 !important;
+  stroke: #e53935 !important;
+  fill-opacity: 0.95 !important;
+}
+
+.leaflet-map .leaflet-circle-marker {
+  transition: filter 0.2s ease;
+}
+
+.leaflet-map .leaflet-circle-marker path {
+  transition: fill 0.2s ease, stroke 0.2s ease, fill-opacity 0.2s ease;
+}
+
 /* Top-right icon buttons */
 .top-right-icons {
   position: absolute;
@@ -193,6 +217,11 @@ body {
   height: 44px;
   border-radius: 50%;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.top-right-icons .icon-btn:hover {
+  background: #e0e0e0;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.15);
 }
 .icon-cloud {
   width: 22px; height: 22px;
@@ -419,8 +448,12 @@ body {
 /* FAQ Panel */
 .faq-panel {
   position: absolute;
-  inset: 24px 32px 24px 32px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   z-index: 55;
+  width: 700px;
+  max-height: 80vh;
   background: var(--grey-light);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -459,6 +492,10 @@ body {
   align-items: center;
   justify-content: center;
   transition: background 0.2s;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .faq-close:hover {

@@ -259,25 +259,56 @@ function initializeMap() {
 function toggleWeatherPanel() {
   const weatherPanel = document.querySelector('.weather-panel');
   const notifPanel = document.querySelector('.notif-panel');
+  const faqPanel = document.getElementById('faq-panel');
+  const authModal = document.getElementById('auth-modal');
+  const accountModal = document.getElementById('account-modal');
   
   weatherPanel.classList.toggle('hidden');
   notifPanel.classList.add('hidden');
+  
+  // Close other panels when weather is opened
+  if (!weatherPanel.classList.contains('hidden')) {
+    faqPanel?.classList.add('hidden');
+    authModal?.classList.add('hidden');
+    accountModal?.classList.add('hidden');
+  }
 }
 
 // Toggle notifications panel visibility
 function toggleNotificationsPanel() {
   const weatherPanel = document.querySelector('.weather-panel');
   const notifPanel = document.querySelector('.notif-panel');
+  const faqPanel = document.getElementById('faq-panel');
+  const authModal = document.getElementById('auth-modal');
+  const accountModal = document.getElementById('account-modal');
   
   notifPanel.classList.toggle('hidden');
   weatherPanel.classList.add('hidden');
+  
+  // Close other panels when notifications is opened
+  if (!notifPanel.classList.contains('hidden')) {
+    faqPanel?.classList.add('hidden');
+    authModal?.classList.add('hidden');
+    accountModal?.classList.add('hidden');
+  }
 }
 
 function openFaqPanel() {
   const faqPanel = document.getElementById('faq-panel');
+  const weatherPanel = document.querySelector('.weather-panel');
+  const notifPanel = document.querySelector('.notif-panel');
+  const authModal = document.getElementById('auth-modal');
+  const accountModal = document.getElementById('account-modal');
+  
   if (faqPanel) {
     faqPanel.classList.remove('hidden');
     faqPanel.setAttribute('aria-hidden', 'false');
+    
+    // Close other panels when FAQ is opened
+    weatherPanel?.classList.add('hidden');
+    notifPanel?.classList.add('hidden');
+    authModal?.classList.add('hidden');
+    accountModal?.classList.add('hidden');
   }
 }
 
@@ -286,6 +317,20 @@ function closeFaqPanel() {
   if (faqPanel) {
     faqPanel.classList.add('hidden');
     faqPanel.setAttribute('aria-hidden', 'true');
+    
+    // Close all FAQ answers when panel is closed
+    const openItems = faqPanel.querySelectorAll('.faq-item.open');
+    openItems.forEach(item => {
+      item.classList.remove('open');
+      const question = item.querySelector('.faq-question');
+      if (question) {
+        question.setAttribute('aria-expanded', 'false');
+      }
+      const answer = item.querySelector('.faq-answer');
+      if (answer) {
+        answer.setAttribute('aria-hidden', 'true');
+      }
+    });
   }
 }
 
@@ -357,8 +402,17 @@ async function apiRequest(path, options = {}) {
 }
 
 function openAuthModal() {
+  const weatherPanel = document.querySelector('.weather-panel');
+  const notifPanel = document.querySelector('.notif-panel');
+  const faqPanel = document.getElementById('faq-panel');
+  
   document.getElementById('auth-modal')?.classList.remove('hidden');
   document.getElementById('account-modal')?.classList.add('hidden');
+  
+  // Close other panels when auth modal is opened
+  weatherPanel?.classList.add('hidden');
+  notifPanel?.classList.add('hidden');
+  faqPanel?.classList.add('hidden');
 }
 
 function closeAuthModal() {
@@ -366,8 +420,17 @@ function closeAuthModal() {
 }
 
 function openAccountModal() {
+  const weatherPanel = document.querySelector('.weather-panel');
+  const notifPanel = document.querySelector('.notif-panel');
+  const faqPanel = document.getElementById('faq-panel');
+  
   document.getElementById('account-modal')?.classList.remove('hidden');
   document.getElementById('auth-modal')?.classList.add('hidden');
+  
+  // Close other panels when account modal is opened
+  weatherPanel?.classList.add('hidden');
+  notifPanel?.classList.add('hidden');
+  faqPanel?.classList.add('hidden');
 }
 
 function closeAccountModal() {

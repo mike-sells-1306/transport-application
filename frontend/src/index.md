@@ -46,7 +46,7 @@ This project is a desktop-style web application interface for a regional travel 
   - Top section uses deep red for branding and service title.
   - Below, a lighter red panel contains a travel prompt and two input fields ("Search…" and "to") for journey planning.
   - A circular icon button for swapping or submitting destinations.
-  - Navigation links (Account, FAQ, Customer Support) at the bottom.
+  - Navigation links (Account, FAQ, Customer Support) at the bottom with hover highlighting that displays a semi-transparent white background when the mouse hovers over them, making the interactive state obvious.
 
 ### 3. Interactive Panels
 - **Route Modal:**
@@ -55,28 +55,38 @@ This project is a desktop-style web application interface for a regional travel 
   - Each route row shows a transport icon, times, and duration.
 
 - **Weather Panel:**
-  - Opens from the top-right icon button.
+  - Opens from the top-right icon button (cloud icon).
+  - Weather button has hover effect with darker background and enhanced shadow.
   - Lists towns and weather icons in a light grey rounded panel.
+  - Automatically closes other panels (notifications, FAQ, account modals) when opened.
 
 - **Notifications Panel:**
-  - Opens from the top-right icon button.
+  - Opens from the top-right icon button (bell icon).
+  - Notification button has hover effect with darker background and enhanced shadow.
   - Lists announcements with timestamps.
+  - Automatically closes other panels (weather, FAQ, account modals) when opened.
 
 - **FAQ Panel:**
   - Opens from the FAQ link in the sidebar.
-  - Displays common questions about the UI and map usage.
+  - Displays common questions about the UI and map usage as a centered modal dialog.
+  - Fixed width (700px) with responsive height (max 80vh) to maintain consistent sizing whether in windowed or fullscreen mode.
+  - Close button (×) uses `user-select: none` to prevent accidental text selection when hovering/clicking.
   - Each question expands to reveal its answer.
+  - When the FAQ panel is closed, all expanded answers are automatically collapsed, ensuring a clean state when reopened.
+  - Automatically closes other panels (weather, notifications, account modals) when opened.
   - Includes a visible close button to return to the map.
 
 - **Account Modal:**
   - Displays account settings.
   - Red header, avatar, username, saved routes, and action buttons.
+  - Automatically closes other panels (weather, notifications, FAQ) when opened.
 
 ### 4. Interactive Map Features
 - **Markers & Popups:** Click any red marker to open its popup showing the location name, optional image, and description. The popup behavior is intelligent:
   - **First click on a marker:** Opens the popup for that location.
   - **Click on a different marker:** Automatically closes the previous popup and opens the new one.
   - **Click the same marker again:** Closes that marker's popup. Only one popup is visible at a time.
+  - **Hover Effect:** When you hover your mouse over a red marker, it transforms to a brighter red color (#ff5252 fill, #e53935 border) and displays a glowing shadow effect for enhanced visibility and clear interactivity indication.
 - **Zoom Controls:** Use the + and - buttons in the top-left of the map or scroll wheel to zoom in/out. Zoom is constrained between levels 9–19.
 - **Pan:** Click and drag to move around the map. Panning is restricted and cannot exceed the defined bounds.
 - **Responsive Zoom:** The zoom level automatically adjusts when you resize the browser window or switch between windowed and fullscreen modes. This maintains consistent geographic visibility—the same geographic area stays in view regardless of window size, without stretching the map.
@@ -94,8 +104,9 @@ The `main.js` file handles:
 - **Location Data:** Array of 23 towns across North West England and the Lake District with accurate town center coordinates, descriptions, and optional images.
 - **Marker Management:** Adds interactive markers with a single popup per marker, including toggle functionality.
 - **Event Listeners:** Sets up click handlers for weather, notification, and marker interactions.
-- **FAQ Interaction:** Opens the FAQ panel, toggles answers, and closes the panel.
-- **Panel Toggling:** Functions to show/hide weather and notification panels.
+- **FAQ Interaction:** Opens the FAQ panel, toggles answers, and closes the panel. When closing, automatically collapses all expanded answers for a clean state on next open.
+- **Panel Toggling:** Functions to show/hide weather and notification panels. All panel-opening functions automatically close other open panels to prevent overlapping UI elements.
+- **Panel Coordination:** When any panel (weather, notifications, FAQ, account) is opened, all other panels are automatically closed to maintain a clean, focused interface.
 - **Backend Health Check:** Attempts to connect to backend API (if running).
 
 ## Why the Code Works
