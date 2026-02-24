@@ -7,7 +7,7 @@ This project is a desktop-style web application interface for a regional travel 
 - **Frontend Framework:** HTML5, CSS3, Vanilla JavaScript
 - **Mapping Library:** Leaflet.js 1.9.4 (open-source JavaScript library)
 - **Map Provider:** OpenStreetMap (free, open-source map data)
-- **Region Focus:** North West England (Preston, Blackpool, Fylde, Wyre coastline)
+- **Region Focus:** Coastal North West England (Preston–Lancaster corridor, including Blackpool, the Fylde, and the Wyre coast)
 
 ## File Structure
 - `index.html`: Main HTML file containing the structure and content of the UI.
@@ -22,11 +22,11 @@ This project is a desktop-style web application interface for a regional travel 
 - **Implementation:**
   - Uses **Leaflet.js** library, a lightweight and flexible mapping solution.
   - Connects to **OpenStreetMap** tiles for real-time, crowd-sourced map data.
-  - Map is centered at coordinates `[53.8, -3.0]` (between Preston and Blackpool) with initial zoom level 10.
-  - Markers are placed at key towns: Preston, Blackpool, Lancaster, Wyre Bay, Fleetwood, Poulton-le-Fylde, Blackburn, and Barrow-in-Furness.
+  - Map is centered at coordinates `[53.88, -3.02]` (Fylde/Wyre coastline) with initial zoom level 11.
+  - Markers are placed at key towns: Preston, Blackpool, Lancaster, Morecambe, Fleetwood, Wyre Coast, and Poulton-le-Fylde.
   - Each marker is styled with red circles matching the branding color scheme.
-  - Clicking a marker displays location details and updates the info card on the right.
-  - Map is constrained to the North West region with bounds to prevent excessive panning.
+  - Clicking a marker opens a single Leaflet popup containing an optional image and a description.
+  - Map is constrained to the coastal region with bounds to prevent excessive panning.
 
 ### 2. Sidebar Navigation
 - **Purpose:** Provides persistent navigation and search controls.
@@ -38,12 +38,6 @@ This project is a desktop-style web application interface for a regional travel 
   - Navigation links (Account, FAQ, Customer Support) at the bottom.
 
 ### 3. Interactive Panels
-- **Info Card:**
-  - Displays when a map marker is clicked.
-  - Shows location name and description dynamically.
-  - White background, rounded corners, drop shadow.
-  - Located left-center of the map.
-  
 - **Route Modal:**
   - Appears when a route search is performed.
   - Large red panel with header, sort dropdown, and stacked route results.
@@ -62,19 +56,18 @@ This project is a desktop-style web application interface for a regional travel 
   - Red header, avatar, username, saved routes, and action buttons.
 
 ### 4. Interactive Map Features
-- **Markers & Popups:** Click any red marker to view location details.
+- **Markers & Popups:** Click any red marker to view location details and an image (if available) in a single popup.
 - **Zoom Controls:** Use the + and - buttons in the top-left of the map or scroll wheel.
 - **Pan:** Click and drag to move around the map.
-- **Bounds Limiting:** Map restricts panning to the North West region.
+- **Bounds Limiting:** Map restricts panning to the coastal Preston–Lancaster corridor.
 - **Responsive Design:** Map resizes with window to fill the available space.
 
 ### 5. JavaScript Application Flow
 The `main.js` file handles:
 - **Map Initialization:** `initializeMap()` creates and configures the Leaflet map instance.
-- **Location Data:** Array of 8 key towns with coordinates and descriptions.
-- **Marker Management:** Adds interactive markers with popups and click handlers.
+- **Location Data:** Array of 7 key towns with coordinates, descriptions, and optional images.
+- **Marker Management:** Adds interactive markers with a single popup per marker.
 - **Event Listeners:** Sets up click handlers for weather, notification, and marker interactions.
-- **Info Card Updates:** `updateInfoCard()` dynamically updates the right-side info panel.
 - **Panel Toggling:** Functions to show/hide weather and notification panels.
 - **Backend Health Check:** Attempts to connect to backend API (if running).
 
@@ -102,10 +95,12 @@ The `main.js` file handles:
 
 ## Map Coordinate Reference
 - **Preston:** 53.7578° N, 2.7059° W
-- **Blackpool:** 53.8132° N, 3.0527° W
-- **Lancaster:** 54.0457° N, 2.8007° W
-- **Barrow-in-Furness:** 54.1088° N, 3.2342° W
-- **Fleetwood:** 53.9175° N, 3.2868° W
+- **Blackpool:** 53.8160° N, 3.0500° W
+- **Lancaster:** 54.0466° N, 2.8015° W
+- **Morecambe:** 54.0740° N, 2.8650° W
+- **Fleetwood:** 53.9176° N, 3.0102° W
+- **Wyre Coast:** 53.8820° N, 3.0380° W
+- **Poulton-le-Fylde:** 53.8468° N, 2.9920° W
 
 ## OpenStreetMap Attribution
 The map data is provided by OpenStreetMap contributors under the Open Data Commons Open Database License. Attribution is automatically displayed in the map corner.
@@ -113,7 +108,7 @@ The map data is provided by OpenStreetMap contributors under the Open Data Commo
 ## How to Use
 1. Open `index.html` in a web browser or start the frontend server.
 2. The interactive map will load, centered on the North West region.
-3. Click any red marker to view location details and update the info card.
+3. Click any red marker to view location details (and image if available) in the popup.
 4. Use zoom controls (+ and - buttons) or scroll to zoom in/out.
 5. Click the weather (cloud) or notification (bell) icons to toggle side panels.
 6. Navigate using the sidebar links or search bar.
@@ -124,7 +119,13 @@ The map data is provided by OpenStreetMap contributors under the Open Data Commo
 Edit the `locations` array in `main.js` to add new markers:
 ```javascript
 const locations = [
-  { name: 'Town Name', lat: 53.0, lng: -2.5, description: 'Town description' },
+  {
+    name: 'Town Name',
+    lat: 53.0,
+    lng: -2.5,
+    description: 'Town description',
+    image: '../../docs/software-design-doc-source/Assets/town_name.png',
+  },
   // ... more locations
 ];
 ```
@@ -143,8 +144,8 @@ Update CSS variables in `style.css`:
 Modify bounds in `initializeMap()`:
 ```javascript
 const bounds = L.latLngBounds(
-  L.latLng(53.5, -3.5),  // Southwest corner
-  L.latLng(54.5, -2.0)   // Northeast corner
+  L.latLng(53.68, -3.28),  // Southwest corner
+  L.latLng(54.12, -2.62)   // Northeast corner
 );
 ```
 

@@ -12,8 +12,8 @@ const authState = {
 function initializeMap() {
   // Center coordinates: Between Preston and Blackpool, spanning the Fylde and Wyre coastline
   // Approximate center: 53.8° N, -3.0° W
-  const mapCenter = [53.8, -3.0];
-  const initialZoom = 10;
+  const mapCenter = [53.88, -3.02];
+  const initialZoom = 11;
 
   // Create Leaflet map instance
   const map = L.map('map').setView(mapCenter, initialZoom);
@@ -22,19 +22,60 @@ function initializeMap() {
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors',
     maxZoom: 19,
-    minZoom: 8,
+    minZoom: 9,
   }).addTo(map);
 
   // Define key towns and locations in the North West region
   const locations = [
-    { name: 'Preston', lat: 53.7578, lng: -2.7059, description: 'Preston - England\'s newest city, cultural hub of Lancashire' },
-    { name: 'Blackpool', lat: 53.8132, lng: -3.0527, description: 'Blackpool - Iconic seaside resort with the famous Blackpool Tower' },
-    { name: 'Lancaster', lat: 54.0457, lng: -2.8007, description: 'Lancaster - Historic city with a medieval castle and university' },
-    { name: 'Wyre Bay', lat: 53.9, lng: -3.2, description: 'Wyre Bay - Beautiful coastal area on the Irish Sea' },
-    { name: 'Fleetwood', lat: 53.9175, lng: -3.2868, description: 'Fleetwood - Charming seaside town and major fishing port' },
-    { name: 'Poulton-le-Fylde', lat: 53.8657, lng: -3.0396, description: 'Poulton-le-Fylde - Market town in the heart of the Fylde' },
-    { name: 'Blackburn', lat: 53.7444, lng: -2.4829, description: 'Blackburn - Historic textile town, home to the cathedral' },
-    { name: 'Barrow-in-Furness', lat: 54.1088, lng: -3.2342, description: 'Barrow-in-Furness - Industrial town on the Irish Sea coast' },
+    {
+      name: 'Preston',
+      lat: 53.7578,
+      lng: -2.7059,
+      description: 'Preston - England\'s newest city, cultural hub of Lancashire.',
+      image: '../../docs/software-design-doc-source/Assets/preston.png',
+    },
+    {
+      name: 'Blackpool',
+      lat: 53.8160,
+      lng: -3.0500,
+      description: 'Blackpool - Iconic seaside resort with the famous Blackpool Tower.',
+      image: '../../docs/software-design-doc-source/Assets/blackpool.png',
+    },
+    {
+      name: 'Lancaster',
+      lat: 54.0466,
+      lng: -2.8015,
+      description: 'Lancaster - Historic city with a medieval castle and university.',
+      image: '../../docs/software-design-doc-source/Assets/lancaster.png',
+    },
+    {
+      name: 'Morecambe',
+      lat: 54.0740,
+      lng: -2.8650,
+      description: 'Morecambe - Seaside town known for its promenade and bay views.',
+      image: '../../docs/software-design-doc-source/Assets/morecambe.png',
+    },
+    {
+      name: 'Fleetwood',
+      lat: 53.9176,
+      lng: -3.0102,
+      description: 'Fleetwood - Coastal town at the mouth of the River Wyre and historic fishing port.',
+      image: '',
+    },
+    {
+      name: 'Wyre Coast',
+      lat: 53.8820,
+      lng: -3.0380,
+      description: 'Wyre Coast - Coastal stretch covering Cleveleys and the Wyre estuary shoreline.',
+      image: '',
+    },
+    {
+      name: 'Poulton-le-Fylde',
+      lat: 53.8468,
+      lng: -2.9920,
+      description: 'Poulton-le-Fylde - Market town in the heart of the Fylde.',
+      image: '../../docs/software-design-doc-source/Assets/poulton_le_fylde.png',
+    },
   ];
 
   // Add markers for each location with popups
@@ -50,41 +91,27 @@ function initializeMap() {
 
     marker.addTo(map);
 
-    // Add popup on marker click
+    const popupImageMarkup = location.image
+      ? `<img src="${location.image}" alt="${location.name} photo" style="width: 100%; height: 120px; object-fit: cover; border-radius: 10px; margin-bottom: 10px;" />`
+      : '';
+
     marker.bindPopup(`
-      <div style="font-family: 'Segoe UI', Arial; min-width: 220px;">
+      <div style="font-family: 'Segoe UI', Arial; min-width: 220px; max-width: 260px;">
+        ${popupImageMarkup}
         <h3 style="margin: 0 0 8px 0; color: #b71c1c; font-size: 1.1rem;">${location.name}</h3>
         <p style="margin: 0; font-size: 0.95rem; color: #333;">${location.description}</p>
       </div>
     `);
-
-    // Update info card when marker is clicked
-    marker.on('click', () => {
-      updateInfoCard(location);
-    });
   });
 
   // Set max bounds to prevent panning too far from region
   const bounds = L.latLngBounds(
-    L.latLng(53.5, -3.5),  // Southwest
-    L.latLng(54.5, -2.0)   // Northeast
+    L.latLng(53.68, -3.28),  // Southwest
+    L.latLng(54.12, -2.62)   // Northeast
   );
   map.setMaxBounds(bounds);
 
   return map;
-}
-
-// Update info card with location information
-function updateInfoCard(location) {
-  const infoCard = document.querySelector('.info-card');
-  const heading = infoCard.querySelector('h2');
-  const description = infoCard.querySelector('p');
-  
-  heading.textContent = location.name.toUpperCase();
-  description.textContent = location.description;
-  
-  // Show the info card
-  infoCard.classList.remove('hidden');
 }
 
 // Toggle weather panel visibility
