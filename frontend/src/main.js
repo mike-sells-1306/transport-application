@@ -132,6 +132,54 @@ function toggleNotificationsPanel() {
   weatherPanel.classList.add('hidden');
 }
 
+function openFaqPanel() {
+  const faqPanel = document.getElementById('faq-panel');
+  if (faqPanel) {
+    faqPanel.classList.remove('hidden');
+    faqPanel.setAttribute('aria-hidden', 'false');
+  }
+}
+
+function closeFaqPanel() {
+  const faqPanel = document.getElementById('faq-panel');
+  if (faqPanel) {
+    faqPanel.classList.add('hidden');
+    faqPanel.setAttribute('aria-hidden', 'true');
+  }
+}
+
+function attachFaqEventHandlers() {
+  const faqLink = document.querySelector('.sidebar-links a[href="#faq"]');
+  faqLink?.addEventListener('click', event => {
+    event.preventDefault();
+    openFaqPanel();
+  });
+
+  document.getElementById('faq-close')?.addEventListener('click', closeFaqPanel);
+
+  document.getElementById('faq-panel')?.addEventListener('click', event => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    if (!target.classList.contains('faq-question')) {
+      return;
+    }
+
+    const item = target.closest('.faq-item');
+    if (!item) {
+      return;
+    }
+
+    const isOpen = item.classList.toggle('open');
+    target.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    const answer = item.querySelector('.faq-answer');
+    if (answer) {
+      answer.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+    }
+  });
+}
+
 function setAuthToken(token) {
   authState.token = token;
   if (token) {
@@ -407,6 +455,7 @@ document.addEventListener('DOMContentLoaded', function() {
     notifBtn.addEventListener('click', toggleNotificationsPanel);
   }
 
+  attachFaqEventHandlers();
   attachAccountEventHandlers();
   refreshAccountView();
   

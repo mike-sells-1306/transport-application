@@ -51,6 +51,12 @@ This project is a desktop-style web application interface for a regional travel 
   - Opens from the top-right icon button.
   - Lists announcements with timestamps.
 
+- **FAQ Panel:**
+  - Opens from the FAQ link in the sidebar.
+  - Displays common questions about the UI and map usage.
+  - Each question expands to reveal its answer.
+  - Includes a visible close button to return to the map.
+
 - **Account Modal:**
   - Displays account settings.
   - Red header, avatar, username, saved routes, and action buttons.
@@ -68,6 +74,7 @@ The `main.js` file handles:
 - **Location Data:** Array of 7 key towns with coordinates, descriptions, and optional images.
 - **Marker Management:** Adds interactive markers with a single popup per marker.
 - **Event Listeners:** Sets up click handlers for weather, notification, and marker interactions.
+- **FAQ Interaction:** Opens the FAQ panel, toggles answers, and closes the panel.
 - **Panel Toggling:** Functions to show/hide weather and notification panels.
 - **Backend Health Check:** Attempts to connect to backend API (if running).
 
@@ -111,7 +118,8 @@ The map data is provided by OpenStreetMap contributors under the Open Data Commo
 3. Click any red marker to view location details (and image if available) in the popup.
 4. Use zoom controls (+ and - buttons) or scroll to zoom in/out.
 5. Click the weather (cloud) or notification (bell) icons to toggle side panels.
-6. Navigate using the sidebar links or search bar.
+6. Open the FAQ from the sidebar to view common questions and answers.
+7. Navigate using the sidebar links or search bar.
 
 ## Customization
 
