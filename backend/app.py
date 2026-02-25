@@ -1,16 +1,31 @@
 import os
 from datetime import datetime
 from functools import wraps
+from pathlib import Path
 
-from flask import Flask, g, jsonify, request
+from flask import Flask, g, jsonify, request, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from services.data_translator import DataTranslator
 from services.transport_service import TransportService
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import UniqueConstraint, event
+from sqlalchemy.engine import Engine
 from werkzeug.security import check_password_hash, generate_password_hash
 
-app = Flask(__name__)
+
+# Enable foreign key constraints for SQLite (disabled by default)
+@event.listens_for(Engine, "connect")
+def _set_sqlite_pragma(dbapi_connection, connection_record):
+    if "sqlite" in str(type(dbapi_connection)).lower():
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+
+# Determine frontend directory path
+FRONTEND_DIR = Path(__file__).parent.parent / "frontend" / "src"
+
+app = Flask(__name__, static_folder=str(FRONTEND_DIR), static_url_path="")
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-change-me")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///transport.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -46,11 +61,11 @@ class Route(db.Model):
 
     __table_args__ = (
         UniqueConstraint(
-            "route_name",
-            "route_start",
-            "route_end",
-            "start_time",
-            "end_time",
+            "routeName",
+            "routeStart",
+            "routeEnd",
+            "startTime",
+            "endTime",
             name="uq_route_signature",
         ),
     )
@@ -564,6 +579,25 @@ def weather_icon(icon_code: str):
     except Exception as e:
         app.logger.error(f"Weather icon error: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+# Serve frontend index.html at root
+@app.route("/")
+def serve_index():
+    return send_from_directory(app.static_folder, "index.html")
+
+
+# Catch-all for frontend routes (SPA support)
+@app.route("/<path:path>")
+def serve_static(path):
+    # Don't intercept API routes
+    if path.startswith("api/"):
+        return jsonify({"error": "Not found"}), 404
+    # Try to serve the file, fallback to index.html
+    file_path = Path(app.static_folder) / path
+    if file_path.exists():
+        return send_from_directory(app.static_folder, path)
+    return send_from_directory(app.static_folder, "index.html")
 
 
 with app.app_context():
