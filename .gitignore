@@ -2,9 +2,12 @@ __pycache__/
 *.pyc
 .env
 venv/
+.venv/
 node_modules/
 dist/
 .DS_Store
 *.log
 /.vscode/
 /*.sqlite3
+*.db
+transport.db
