@@ -189,12 +189,12 @@ function initializeMap() {
   // Add markers for each location with popups and toggle functionality
   locations.forEach(location => {
     const marker = L.circleMarker([location.lat, location.lng], {
-      radius: 8,
+      radius: 9,
       fillColor: '#d32f2f',
       color: '#b71c1c',
       weight: 1,
       opacity: 1,
-      fillOpacity: 0.5,
+      fillOpacity: 0.35,
     });
 
     marker.addTo(map);
