@@ -3,16 +3,50 @@ Transport Application
 
 Scaffold for the Transport for North West integrated journey-planning project.
 
-Quick start (development):
+## Quick Start (Local Development)
 
-1. Start services with Docker Compose:
+### Linux/macOS
+
+```bash
+# 1. Install dependencies (first time only)
+make install
+
+# 2. Run the application
+make run
+
+# 3. Open http://localhost:5000
+```
+
+### Windows (PowerShell)
+
+```powershell
+# 1. Install dependencies (first time only)
+cd backend
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+
+# 2. Run the application
+$env:DATABASE_URL="sqlite:///transport.db"
+python app.py
+
+# 3. Open http://localhost:5000
+```
+
+### Docker (optional)
 
 ```bash
 docker-compose up --build
+# Frontend: http://localhost:3000
+# Backend: http://localhost:5000
 ```
 
-2. Backend health: http://localhost:5000/health
-3. Frontend: http://localhost:3000/
+## Running Tests
+
+```bash
+make test          # Linux/macOS
+make test-win      # Windows
+```
 
 ## Account management integration
 
