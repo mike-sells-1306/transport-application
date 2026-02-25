@@ -22,13 +22,22 @@
     </div>
     <div class="sidebar-search">
       <label for="from-input">Where would you like to travel today?</label>
-      <div class="input-group">
-        <input id="from-input" type="text" placeholder="Search…" />
-        <button class="icon-btn" title="Swap or Submit">
+      <div class="journey-search-group">
+        <div class="journey-box">
+          <span class="journey-dot journey-dot-empty"></span>
+          <input id="from-input" type="text" placeholder="Search…" />
+        </div>
+        <div class="journey-line-container">
+          <span class="journey-line"></span>
+        </div>
+        <div class="journey-box">
+          <span class="journey-dot journey-dot-filled"></span>
+          <input id="to-input" type="text" placeholder="to" />
+        </div>
+        <button class="icon-btn journey-swap-btn" title="Swap or Submit">
           <span class="icon-swap"></span>
         </button>
       </div>
-      <input id="to-input" type="text" placeholder="to" />
     </div>
     <nav class="sidebar-links">
       <a href="#account" id="account-link">Account</a>
