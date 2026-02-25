@@ -60,7 +60,7 @@
 
 /* Ensure autocomplete wrapper takes proper width */
 .journey-box .autocomplete-wrapper {
-  width: 90%;
+  width: 75%;
 }
 
 .journey-swap-btn {
@@ -72,6 +72,12 @@
   transform: translateX(-50%);
   margin: -6.3rem 0;
   z-index: 2;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.journey-swap-btn:hover {
+  transform: translateX(-50%) scale(1.1);
 }
 
 /* Custom size for 'to' location search box */
