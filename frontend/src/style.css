@@ -1,3 +1,86 @@
+/* Journey search visual styles */
+.journey-search-group {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  position: relative;
+  margin-top: 30px;
+  gap: 0;
+}
+.journey-box {
+  display: flex;
+  align-items: center;
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+.journey-dot {
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+.journey-dot-empty {
+  border: 3px solid #800000;
+  border-radius: 50%;
+  background: transparent;
+}
+.journey-dot-filled {
+  background: #800000;
+  border-radius: 50%;
+  border: 3px solid #800000;
+}
+.journey-line-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 18px;
+  margin-right: 253px;
+  margin-bottom: 0.5rem;
+}
+.journey-line {
+  border-left: 2px dotted #800000;
+  height: 50px;
+  display: inline-block;
+}
+.journey-box input[type="text"] {
+  margin-top: 10px; /* Moves the search boxes downward, adjust as needed */
+  width: 90%;
+  padding: 10px 14px;
+  margin-bottom: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: #222;
+  color: var(--white);
+  font-size: 1rem;
+  outline: none;
+  transition: box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.journey-swap-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  left: 95%;
+  transform: translateX(-50%);
+  margin: -6.3rem 0;
+  z-index: 2;
+}
+/* Custom size for 'to' location search box */
+#to-input {
+  width: 75%;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: #222;
+  color: var(--white);
+  font-size: 1rem;
+  outline: none;
+  transition: box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
 /*
   style.css - Main stylesheet for Transport for North West UI
   Author: [Your Name]
@@ -59,6 +142,7 @@ body {
   margin-bottom: 18px;
 }
 .sidebar-search label {
+  margin-top: 20px; /* Moves the label text further down without affecting the boxes or dots */
   display: block;
   font-size: 1.1rem;
   margin-bottom: 14px;
@@ -115,8 +199,11 @@ body {
   padding: 24px 32px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 30px;
+  background: #8b1111;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
+
 .sidebar-links a {
   color: var(--white);
   text-decoration: none;
