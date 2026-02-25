@@ -12,10 +12,10 @@ down:
 
 # Local development
 install:
-	cd backend && python -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
+	cd backend && python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
 
 run:
-	cd backend && . .venv/bin/activate && DATABASE_URL="sqlite:////tmp/transport.db" python app.py
+	cd backend && . .venv/bin/activate && DATABASE_URL="sqlite:////tmp/transport.db" python3 app.py
 
 test:
-	cd backend && . .venv/bin/activate && DATABASE_URL="sqlite://" python -m pytest tests/ -v
+	cd backend && . .venv/bin/activate && DATABASE_URL="sqlite://" python3 -m pytest tests/ -v

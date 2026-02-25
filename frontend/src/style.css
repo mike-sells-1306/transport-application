@@ -45,7 +45,7 @@
 }
 .journey-box input[type="text"] {
   margin-top: 10px; /* Moves the search boxes downward, adjust as needed */
-  width: 90%;
+  width: 100%;
   padding: 10px 14px;
   margin-bottom: 0;
   border: none;
@@ -57,6 +57,12 @@
   transition: box-shadow 0.2s;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
+
+/* Ensure autocomplete wrapper takes proper width */
+.journey-box .autocomplete-wrapper {
+  width: 90%;
+}
+
 .journey-swap-btn {
   display: flex;
   align-items: center;
@@ -67,20 +73,91 @@
   margin: -6.3rem 0;
   z-index: 2;
 }
+
 /* Custom size for 'to' location search box */
 #to-input {
-  width: 75%;
-  padding: 10px 14px;
-  margin-bottom: 10px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: #222;
-  color: var(--white);
-  font-size: 1rem;
-  outline: none;
-  transition: box-shadow 0.2s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  width: 100%;
 }
+
+/* Override for 'to' autocomplete wrapper */
+.journey-box:has(#to-input) .autocomplete-wrapper {
+  width: 75%;
+}
+
+/* Autocomplete Styles */
+.autocomplete-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.autocomplete-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 1000;
+  display: none;
+}
+
+.autocomplete-suggestions.visible {
+  display: block;
+}
+
+.autocomplete-suggestion-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  color: var(--white);
+  font-size: 0.95rem;
+  border-bottom: 1px solid #333;
+  transition: background-color 0.15s;
+}
+
+.autocomplete-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.autocomplete-suggestion-item:hover,
+.autocomplete-suggestion-item.selected {
+  background-color: #2a2a2a;
+}
+
+.autocomplete-suggestion-item:active {
+  background-color: #333;
+}
+
+.autocomplete-no-results {
+  padding: 10px 14px;
+  color: #999;
+  font-size: 0.9rem;
+  font-style: italic;
+  text-align: center;
+}
+
+/* Scrollbar styling for autocomplete */
+.autocomplete-suggestions::-webkit-scrollbar {
+  width: 8px;
+}
+
+.autocomplete-suggestions::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.autocomplete-suggestions::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+.autocomplete-suggestions::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
 /*
   style.css - Main stylesheet for Transport for North West UI
   Author: [Your Name]

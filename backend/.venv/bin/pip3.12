@@ -1,4 +1,6 @@
-#!/home/sells/h-drive/y2/group-project/transport-application/backend/.venv/bin/python3
+#!/bin/sh
+'''exec' "/home/oultonm/h-drive/2nd Year/200/transport-application/backend/.venv/bin/python3" "$0" "$@"
+' '''
 # -*- coding: utf-8 -*-
 import re
 import sys

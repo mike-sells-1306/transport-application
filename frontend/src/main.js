@@ -642,10 +642,238 @@ function attachAccountEventHandlers() {
   document.getElementById('delete-account-btn')?.addEventListener('click', handleDeleteAccount);
 }
 
+// ============================================================================
+// AUTOCOMPLETE FUNCTIONALITY
+// ============================================================================
+
+// Store selected stop data for each input
+const selectedStops = {
+  from: null,
+  to: null
+};
+
+// Debounce timer
+let debounceTimer = null;
+
+/**
+ * Initialize autocomplete for both search inputs
+ */
+function initializeAutocomplete() {
+  const fromInput = document.getElementById('from-input');
+  const toInput = document.getElementById('to-input');
+  const fromSuggestions = document.getElementById('from-suggestions');
+  const toSuggestions = document.getElementById('to-suggestions');
+
+  if (fromInput && fromSuggestions) {
+    setupAutocomplete(fromInput, fromSuggestions, 'from');
+  }
+
+  if (toInput && toSuggestions) {
+    setupAutocomplete(toInput, toSuggestions, 'to');
+  }
+
+  // Close suggestions when clicking outside
+  document.addEventListener('click', function(event) {
+    if (!event.target.closest('.autocomplete-wrapper')) {
+      hideAllSuggestions();
+    }
+  });
+}
+
+/**
+ * Setup autocomplete for a specific input
+ */
+function setupAutocomplete(input, suggestionsContainer, inputType) {
+  let selectedIndex = -1;
+
+  // Input event handler with debouncing
+  input.addEventListener('input', function() {
+    const query = this.value.trim();
+    selectedIndex = -1;
+    
+    // Clear selected stop when user modifies input
+    selectedStops[inputType] = null;
+
+    // Debounce the search
+    clearTimeout(debounceTimer);
+    
+    if (query.length < 2) {
+      hideSuggestions(suggestionsContainer);
+      return;
+    }
+
+    debounceTimer = setTimeout(() => {
+      searchStops(query, suggestionsContainer, input, inputType);
+    }, 300);
+  });
+
+  // Keyboard navigation
+  input.addEventListener('keydown', function(event) {
+    const suggestions = suggestionsContainer.querySelectorAll('.autocomplete-suggestion-item');
+    
+    if (suggestions.length === 0) return;
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      selectedIndex = Math.min(selectedIndex + 1, suggestions.length - 1);
+      updateSelectedSuggestion(suggestions, selectedIndex);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      selectedIndex = Math.max(selectedIndex - 1, 0);
+      updateSelectedSuggestion(suggestions, selectedIndex);
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      if (selectedIndex >= 0 && suggestions[selectedIndex]) {
+        suggestions[selectedIndex].click();
+      }
+    } else if (event.key === 'Escape') {
+      hideSuggestions(suggestionsContainer);
+      selectedIndex = -1;
+    }
+  });
+
+  // Focus event - show suggestions if there's a query
+  input.addEventListener('focus', function() {
+    if (this.value.trim().length >= 2 && suggestionsContainer.children.length > 0) {
+      showSuggestions(suggestionsContainer);
+    }
+  });
+}
+
+/**
+ * Search for stops matching the query
+ */
+async function searchStops(query, suggestionsContainer, input, inputType) {
+  try {
+    const response = await fetch(`/api/stops/search?q=${encodeURIComponent(query)}&limit=10`);
+    const data = await response.json();
+
+    if (data.stops && data.stops.length > 0) {
+      displaySuggestions(data.stops, suggestionsContainer, input, inputType);
+    } else {
+      displayNoResults(suggestionsContainer);
+    }
+  } catch (error) {
+    console.error('Error searching stops:', error);
+    displayError(suggestionsContainer);
+  }
+}
+
+/**
+ * Display suggestions in the dropdown
+ */
+function displaySuggestions(stops, suggestionsContainer, input, inputType) {
+  suggestionsContainer.innerHTML = '';
+
+  stops.forEach((stop, index) => {
+    const item = document.createElement('div');
+    item.className = 'autocomplete-suggestion-item';
+    item.textContent = stop.name;
+    item.dataset.atcoCode = stop.atcoCode;
+    item.dataset.lat = stop.lat;
+    item.dataset.lon = stop.lon;
+    item.dataset.name = stop.name;
+    item.dataset.stopType = stop.stopType;
+
+    item.addEventListener('click', function() {
+      selectStop(stop, input, suggestionsContainer, inputType);
+    });
+
+    // Hover effect
+    item.addEventListener('mouseenter', function() {
+      const allItems = suggestionsContainer.querySelectorAll('.autocomplete-suggestion-item');
+      allItems.forEach(i => i.classList.remove('selected'));
+      this.classList.add('selected');
+    });
+
+    suggestionsContainer.appendChild(item);
+  });
+
+  showSuggestions(suggestionsContainer);
+}
+
+/**
+ * Display no results message
+ */
+function displayNoResults(suggestionsContainer) {
+  suggestionsContainer.innerHTML = '<div class="autocomplete-no-results">No stops found within the region</div>';
+  showSuggestions(suggestionsContainer);
+}
+
+/**
+ * Display error message
+ */
+function displayError(suggestionsContainer) {
+  suggestionsContainer.innerHTML = '<div class="autocomplete-no-results">Error loading stops</div>';
+  showSuggestions(suggestionsContainer);
+}
+
+/**
+ * Select a stop from suggestions
+ */
+function selectStop(stop, input, suggestionsContainer, inputType) {
+  input.value = stop.name;
+  selectedStops[inputType] = stop;
+  hideSuggestions(suggestionsContainer);
+  
+  console.log(`Selected ${inputType} stop:`, stop);
+}
+
+/**
+ * Update which suggestion is highlighted
+ */
+function updateSelectedSuggestion(suggestions, index) {
+  suggestions.forEach((item, i) => {
+    if (i === index) {
+      item.classList.add('selected');
+      item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    } else {
+      item.classList.remove('selected');
+    }
+  });
+}
+
+/**
+ * Show suggestions dropdown
+ */
+function showSuggestions(suggestionsContainer) {
+  suggestionsContainer.classList.add('visible');
+}
+
+/**
+ * Hide suggestions dropdown
+ */
+function hideSuggestions(suggestionsContainer) {
+  suggestionsContainer.classList.remove('visible');
+}
+
+/**
+ * Hide all suggestion dropdowns
+ */
+function hideAllSuggestions() {
+  document.querySelectorAll('.autocomplete-suggestions').forEach(container => {
+    hideSuggestions(container);
+  });
+}
+
+/**
+ * Get selected stop data
+ */
+function getSelectedStops() {
+  return selectedStops;
+}
+
+// ============================================================================
+// END AUTOCOMPLETE FUNCTIONALITY
+// ============================================================================
+
 // Initialize application when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
   // Initialize the interactive map
   initializeMap();
+  
+  // Initialize autocomplete for search inputs
+  initializeAutocomplete();
   
   // Set up panel toggle event listeners
   const weatherBtn = document.getElementById('weather-btn');

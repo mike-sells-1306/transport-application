@@ -25,14 +25,20 @@
       <div class="journey-search-group">
         <div class="journey-box">
           <span class="journey-dot journey-dot-empty"></span>
-          <input id="from-input" type="text" placeholder="Search…" />
+          <div class="autocomplete-wrapper">
+            <input id="from-input" type="text" placeholder="Search…" autocomplete="off" />
+            <div class="autocomplete-suggestions" id="from-suggestions"></div>
+          </div>
         </div>
         <div class="journey-line-container">
           <span class="journey-line"></span>
         </div>
         <div class="journey-box">
           <span class="journey-dot journey-dot-filled"></span>
-          <input id="to-input" type="text" placeholder="to" />
+          <div class="autocomplete-wrapper">
+            <input id="to-input" type="text" placeholder="to" autocomplete="off" />
+            <div class="autocomplete-suggestions" id="to-suggestions"></div>
+          </div>
         </div>
         <button class="icon-btn journey-swap-btn" title="Swap or Submit">
           <span class="icon-swap"></span>

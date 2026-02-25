@@ -456,6 +456,89 @@ def naptan():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/api/stops/search')
+def search_stops():
+    """Search for bus and train stops within map bounds with autocomplete support"""
+    try:
+        query = request.args.get('q', '').strip().lower()
+        limit = min(int(request.args.get('limit', 10)), 50)
+        
+        # Map bounds: SW (53.3665, -3.5) to NE (54.6200, -2.211)
+        MIN_LAT, MAX_LAT = 53.3665, 54.6200
+        MIN_LON, MAX_LON = -3.5, -2.211
+        
+        if not query or len(query) < 2:
+            return jsonify({"stops": []})
+        
+        # Get NaPTAN data from transport service
+        app.logger.info(f"Fetching NaPTAN data for query: {query}")
+        naptan_data = transport_service.get_naptan(full=False)
+        app.logger.info(f"NaPTAN data type: {type(naptan_data)}, keys: {naptan_data.keys() if isinstance(naptan_data, dict) else 'N/A'}")
+        
+        # Filter stops within bounds and matching query
+        matching_stops = []
+        
+        # naptan_data should be a dict with 'stops' key
+        stops_list = naptan_data.get('stops', []) if isinstance(naptan_data, dict) else naptan_data
+        
+        app.logger.info(f"Stops list length: {len(stops_list) if stops_list else 0}")
+        
+        if stops_list:
+            for stop in stops_list:
+                # Extract coordinates
+                lat = stop.get('Latitude')
+                lon = stop.get('Longitude')
+                
+                # Skip if coordinates missing
+                if lat is None or lon is None:
+                    continue
+                
+                # Convert to float
+                try:
+                    lat = float(lat)
+                    lon = float(lon)
+                except (ValueError, TypeError):
+                    continue
+                
+                # Check if within bounds
+                if not (MIN_LAT <= lat <= MAX_LAT and MIN_LON <= lon <= MAX_LON):
+                    continue
+                
+                # Get stop name and code
+                stop_name = stop.get('CommonName', '').lower()
+                stop_indicator = stop.get('Indicator', '')
+                stop_locality = stop.get('LocalityName', '')
+                atco_code = stop.get('ATCOCode', '')
+                
+                # Check if query matches stop name or locality
+                if query in stop_name or query in stop_locality.lower():
+                    # Create display name
+                    display_name = stop.get('CommonName', '')
+                    if stop_indicator:
+                        display_name += f" ({stop_indicator})"
+                    if stop_locality and stop_locality not in display_name:
+                        display_name += f", {stop_locality}"
+                    
+                    matching_stops.append({
+                        'name': display_name,
+                        'atcoCode': atco_code,
+                        'lat': lat,
+                        'lon': lon,
+                        'stopType': stop.get('StopType', 'bus')
+                    })
+                
+                # Stop once we have enough results
+                if len(matching_stops) >= limit:
+                    break
+        
+        app.logger.info(f"Returning {len(matching_stops)} matching stops for query '{query}'")
+        return jsonify({"stops": matching_stops})
+        
+    except Exception as e:
+        app.logger.error(f"Stop search error: {e}")
+        return jsonify({"error": str(e), "stops": []}), 500
+
+
 @app.route('/api/bus/timetable/<bus_code>')
 def bus_timetable(bus_code):
     try:
