@@ -19,9 +19,9 @@ The account management system is **substantially implemented** with core functio
 
 | Feature | Status | Location |
 |---------|--------|----------|
-| User Registration | ✅ Complete | [backend/app.py](../backend/app.py) - `/api/auth/register` |
-| User Login | ✅ Complete | [backend/app.py](../backend/app.py) - `/api/auth/login` |
-| User Logout | ✅ Complete | [backend/app.py](../backend/app.py) - `/api/auth/logout` |
+| User Registration | ✅ Complete | [backend/app.py](../../backend/app.py) - `/api/auth/register` |
+| User Login | ✅ Complete | [backend/app.py](../../backend/app.py) - `/api/auth/login` |
+| User Logout | ✅ Complete | [backend/app.py](../../backend/app.py) - `/api/auth/logout` |
 | Token-based Authentication | ✅ Complete | Uses `itsdangerous.URLSafeTimedSerializer` |
 | Password Hashing | ✅ Complete | Uses `werkzeug.security.generate_password_hash` |
 | Get User Profile | ✅ Complete | `/api/account/me` |
@@ -46,13 +46,13 @@ The account management system is **substantially implemented** with core functio
 | `Notification` | ✅ Complete | notificationID, userID, message, created_at, is_read |
 | `UserWeather` | ✅ Complete | userID, location tracking |
 
-Schema defined in: [backend/migrations/account_management_schema.sql](../backend/migrations/account_management_schema.sql)
+Schema defined in: [backend/migrations/account_management_schema.sql](../../backend/migrations/account_management_schema.sql)
 
 #### Frontend (JavaScript + HTML/CSS)
 
 | Feature | Status | Location |
 |---------|--------|----------|
-| Auth State Management | ✅ Complete | [frontend/src/main.js](../frontend/src/main.js) - `authState` object |
+| Auth State Management | ✅ Complete | [frontend/src/main.js](../../frontend/src/main.js) - `authState` object |
 | Login Form | ✅ Complete | Auth modal with email/password inputs |
 | Registration Form | ✅ Complete | Register form with username/email/password |
 | Token Storage | ✅ Complete | `localStorage` for auth token |
@@ -68,8 +68,8 @@ Schema defined in: [backend/migrations/account_management_schema.sql](../backend
 
 | Test Suite | Status | Location |
 |------------|--------|----------|
-| Register/Login/Me Flow | ✅ Complete | [backend/tests/test_account.py](../backend/tests/test_account.py) |
-| Saved Route CRUD Flow | ✅ Complete | [backend/tests/test_account.py](../backend/tests/test_account.py) |
+| Register/Login/Me Flow | ✅ Complete | [backend/tests/test_account.py](../../backend/tests/test_account.py) |
+| Saved Route CRUD Flow | ✅ Complete | [backend/tests/test_account.py](../../backend/tests/test_account.py) |
 
 ---
 
@@ -250,15 +250,15 @@ Schema defined in: [backend/migrations/account_management_schema.sql](../backend
 
 | File | Purpose |
 |------|---------|
-| [backend/app.py](../backend/app.py) | Main Flask application with all routes |
-| [backend/services/account_management.py](../backend/services/account_management.py) | Legacy in-memory account service (deprecated) |
-| [backend/migrations/account_management_schema.sql](../backend/migrations/account_management_schema.sql) | MySQL schema definition |
-| [backend/tests/test_account.py](../backend/tests/test_account.py) | Account management test suite |
-| [frontend/src/main.js](../frontend/src/main.js) | Frontend auth/account JavaScript |
-| [frontend/src/index.html](../frontend/src/index.html) | HTML with auth/account modals |
-| [frontend/src/style.css](../frontend/src/style.css) | Account modal styling |
-| [docs/account-management.md](./account-management.md) | API documentation |
-| [TODO.md](../TODO.md) | Project-wide TODO list |
+| [backend/app.py](../../backend/app.py) | Main Flask application with all routes |
+| [backend/services/account_management.py](../../backend/services/account_management.py) | Legacy in-memory account service (deprecated) |
+| [backend/migrations/account_management_schema.sql](../../backend/migrations/account_management_schema.sql) | MySQL schema definition |
+| [backend/tests/test_account.py](../../backend/tests/test_account.py) | Account management test suite |
+| [frontend/src/main.js](../../frontend/src/main.js) | Frontend auth/account JavaScript |
+| [frontend/src/index.html](../../frontend/src/index.html) | HTML with auth/account modals |
+| [frontend/src/style.css](../../frontend/src/style.css) | Account modal styling |
+| [docs/features/account-management.md](./account-management.md) | API documentation |
+| [TODO.md](../../TODO.md) | Project-wide TODO list |
 
 ---
 

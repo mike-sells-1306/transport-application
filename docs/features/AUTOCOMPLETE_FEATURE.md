@@ -516,10 +516,10 @@ Potential improvements for future versions:
 
 ## Related Documentation
 
-- [API Documentation](../backend/API_DOCUMENTATION.md)
+- [API Documentation](../api/API_DOCUMENTATION.md)
 - [Account Management](./account-management.md)
-- [Frontend UI Guide](../frontend/src/index.md)
-- [Backend Status](../backend/BACKEND_STATUS.md)
+- [Frontend UI Guide](../../frontend/src/index.md)
+- [Backend Status](../api/BACKEND_STATUS.md)
 
 ---
 

@@ -19,7 +19,7 @@ The account subsystem is implemented in the backend API and consumed from the fr
 
 ## Data model
 
-Core tables are defined in [backend/migrations/account_management_schema.sql](../backend/migrations/account_management_schema.sql):
+Core tables are defined in [backend/migrations/account_management_schema.sql](../../backend/migrations/account_management_schema.sql):
 
 - `User`
 - `Route`

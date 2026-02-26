@@ -86,8 +86,10 @@ The backend reads the following environment variables:
 - `SECRET_KEY`
 - `AUTH_TOKEN_MAX_AGE_SECONDS`
 
-See [docs/account-management.md](docs/account-management.md) for endpoint contracts and implementation notes.
+See [docs/features/account-management.md](docs/features/account-management.md) for endpoint contracts and implementation notes.
 
-See `docs/software-design-doc-source/main.tex` for the software design document.
+See [docs/design/software-design-doc-source/main.tex](docs/design/software-design-doc-source/main.tex) for the software design document.
+
+See [docs/README.md](docs/README.md) for a full documentation index.
 # transport-application
 todo

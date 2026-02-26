@@ -100,8 +100,8 @@ This backend provides unified API endpoints for regional transport datasets and 
 ---
 
 ## References
-- [Transport Application Overview.html](../docs/software-design-doc-source/Transport%20Application%20Overview.html)
-- [main.tex](../docs/software-design-doc-source/main.tex)
+- [Transport Application Overview.html](../design/software-design-doc-source/Transport%20Application%20Overview.html)
+- [main.tex](../design/software-design-doc-source/main.tex)
 
 ---
 
