@@ -45,36 +45,37 @@
         </button>
       </div>
     </div>
-    <nav class="sidebar-links">
+    <nav class="sidebar-links" aria-label="Main navigation">
       <a href="#account" id="account-link">Account</a>
       <a href="#faq">FAQ</a>
       <a href="#support">Customer Support</a>
+      <a href="#accessibility" id="colorblind-toggle-link" role="button" aria-pressed="false">Accessibility</a>
     </nav>
   </aside>
 
   <!-- Main Map Area -->
   <main class="map-area">
     <!-- Interactive OpenStreetMap container -->
-    <div id="map" class="leaflet-map">
+    <div id="map" class="leaflet-map" role="application" aria-label="Interactive map of North West England">
       <!-- Map will be rendered here by Leaflet JS -->
     </div>
 
     <!-- Top-right icon buttons -->
     <div class="top-right-icons">
-      <button class="icon-btn" id="weather-btn" title="Weather">
+      <button class="icon-btn" id="weather-btn" title="Weather" aria-expanded="false" aria-controls="weather-panel">
         <span class="icon-cloud"></span>
       </button>
-      <button class="icon-btn" id="notif-btn" title="Notifications">
+      <button class="icon-btn" id="notif-btn" title="Notifications" aria-expanded="false" aria-controls="notif-panel">
         <span class="icon-bell"></span>
       </button>
     </div>
 
     <!-- Route Results Modal (example, hidden by default) -->
-    <section class="route-modal hidden">
-      <div class="route-modal-header">Routes from Lancaster to Blackpool</div>
+    <section class="route-modal hidden" id="route-modal" role="dialog" aria-modal="true" aria-labelledby="route-modal-title">
+      <div class="route-modal-header" id="route-modal-title">Routes from Lancaster to Blackpool</div>
       <div class="route-modal-sort">
         <label for="sort">Sort by:</label>
-        <select id="sort">
+        <select id="sort" aria-label="Sort routes by">
           <option>Fastest</option>
           <option>Cheapest</option>
           <option>Fewest Changes</option>
@@ -100,17 +101,17 @@
     </section>
 
     <!-- Weather Panel (hidden by default) - populated dynamically from API -->
-    <section class="weather-panel hidden">
+    <section class="weather-panel hidden" id="weather-panel" role="region" aria-label="Weather information">
       <div class="panel-header">Weather</div>
-      <ul class="weather-list" id="weather-list">
+      <ul class="weather-list" id="weather-list" aria-live="polite">
         <li class="weather-loading">Loading weather data…</li>
       </ul>
     </section>
 
     <!-- Notifications Panel (hidden by default) -->
-    <section class="notif-panel hidden">
+    <section class="notif-panel hidden" id="notif-panel" role="region" aria-label="Notifications">
       <div class="panel-header">Notifications</div>
-      <div class="notif-list">
+      <div class="notif-list" aria-live="polite">
         <div class="notif-item">
           <strong>ANNOUNCEMENT:</strong> Train to Blackpool delayed by 12 minutes. <span class="notif-time">12m ago</span>
         </div>
@@ -164,8 +165,8 @@
     </section>
 
     <!-- Authentication Modal (hidden by default) -->
-    <section class="auth-modal hidden" id="auth-modal">
-      <div class="auth-modal-header">Account Login</div>
+    <section class="auth-modal hidden" id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+      <div class="auth-modal-header" id="auth-modal-title">Account Login</div>
       <div class="auth-modal-body">
         <p class="auth-help">Sign in or create an account to save routes and manage preferences.</p>
         <form id="login-form" class="auth-form">
@@ -186,8 +187,8 @@
     </section>
 
     <!-- Account Settings Modal (hidden by default) -->
-    <section class="account-modal hidden" id="account-modal">
-      <div class="account-modal-header">Account Settings</div>
+    <section class="account-modal hidden" id="account-modal" role="dialog" aria-modal="true" aria-labelledby="account-modal-title">
+      <div class="account-modal-header" id="account-modal-title">Account Settings</div>
       <div class="account-modal-body">
         <div class="account-avatar"></div>
         <div class="account-info">
@@ -201,6 +202,12 @@
             </ul>
           </div>
           <div class="account-actions">
+            <div class="colorblind-toggle">
+              <label for="colorblind-checkbox">
+                <input type="checkbox" id="colorblind-checkbox" role="switch" aria-checked="false" aria-label="Enable colourblind mode" />
+                Colourblind Mode
+              </label>
+            </div>
             <button class="action-btn" id="update-password-btn" type="button">Update Password</button>
             <button class="action-btn" id="logout-btn" type="button">Log Out</button>
             <button class="action-btn danger" id="delete-account-btn" type="button">Delete Account</button>

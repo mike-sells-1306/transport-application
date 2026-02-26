@@ -640,7 +640,7 @@ body {
 }
 .notif-time {
   font-size: 0.98rem;
-  color: #888;
+  color: #666;
   margin-left: 16px;
 }
 .notif-item.more {
@@ -915,6 +915,148 @@ body {
   border-radius: 8px;
   padding: 10px;
   font-size: 0.95rem;
+}
+
+/* Placeholder contrast fix (WCAG 1.4.3) */
+::placeholder {
+  color: #aaa;
+  opacity: 1;
+}
+
+/* Popup styles (theme-aware, replaces inline styles) */
+.popup-content {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  min-width: 220px;
+  max-width: 260px;
+}
+
+.popup-title {
+  margin: 0 0 8px 0;
+  color: var(--red-main);
+  font-size: 1.1rem;
+}
+
+.popup-description {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+/* Colourblind toggle styling */
+.colorblind-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.colorblind-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.05rem;
+  color: #333;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.colorblind-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--red-main);
+  cursor: pointer;
+}
+
+/* Focus visibility (WCAG 2.4.7) */
+:focus-visible {
+  outline: 3px solid #0057B7;
+  outline-offset: 2px;
+}
+
+.sidebar-search input[type="text"]:focus-visible,
+.journey-box input[type="text"]:focus-visible {
+  outline: 3px solid #0057B7;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 87, 183, 0.25);
+}
+
+.auth-form input:focus-visible {
+  outline: 3px solid #0057B7;
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   COLOURBLIND MODE — WCAG 2.2 AA Compliant Palette
+   Triggered by body.colorblind-mode class
+   Uses blue/orange palette safe for protanopia, deuteranopia, tritanopia
+   ============================================================ */
+body.colorblind-mode {
+  --red-main:    #0057B7;
+  --red-light:   #1976D2;
+  --red-panel:   #004A99;
+  --grey-dark:   #222;
+  --blue-map:    #E3F2FD;
+}
+
+/* Override hardcoded colours that don't use CSS variables */
+body.colorblind-mode .sidebar-links {
+  background: #003D80;
+}
+
+body.colorblind-mode .action-btn.danger {
+  background: #B7410E;
+}
+
+body.colorblind-mode .notif-item strong {
+  color: #0057B7;
+}
+
+body.colorblind-mode .popup-description {
+  color: #222;
+}
+
+/* Journey dots — colour override for CB mode (WCAG 1.4.1) */
+body.colorblind-mode .journey-dot-empty {
+  border-color: #0057B7;
+}
+
+body.colorblind-mode .journey-dot-filled {
+  background: #0057B7;
+  border-color: #0057B7;
+}
+
+body.colorblind-mode .journey-line {
+  border-left-color: #0057B7;
+}
+
+/* Focus styles in colourblind mode — orange for high contrast against blue theme */
+body.colorblind-mode :focus-visible {
+  outline-color: #FF8C00;
+}
+
+body.colorblind-mode .sidebar-search input[type="text"]:focus-visible,
+body.colorblind-mode .journey-box input[type="text"]:focus-visible {
+  outline-color: #FF8C00;
+  box-shadow: 0 0 0 4px rgba(255, 140, 0, 0.25);
+}
+
+body.colorblind-mode .auth-form input:focus-visible {
+  outline-color: #FF8C00;
+}
+
+/* Map marker hover in colourblind mode */
+body.colorblind-mode .leaflet-map .leaflet-circle-marker:hover path {
+  fill: #1976D2 !important;
+  stroke: #0057B7 !important;
+}
+
+/* Route row alternating differentiation — add border for non-colour distinction */
+body.colorblind-mode .route-row {
+  border-left: 3px solid transparent;
+}
+
+body.colorblind-mode .route-row.alt {
+  border-left: 3px solid rgba(255, 255, 255, 0.5);
 }
 
 /* Utility */

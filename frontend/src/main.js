@@ -11,6 +11,9 @@ const authState = {
 // Track which marker has an open popup
 let currentOpenPopup = null;
 
+// Store map marker references for theme updates
+let mapMarkers = [];
+
 // Swap button functionality
 function setupSwapButton() {
   const swapBtn = document.querySelector('.journey-swap-btn');
@@ -217,14 +220,16 @@ function initializeMap() {
 
   // Add markers for each location with popups and toggle functionality
   locations.forEach(location => {
+    const colors = getMarkerColors();
     const marker = L.circleMarker([location.lat, location.lng], {
       radius: 9,
-      fillColor: '#d32f2f',
-      color: '#b71c1c',
+      fillColor: colors.fillColor,
+      color: colors.color,
       weight: 1,
       opacity: 1,
-      fillOpacity: 0.35,
+      fillOpacity: colors.fillOpacity,
     });
+    mapMarkers.push(marker);
 
     marker.addTo(map);
 
@@ -233,10 +238,10 @@ function initializeMap() {
       : '';
 
     marker.bindPopup(`
-      <div style="font-family: 'Segoe UI', Arial; min-width: 220px; max-width: 260px;">
+      <div class="popup-content">
         ${popupImageMarkup}
-        <h3 style="margin: 0 0 8px 0; color: #b71c1c; font-size: 1.1rem;">${location.name}</h3>
-        <p style="margin: 0; font-size: 0.95rem; color: #333;">${location.description}</p>
+        <h3 class="popup-title">${location.name}</h3>
+        <p class="popup-description">${location.description}</p>
       </div>
     `);
 
@@ -282,6 +287,67 @@ function initializeMap() {
   });
 
   return map;
+}
+
+// ============================================================================
+// COLOURBLIND MODE / ACCESSIBILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Get marker colours based on current theme.
+ * Returns blue palette in colourblind mode, red in normal mode.
+ */
+function getMarkerColors() {
+  const isCB = document.body.classList.contains('colorblind-mode');
+  return {
+    fillColor: isCB ? '#1976D2' : '#d32f2f',
+    color: isCB ? '#0057B7' : '#b71c1c',
+    fillOpacity: isCB ? 0.6 : 0.35,
+  };
+}
+
+/**
+ * Update all map marker colours to match the current theme.
+ */
+function updateMapMarkerColors() {
+  const colors = getMarkerColors();
+  mapMarkers.forEach(marker => {
+    marker.setStyle({
+      fillColor: colors.fillColor,
+      color: colors.color,
+      fillOpacity: colors.fillOpacity,
+    });
+  });
+}
+
+/**
+ * Apply or remove colourblind mode across the application.
+ * Toggles the CSS class, updates map markers, syncs UI controls,
+ * and persists the preference to localStorage.
+ * @param {boolean} enabled - Whether colourblind mode should be active
+ */
+function applyColorblindMode(enabled) {
+  document.body.classList.toggle('colorblind-mode', enabled);
+
+  // Sync the account settings checkbox
+  const checkbox = document.getElementById('colorblind-checkbox');
+  if (checkbox) {
+    checkbox.checked = enabled;
+    checkbox.setAttribute('aria-checked', String(enabled));
+  }
+
+  // Sync the sidebar accessibility link
+  const sidebarLink = document.getElementById('colorblind-toggle-link');
+  if (sidebarLink) {
+    sidebarLink.setAttribute('aria-pressed', String(enabled));
+    sidebarLink.textContent = enabled ? 'Accessibility \u2713' : 'Accessibility';
+  }
+
+  // Persist preference for non-logged-in users
+  localStorage.setItem('colorblindMode', JSON.stringify(enabled));
+
+  // Update map markers to match the new theme
+  updateMapMarkerColors();
 }
 
 // ============================================================================
@@ -430,7 +496,13 @@ function toggleWeatherPanel() {
   
   weatherPanel.classList.toggle('hidden');
   notifPanel.classList.add('hidden');
-  
+
+  // Update aria-expanded states for screen readers
+  const weatherBtn = document.getElementById('weather-btn');
+  const notifBtn = document.getElementById('notif-btn');
+  if (weatherBtn) weatherBtn.setAttribute('aria-expanded', String(!weatherPanel.classList.contains('hidden')));
+  if (notifBtn) notifBtn.setAttribute('aria-expanded', 'false');
+
   // Close other panels when weather is opened
   if (!weatherPanel.classList.contains('hidden')) {
     faqPanel?.classList.add('hidden');
@@ -451,7 +523,13 @@ function toggleNotificationsPanel() {
   
   notifPanel.classList.toggle('hidden');
   weatherPanel.classList.add('hidden');
-  
+
+  // Update aria-expanded states for screen readers
+  const weatherBtn = document.getElementById('weather-btn');
+  const notifBtn = document.getElementById('notif-btn');
+  if (notifBtn) notifBtn.setAttribute('aria-expanded', String(!notifPanel.classList.contains('hidden')));
+  if (weatherBtn) weatherBtn.setAttribute('aria-expanded', 'false');
+
   // Close other panels when notifications is opened
   if (!notifPanel.classList.contains('hidden')) {
     faqPanel?.classList.add('hidden');
@@ -613,6 +691,9 @@ async function refreshAccountView() {
   try {
     const meResponse = await apiRequest('/api/account/me');
     authState.user = meResponse.user;
+
+    // Apply colourblind mode preference from server
+    applyColorblindMode(!!authState.user.colorblindmode);
 
     const usernameTarget = document.getElementById('account-username-value');
     if (usernameTarget) {
@@ -807,6 +888,35 @@ function attachAccountEventHandlers() {
   document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
   document.getElementById('update-password-btn')?.addEventListener('click', handleUpdatePassword);
   document.getElementById('delete-account-btn')?.addEventListener('click', handleDeleteAccount);
+
+  // Colourblind mode toggle in account settings
+  document.getElementById('colorblind-checkbox')?.addEventListener('change', async (e) => {
+    const enabled = e.target.checked;
+    applyColorblindMode(enabled);
+    if (authState.token) {
+      try {
+        await apiRequest('/api/account/profile', {
+          method: 'PATCH',
+          body: { colorblindmode: enabled },
+        });
+      } catch (err) {
+        console.warn('Failed to save colourblind preference:', err.message);
+      }
+    }
+  });
+
+  // Sidebar accessibility link toggle (works without login)
+  document.getElementById('colorblind-toggle-link')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const isCurrentlyEnabled = document.body.classList.contains('colorblind-mode');
+    applyColorblindMode(!isCurrentlyEnabled);
+    if (authState.token) {
+      apiRequest('/api/account/profile', {
+        method: 'PATCH',
+        body: { colorblindmode: !isCurrentlyEnabled },
+      }).catch(err => console.warn('Failed to save colourblind preference:', err.message));
+    }
+  });
 }
 
 // ============================================================================
@@ -1059,6 +1169,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
   attachFaqEventHandlers();
   attachAccountEventHandlers();
+
+  // Restore colourblind mode from localStorage (before account fetch may override)
+  const savedColorblindMode = JSON.parse(localStorage.getItem('colorblindMode') || 'false');
+  if (savedColorblindMode) {
+    applyColorblindMode(true);
+  }
+
   refreshAccountView();
   
   // Health check for backend (if available)
