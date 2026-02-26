@@ -11,6 +11,33 @@ const authState = {
 // Track which marker has an open popup
 let currentOpenPopup = null;
 
+// Swap button functionality
+function setupSwapButton() {
+  const swapBtn = document.querySelector('.journey-swap-btn');
+  const fromInput = document.getElementById('from-input');
+  const toInput = document.getElementById('to-input');
+  const fromSuggestions = document.getElementById('from-suggestions');
+  const toSuggestions = document.getElementById('to-suggestions');
+  
+  if (swapBtn) {
+    swapBtn.addEventListener('click', () => {
+      // Swap the input values
+      const temp = fromInput.value;
+      fromInput.value = toInput.value;
+      toInput.value = temp;
+      
+      // Clear autocomplete suggestions
+      fromSuggestions.innerHTML = '';
+      fromSuggestions.classList.remove('visible');
+      toSuggestions.innerHTML = '';
+      toSuggestions.classList.remove('visible');
+      
+      // Trigger input event on from-input to update autocomplete if needed
+      fromInput.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+}
+
 // Initialize Leaflet map focused on North West England (Preston, Blackpool, Fylde, Wyre)
 function initializeMap() {
   // Center coordinates: Between Preston and Blackpool, spanning the Fylde and Wyre coastline
@@ -874,6 +901,9 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Initialize autocomplete for search inputs
   initializeAutocomplete();
+  
+  // Set up swap button functionality
+  setupSwapButton();
   
   // Set up panel toggle event listeners
   const weatherBtn = document.getElementById('weather-btn');
