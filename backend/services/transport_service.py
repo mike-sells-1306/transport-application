@@ -1,5 +1,6 @@
 from adapters.transport_adapters import NPTGAdapter, NaPTANAdapter, BusAdapter, RailAdapter
 from adapters.weather_adapter import WeatherAdapter
+from datetime import datetime, timedelta
 
 class TransportService:
     def __init__(self):
@@ -8,14 +9,33 @@ class TransportService:
         self.bus = BusAdapter()
         self.rail = RailAdapter()
         self.weather = WeatherAdapter()
+        
+        # Cache for NaPTAN data (expires after 1 hour)
+        self._naptan_cache = {}
+        self._naptan_cache_time = {}
 
     def get_gazetteer(self):
         xml_data = self.nptg.fetch_nptg()
         return self.nptg.parse_nptg(xml_data)
 
     def get_naptan(self, full=False):
+        cache_key = 'full' if full else 'normal'
+        
+        # Check if cache exists and is still valid (< 1 hour old)
+        if cache_key in self._naptan_cache:
+            cache_time = self._naptan_cache_time.get(cache_key)
+            if cache_time and (datetime.now() - cache_time) < timedelta(hours=1):
+                return self._naptan_cache[cache_key]
+        
+        # Fetch and parse if not cached or expired
         xml_data = self.naptan.fetch_naptan(full=full)
-        return self.naptan.parse_naptan(xml_data)
+        parsed_data = self.naptan.parse_naptan(xml_data)
+        
+        # Update cache
+        self._naptan_cache[cache_key] = parsed_data
+        self._naptan_cache_time[cache_key] = datetime.now()
+        
+        return parsed_data
 
     def get_bus_timetable(self, bus_code):
         return self.bus.fetch_bus_timetable(bus_code)

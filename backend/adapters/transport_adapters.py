@@ -6,9 +6,13 @@ BASE_URL = "http://transport.scc.lancs.ac.uk"
 class NPTGAdapter:
     def fetch_nptg(self):
         url = f"{BASE_URL}/nptg/nptg.xml"
-        response = requests.get(url)
-        response.raise_for_status()
-        return response.content
+        try:
+            response = requests.get(url, timeout=15)
+            response.raise_for_status()
+            return response.content
+        except Exception as e:
+            print(f"Error fetching NPTG data: {e}")
+            return b'<?xml version="1.0"?><NptgCsvData></NptgCsvData>'
 
     def parse_nptg(self, xml_data):
         root = ET.fromstring(xml_data)
@@ -131,22 +135,34 @@ class NaPTANAdapter:
 class BusAdapter:
     def fetch_bus_timetable(self, bus_code):
         url = f"{BASE_URL}/bus/times/{bus_code}"
-        response = requests.get(url)
-        response.raise_for_status()
-        return response.json()
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            print(f"Error fetching bus timetable: {e}")
+            return {"error": str(e)}
 
     def fetch_bus_live(self, bus_code):
         url = f"{BASE_URL}/bus/live/{bus_code}"
-        response = requests.get(url)
-        response.raise_for_status()
-        return response.json()
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            print(f"Error fetching live bus data: {e}")
+            return {"error": str(e)}
 
 class RailAdapter:
     def fetch_corpus(self):
         url = f"{BASE_URL}/rail/corpus"
-        response = requests.get(url)
-        response.raise_for_status()
-        return response.json()
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            print(f"Error fetching rail corpus: {e}")
+            return {"error": str(e)}
 
 # For live feeds (STOMP/AMQP), placeholder for future implementation
 class LiveFeedAdapter:

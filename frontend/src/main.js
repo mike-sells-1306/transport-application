@@ -39,6 +39,11 @@ function setupSwapButton() {
       fromSuggestions.classList.remove('visible');
       toSuggestions.innerHTML = '';
       toSuggestions.classList.remove('visible');
+      
+      // Search for routes if both stops are selected
+      if (selectedStops.from && selectedStops.to) {
+        searchRoutes();
+      }
     });
   }
 }
@@ -1094,6 +1099,11 @@ function selectStop(stop, input, suggestionsContainer, inputType) {
   hideSuggestions(suggestionsContainer);
   
   console.log(`Selected ${inputType} stop:`, stop);
+  
+  // Search for routes if both stops are selected
+  if (selectedStops.from && selectedStops.to) {
+    searchRoutes();
+  }
 }
 
 /**
@@ -1140,6 +1150,122 @@ function getSelectedStops() {
   return selectedStops;
 }
 
+/**
+ * Search for routes between the selected stops
+ */
+async function searchRoutes() {
+  // Only proceed if both stops are selected
+  if (!selectedStops.from || !selectedStops.to) {
+    console.warn('Both from and to stops must be selected');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/routes/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: selectedStops.from,
+        to: selectedStops.to,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Error searching routes:', errorData.error);
+      return;
+    }
+
+    const data = await response.json();
+    console.log('Routes found:', data.routes);
+    
+    // Display the routes in the modal
+    displayRoutesModal(data);
+  } catch (error) {
+    console.error('Error fetching routes:', error);
+  }
+}
+
+/**
+ * Display the routes modal with search results
+ */
+function displayRoutesModal(data) {
+  const modal = document.getElementById('route-modal');
+  const modalHeader = document.querySelector('.route-modal-header');
+  const routeList = document.querySelector('.route-list');
+  
+  if (!modal || !routeList) {
+    console.error('Route modal or route list not found');
+    return;
+  }
+
+  // Update the modal header with from/to information
+  // Get the text node and update it (excluding the close button)
+  const headerText = document.createTextNode(`Routes from ${data.from} to ${data.to}`);
+  
+  // Clear previous content but preserve the close button
+  const closeBtn = modalHeader.querySelector('#close-route-modal');
+  modalHeader.textContent = ''; // Clear everything
+  modalHeader.appendChild(headerText); // Add the new text
+  if (closeBtn) {
+    modalHeader.appendChild(closeBtn); // Re-add the close button at the end
+  }
+
+  // Clear existing routes
+  routeList.innerHTML = '';
+
+  // Add each route as a row
+  data.routes.forEach((route, index) => {
+    const routeRow = document.createElement('div');
+    routeRow.className = 'route-row' + (index % 2 === 1 ? ' alt' : '');
+
+    // Create transport icons
+    const transportIcons = route.transport.map(transport => {
+      const icon = document.createElement('span');
+      icon.className = transport === 'bus' ? 'icon-bus' : 'icon-train';
+      return icon;
+    });
+
+    // Create time display
+    const timesSpan = document.createElement('span');
+    timesSpan.className = 'route-times';
+    timesSpan.textContent = `${route.start_time} − ${route.end_time}`;
+
+    // Create duration display
+    const durationSpan = document.createElement('span');
+    durationSpan.className = 'route-duration';
+    
+    // Format duration
+    let durationText;
+    if (route.duration_mins < 60) {
+      durationText = `${route.duration_mins} min`;
+    } else {
+      const hours = Math.floor(route.duration_mins / 60);
+      const mins = route.duration_mins % 60;
+      durationText = mins > 0 ? `${hours}h ${mins} min` : `${hours}h`;
+    }
+    durationSpan.textContent = durationText;
+
+    // Append elements to the route row
+    routeRow.appendChild(transportIcons[0]); // First transport icon
+    
+    // If there are multiple transports (transfer), add the second icon
+    if (transportIcons.length > 1) {
+      routeRow.appendChild(transportIcons[1]);
+    }
+    
+    routeRow.appendChild(timesSpan);
+    routeRow.appendChild(durationSpan);
+
+    routeList.appendChild(routeRow);
+  });
+
+  // Show the modal by removing the hidden class
+  modal.classList.remove('hidden');
+}
+
 // ============================================================================
 // END AUTOCOMPLETE FUNCTIONALITY
 // ============================================================================
@@ -1165,6 +1291,25 @@ document.addEventListener('DOMContentLoaded', function() {
   
   if (notifBtn) {
     notifBtn.addEventListener('click', toggleNotificationsPanel);
+  }
+
+  // Set up route modal close button
+  const closeRouteModalBtn = document.getElementById('close-route-modal');
+  const routeModal = document.getElementById('route-modal');
+  
+  if (closeRouteModalBtn && routeModal) {
+    closeRouteModalBtn.addEventListener('click', () => {
+      routeModal.classList.add('hidden');
+    });
+  }
+
+  // Close modal when clicking outside of it
+  if (routeModal) {
+    routeModal.addEventListener('click', (event) => {
+      if (event.target === routeModal) {
+        routeModal.classList.add('hidden');
+      }
+    });
   }
 
   attachFaqEventHandlers();
