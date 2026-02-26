@@ -26,14 +26,16 @@ function setupSwapButton() {
       fromInput.value = toInput.value;
       toInput.value = temp;
       
+      // Swap the selected stop data
+      const tempStop = selectedStops.from;
+      selectedStops.from = selectedStops.to;
+      selectedStops.to = tempStop;
+      
       // Clear autocomplete suggestions
       fromSuggestions.innerHTML = '';
       fromSuggestions.classList.remove('visible');
       toSuggestions.innerHTML = '';
       toSuggestions.classList.remove('visible');
-      
-      // Trigger input event on from-input to update autocomplete if needed
-      fromInput.dispatchEvent(new Event('input', { bubbles: true }));
     });
   }
 }
@@ -915,26 +917,6 @@ document.addEventListener('DOMContentLoaded', function() {
   
   if (notifBtn) {
     notifBtn.addEventListener('click', toggleNotificationsPanel);
-  }
-
-  // Set up swap button to swap from/to inputs
-  const swapBtn = document.querySelector('.journey-swap-btn');
-  if (swapBtn) {
-    swapBtn.addEventListener('click', function() {
-      const fromInput = document.getElementById('from-input');
-      const toInput = document.getElementById('to-input');
-      if (fromInput && toInput) {
-        // Swap the text values
-        const tempValue = fromInput.value;
-        fromInput.value = toInput.value;
-        toInput.value = tempValue;
-
-        // Swap the selected stop data
-        const tempStop = selectedStops.from;
-        selectedStops.from = selectedStops.to;
-        selectedStops.to = tempStop;
-      }
-    });
   }
 
   attachFaqEventHandlers();
