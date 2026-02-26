@@ -359,7 +359,7 @@ function applyColorblindMode(enabled) {
 // LIVE WEATHER FUNCTIONALITY
 // ============================================================================
 
-// Weather locations: all 23 map locations with coordinates for API calls
+// Weather locations: all 22 map locations with coordinates for API calls
 const weatherLocations = [
   { name: 'Ambleside', lat: 54.4316, lon: -2.9622 },
   { name: 'Barrow-in-Furness', lat: 54.1289, lon: -3.2269 },
@@ -388,12 +388,18 @@ const weatherLocations = [
 // Cache for weather data to avoid repeated API calls
 let weatherCache = null;
 let weatherCacheTimestamp = 0;
-const WEATHER_CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+const WEATHER_CACHE_DURATION_MS = 60 * 1000; // 1 minute
+
+// Auto-refresh interval ID (runs while panel is open)
+let weatherRefreshInterval = null;
+
+// Debounce timer for weather search
+let weatherSearchTimer = null;
 
 /**
- * Fetch weather data for all locations from the backend API.
+ * Fetch weather data for all default locations from the backend API.
  * Uses the /api/weather endpoint for each location.
- * Results are cached for 5 minutes to reduce API load.
+ * Results are cached for 1 minute to reduce API load.
  * @returns {Promise<Array>} Array of { name, weather } objects
  */
 async function fetchWeatherForAllLocations() {
@@ -423,68 +429,261 @@ async function fetchWeatherForAllLocations() {
 }
 
 /**
+ * Search for locations by name via the backend gazetteer and return weather data.
+ * @param {string} query - The search string
+ * @returns {Promise<Array>} Array of { name, weather } objects from the API
+ */
+async function searchWeatherLocations(query) {
+  try {
+    const res = await fetch(`/api/weather/search?q=${encodeURIComponent(query)}&limit=15`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return (data.results || []).map(r => ({ name: r.name, weather: r.weather }));
+  } catch (err) {
+    console.error('Weather search failed:', err);
+    return [];
+  }
+}
+
+/**
+ * Build a single weather list item element with expandable detail section.
+ * @param {string} name - Location name
+ * @param {object|null} weather - Parsed weather data from API
+ * @returns {HTMLLIElement}
+ */
+function buildWeatherListItem(name, weather) {
+  const li = document.createElement('li');
+  li.className = 'weather-item';
+
+  // --- Top row (always visible): name + icon + temp ---
+  const row = document.createElement('div');
+  row.className = 'weather-row';
+  row.setAttribute('role', 'button');
+  row.setAttribute('tabindex', '0');
+  row.setAttribute('aria-expanded', 'false');
+
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'weather-location-name';
+  nameSpan.textContent = name;
+
+  const rightSide = document.createElement('span');
+  rightSide.className = 'weather-info';
+
+  let description = '';
+  let humidity = null;
+  let windSpeed = null;
+  let windUnit = '';
+  let feelsLike = null;
+  let cloudCoverage = null;
+  let visibility = null;
+
+  if (weather && !weather.error) {
+    const temp = weather.temperature?.current;
+    const tempSpan = document.createElement('span');
+    tempSpan.className = 'weather-temp';
+    tempSpan.textContent = temp != null ? `${Math.round(temp)}\u00b0C` : '--\u00b0C';
+
+    const iconCode = weather.icon?.code;
+    if (iconCode) {
+      const iconWrap = document.createElement('span');
+      iconWrap.className = 'weather-icon-bg';
+      const iconImg = document.createElement('img');
+      iconImg.src = `/api/weather/icon/${iconCode}`;
+      iconImg.alt = weather.conditions?.description || 'weather';
+      iconImg.className = 'weather-icon-img';
+      iconImg.width = 32;
+      iconImg.height = 32;
+      iconWrap.appendChild(iconImg);
+      rightSide.appendChild(iconWrap);
+    }
+
+    rightSide.appendChild(tempSpan);
+
+    // Collect detail data
+    description = weather.conditions?.description || '';
+    humidity = weather.atmospheric_conditions?.humidity;
+    windSpeed = weather.wind?.speed;
+    windUnit = weather.wind?.speed_unit || 'm/s';
+    feelsLike = weather.temperature?.feels_like;
+    cloudCoverage = weather.cloud_coverage?.percentage;
+    visibility = weather.visibility?.distance;
+  } else {
+    const errorSpan = document.createElement('span');
+    errorSpan.className = 'weather-temp';
+    errorSpan.textContent = '--\u00b0C';
+    rightSide.appendChild(errorSpan);
+  }
+
+  // Expand chevron
+  const chevron = document.createElement('span');
+  chevron.className = 'weather-chevron';
+  chevron.textContent = '\u25B8'; // right-pointing triangle
+  rightSide.appendChild(chevron);
+
+  row.appendChild(nameSpan);
+  row.appendChild(rightSide);
+
+  // --- Detail section (hidden by default) ---
+  const detail = document.createElement('div');
+  detail.className = 'weather-detail';
+
+  if (description) {
+    // Capitalise first letter of description
+    const desc = description.charAt(0).toUpperCase() + description.slice(1);
+    let detailHTML = `<span class="weather-detail-desc">${desc}</span>`;
+    const extras = [];
+    if (feelsLike != null) extras.push(`Feels like ${Math.round(feelsLike)}\u00b0C`);
+    if (humidity != null) extras.push(`Humidity ${humidity}%`);
+    if (windSpeed != null) extras.push(`Wind ${windSpeed} ${windUnit}`);
+    if (cloudCoverage != null) extras.push(`Cloud cover ${cloudCoverage}%`);
+    if (visibility != null) extras.push(`Visibility ${(visibility / 1000).toFixed(1)} km`);
+    if (extras.length) {
+      detailHTML += `<span class="weather-detail-extras">${extras.join(' \u00b7 ')}</span>`;
+    }
+    detail.innerHTML = detailHTML;
+  } else {
+    detail.innerHTML = '<span class="weather-detail-desc">No detail available</span>';
+  }
+
+  li.appendChild(row);
+  li.appendChild(detail);
+
+  // Toggle expand/collapse on click
+  row.addEventListener('click', () => {
+    const isOpen = li.classList.toggle('weather-item-open');
+    row.setAttribute('aria-expanded', String(isOpen));
+  });
+  row.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      row.click();
+    }
+  });
+
+  return li;
+}
+
+/**
  * Render the weather list inside the weather panel with real API data.
- * Each item displays: location name, weather icon from API, and temperature in °C.
+ * Each item displays: location name, weather icon, temperature,
+ * and an expandable detail section with a brief description.
  */
 async function renderWeatherPanel() {
   const weatherList = document.getElementById('weather-list');
   if (!weatherList) return;
 
   // Show loading state
-  weatherList.innerHTML = '<li class="weather-loading">Loading weather data…</li>';
+  weatherList.innerHTML = '<li class="weather-loading">Loading weather data\u2026</li>';
 
   try {
     const weatherData = await fetchWeatherForAllLocations();
-
     weatherList.innerHTML = '';
-
     weatherData.forEach(({ name, weather }) => {
-      const li = document.createElement('li');
-
-      // Location name
-      const nameSpan = document.createElement('span');
-      nameSpan.className = 'weather-location-name';
-      nameSpan.textContent = name;
-
-      // Right side: icon + temperature
-      const rightSide = document.createElement('span');
-      rightSide.className = 'weather-info';
-
-      if (weather && !weather.error) {
-        // Temperature (integer format)
-        const temp = weather.temperature?.current;
-        const tempSpan = document.createElement('span');
-        tempSpan.className = 'weather-temp';
-        tempSpan.textContent = temp != null ? `${Math.round(temp)}°C` : '--°C';
-
-        // Weather icon from API
-        const iconCode = weather.icon?.code;
-        if (iconCode) {
-          const iconImg = document.createElement('img');
-          iconImg.src = `/api/weather/icon/${iconCode}`;
-          iconImg.alt = weather.conditions?.description || 'weather';
-          iconImg.className = 'weather-icon-img';
-          iconImg.width = 28;
-          iconImg.height = 28;
-          rightSide.appendChild(iconImg);
-        }
-
-        rightSide.appendChild(tempSpan);
-      } else {
-        const errorSpan = document.createElement('span');
-        errorSpan.className = 'weather-temp';
-        errorSpan.textContent = '--°C';
-        rightSide.appendChild(errorSpan);
-      }
-
-      li.appendChild(nameSpan);
-      li.appendChild(rightSide);
-      weatherList.appendChild(li);
+      weatherList.appendChild(buildWeatherListItem(name, weather));
     });
   } catch (err) {
     console.error('Failed to load weather data:', err);
     weatherList.innerHTML = '<li class="weather-loading">Unable to load weather data</li>';
   }
+}
+
+/**
+ * Render weather search results into the weather list.
+ * @param {Array} results - Array of { name, weather } objects
+ */
+function renderWeatherSearchResults(results) {
+  const weatherList = document.getElementById('weather-list');
+  if (!weatherList) return;
+
+  weatherList.innerHTML = '';
+  if (!results.length) {
+    weatherList.innerHTML = '<li class="weather-loading">No locations found</li>';
+    return;
+  }
+  results.forEach(({ name, weather }) => {
+    weatherList.appendChild(buildWeatherListItem(name, weather));
+  });
+}
+
+/**
+ * Initialise the weather search bar event listeners.
+ * Filters default locations client-side for instant feedback,
+ * and queries the backend gazetteer for broader location search.
+ */
+function initWeatherSearch() {
+  const input = document.getElementById('weather-search-input');
+  if (!input) return;
+
+  input.addEventListener('input', () => {
+    const query = input.value.trim().toLowerCase();
+    clearTimeout(weatherSearchTimer);
+
+    if (query.length === 0) {
+      // Empty search: show all default locations from cache or re-fetch
+      renderWeatherPanel();
+      return;
+    }
+
+    if (query.length < 2) {
+      // Too short: filter default locations client-side only
+      if (weatherCache) {
+        const filtered = weatherCache.filter(w =>
+          w.name.toLowerCase().includes(query)
+        );
+        renderWeatherSearchResults(filtered);
+      }
+      return;
+    }
+
+    // For 2+ chars: immediately filter defaults, then debounce an API search
+    // for broader gazetteer results
+    if (weatherCache) {
+      const filtered = weatherCache.filter(w =>
+        w.name.toLowerCase().includes(query)
+      );
+      renderWeatherSearchResults(filtered);
+    }
+
+    weatherSearchTimer = setTimeout(async () => {
+      const weatherList = document.getElementById('weather-list');
+      // Show a subtle loading indicator at the bottom while searching
+      if (weatherList) {
+        const loadingLi = document.createElement('li');
+        loadingLi.className = 'weather-loading';
+        loadingLi.textContent = 'Searching more locations\u2026';
+        weatherList.appendChild(loadingLi);
+      }
+
+      const apiResults = await searchWeatherLocations(query);
+
+      // Merge: default locations matching query + API results, deduplicated
+      const seen = new Set();
+      const merged = [];
+
+      // Add matching defaults first (already cached)
+      if (weatherCache) {
+        weatherCache.filter(w => w.name.toLowerCase().includes(query)).forEach(w => {
+          if (!seen.has(w.name.toLowerCase())) {
+            seen.add(w.name.toLowerCase());
+            merged.push(w);
+          }
+        });
+      }
+
+      // Then add API results that aren't already shown
+      apiResults.forEach(r => {
+        if (!seen.has(r.name.toLowerCase())) {
+          seen.add(r.name.toLowerCase());
+          merged.push(r);
+        }
+      });
+
+      // Only update if the search query hasn't changed while we were fetching
+      if (input.value.trim().toLowerCase() === query) {
+        renderWeatherSearchResults(merged);
+      }
+    }, 400);
+  });
 }
 
 // ============================================================================
@@ -513,8 +712,27 @@ function toggleWeatherPanel() {
     faqPanel?.classList.add('hidden');
     authModal?.classList.add('hidden');
     accountModal?.classList.add('hidden');
+    // Clear search input when opening the panel
+    const searchInput = document.getElementById('weather-search-input');
+    if (searchInput) searchInput.value = '';
     // Fetch and render live weather data when panel is opened
     renderWeatherPanel();
+    // Start auto-refresh every 60 seconds while panel is open
+    clearInterval(weatherRefreshInterval);
+    weatherRefreshInterval = setInterval(() => {
+      // Invalidate cache so next render fetches fresh data
+      weatherCache = null;
+      weatherCacheTimestamp = 0;
+      // Only re-render if search bar is empty (don't overwrite active search)
+      const si = document.getElementById('weather-search-input');
+      if (!si || si.value.trim() === '') {
+        renderWeatherPanel();
+      }
+    }, WEATHER_CACHE_DURATION_MS);
+  } else {
+    // Panel is closing — stop auto-refresh
+    clearInterval(weatherRefreshInterval);
+    weatherRefreshInterval = null;
   }
 }
 
@@ -1314,6 +1532,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   attachFaqEventHandlers();
   attachAccountEventHandlers();
+  initWeatherSearch();
 
   // Restore colourblind mode from localStorage (before account fetch may override)
   const savedColorblindMode = JSON.parse(localStorage.getItem('colorblindMode') || 'false');

@@ -58,11 +58,21 @@ This project is a desktop-style web application interface for a regional travel 
   - Opens from the top-right icon button (cloud icon).
   - Weather button has hover effect with darker background and enhanced shadow.
   - **Live API Integration:** Fetches real-time weather data from the backend `/api/weather` endpoint for all 22 mapped locations when the panel is opened.
-  - Each location displays: the town/city name, a weather icon fetched from `/api/weather/icon/<code>` matching the current conditions (e.g. rain, clouds, clear sky), and the current temperature in integer °C format.
+  - **Expandable Rows:** Each location is a clickable row that expands/collapses to show detailed weather information:
+    - **Summary row:** Town name, weather icon on a dark circular background for contrast, temperature in °C, and a chevron arrow (▸).
+    - **Detail section (hidden by default):** Weather description (red text), feels-like temperature, humidity %, wind speed and direction, cloud cover %, and visibility in km.
+    - Clicking the row toggles the detail section with a smooth `max-height` CSS animation. The chevron rotates 90° and turns red when expanded.
+  - **Icon Contrast Fix:** Weather icons are displayed inside a dark circular background (`#3a3a3a`) to ensure white/light icons (e.g., snow, mist) are visible against the white panel.
+  - **Search Bar:** A text input at the top of the panel allows users to search for weather at any named locality within the map bounds:
+    - Typing filters the cached default locations client-side for instant results.
+    - Simultaneously queries the backend `/api/weather/search` endpoint which searches the NPTG gazetteer for matching locality names, fetches their weather, and returns results.
+    - Both result sets are merged and deduplicated by name.
+    - Clearing the search input restores the full default panel.
+    - Minimum 2 characters required to trigger a search.
   - Weather data is cached for 5 minutes on the client side to reduce API load; reopening the panel within 5 minutes reuses cached data.
   - A loading state ("Loading weather data…") is shown while API calls are in progress.
   - If weather data fails to load for a location, a fallback "--°C" is displayed.
-  - The panel is scrollable (max-height 480px) to accommodate all locations.
+  - The panel is scrollable (max-height 420px) to accommodate all locations.
   - Automatically closes other panels (notifications, FAQ, account modals) when opened.
 
 - **Notifications Panel:**
@@ -109,7 +119,7 @@ The `main.js` file handles:
 - **Location Data:** Array of 23 towns across North West England and the Lake District with accurate town center coordinates, descriptions, and optional images.
 - **Marker Management:** Adds interactive markers with a single popup per marker, including toggle functionality.
 - **Event Listeners:** Sets up click handlers for weather, notification, and marker interactions.
-- **Live Weather:** `fetchWeatherForAllLocations()` calls the `/api/weather` endpoint for each of the 22 weather locations in parallel using `Promise.allSettled()`. Results are cached in memory for 5 minutes. `renderWeatherPanel()` dynamically builds the weather list UI with real icons from `/api/weather/icon/<code>` and integer temperatures.
+- **Live Weather:** `fetchWeatherForAllLocations()` calls the `/api/weather` endpoint for each of the 22 weather locations in parallel using `Promise.allSettled()`. Results are cached in memory for 5 minutes. `renderWeatherPanel()` dynamically builds the weather list using `buildWeatherListItem()` which creates expandable rows with real icons (on dark circular backgrounds for contrast), integer temperatures, and hidden detail sections containing description, feels-like, humidity, wind, cloud cover, and visibility. `initWeatherSearch()` sets up a debounced search handler that filters cached results client-side and queries the `/api/weather/search` endpoint for additional NPTG gazetteer matches.
 - **FAQ Interaction:** Opens the FAQ panel, toggles answers, and closes the panel. When closing, automatically collapses all expanded answers for a clean state on next open.
 - **Panel Toggling:** Functions to show/hide weather and notification panels. All panel-opening functions automatically close other open panels to prevent overlapping UI elements.
 - **Panel Coordination:** When any panel (weather, notifications, FAQ, account) is opened, all other panels are automatically closed to maintain a clean, focused interface.

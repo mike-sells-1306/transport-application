@@ -106,6 +106,9 @@
     <!-- Weather Panel (hidden by default) - populated dynamically from API -->
     <section class="weather-panel hidden" id="weather-panel" role="region" aria-label="Weather information">
       <div class="panel-header">Weather</div>
+      <div class="weather-search-wrapper">
+        <input type="text" id="weather-search-input" class="weather-search-input" placeholder="Search location…" autocomplete="off" />
+      </div>
       <ul class="weather-list" id="weather-list" aria-live="polite">
         <li class="weather-loading">Loading weather data…</li>
       </ul>
