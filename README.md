@@ -33,13 +33,27 @@ python app.py
 # 3. Open http://localhost:5000
 ```
 
-### Docker (optional)
+### Podman (containerised)
 
 ```bash
-docker-compose up --build
+# Install podman-compose once (if not already present)
+pip install --user podman-compose
+# or: sudo dnf install podman-compose   (Fedora/RHEL)
+# or: sudo apt install podman-compose   (Debian/Ubuntu)
+
+# Build and start all services
+make up
+# or directly:
+podman-compose up --build
+
 # Frontend: http://localhost:3000
-# Backend: http://localhost:5000
+# Backend:  http://localhost:5000
+
+# Stop and remove containers
+make down
 ```
+
+> **Note:** Podman runs rootless by default. No daemon or `sudo` is required.
 
 ## Running Tests
 

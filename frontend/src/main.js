@@ -887,6 +887,26 @@ document.addEventListener('DOMContentLoaded', function() {
     notifBtn.addEventListener('click', toggleNotificationsPanel);
   }
 
+  // Set up swap button to swap from/to inputs
+  const swapBtn = document.querySelector('.journey-swap-btn');
+  if (swapBtn) {
+    swapBtn.addEventListener('click', function() {
+      const fromInput = document.getElementById('from-input');
+      const toInput = document.getElementById('to-input');
+      if (fromInput && toInput) {
+        // Swap the text values
+        const tempValue = fromInput.value;
+        fromInput.value = toInput.value;
+        toInput.value = tempValue;
+
+        // Swap the selected stop data
+        const tempStop = selectedStops.from;
+        selectedStops.from = selectedStops.to;
+        selectedStops.to = tempStop;
+      }
+    });
+  }
+
   attachFaqEventHandlers();
   attachAccountEventHandlers();
   refreshAccountView();

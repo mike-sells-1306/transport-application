@@ -543,7 +543,7 @@ class TestNotifications:
             headers=_auth_header(registered_user["token"]),
         )
         notifications = json.loads(list_resp.data)["notifications"]
-        notif_id = notifications[0]["id"]
+        notif_id = notifications[0]["notificationID"]
 
         resp = client.patch(
             f"/api/account/notifications/{notif_id}/read",

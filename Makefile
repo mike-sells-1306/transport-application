@@ -1,14 +1,18 @@
-.PHONY: build up down run test install
+.PHONY: build up down run test install podman-install
 
-# Docker commands
+# Podman / container commands
+# Requires podman-compose: pip install podman-compose  (or: sudo dnf/apt install podman-compose)
+podman-install:
+	pip install podman-compose
+
 build:
-	docker-compose build
+	podman-compose build
 
 up:
-	docker-compose up --build
+	podman-compose up --build
 
 down:
-	docker-compose down
+	podman-compose down
 
 # Local development (Linux/macOS)
 install:

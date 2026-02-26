@@ -60,7 +60,7 @@
 
 /* Ensure autocomplete wrapper takes proper width */
 .journey-box .autocomplete-wrapper {
-  width: 90%;
+  width: 75%;
 }
 
 .journey-swap-btn {
