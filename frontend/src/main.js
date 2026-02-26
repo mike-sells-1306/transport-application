@@ -383,7 +383,10 @@ const weatherLocations = [
 // Cache for weather data to avoid repeated API calls
 let weatherCache = null;
 let weatherCacheTimestamp = 0;
-const WEATHER_CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+const WEATHER_CACHE_DURATION_MS = 60 * 1000; // 1 minute
+
+// Auto-refresh interval ID (runs while panel is open)
+let weatherRefreshInterval = null;
 
 // Debounce timer for weather search
 let weatherSearchTimer = null;
@@ -391,7 +394,7 @@ let weatherSearchTimer = null;
 /**
  * Fetch weather data for all default locations from the backend API.
  * Uses the /api/weather endpoint for each location.
- * Results are cached for 5 minutes to reduce API load.
+ * Results are cached for 1 minute to reduce API load.
  * @returns {Promise<Array>} Array of { name, weather } objects
  */
 async function fetchWeatherForAllLocations() {
@@ -483,8 +486,8 @@ function buildWeatherListItem(name, weather) {
       iconImg.src = `/api/weather/icon/${iconCode}`;
       iconImg.alt = weather.conditions?.description || 'weather';
       iconImg.className = 'weather-icon-img';
-      iconImg.width = 28;
-      iconImg.height = 28;
+      iconImg.width = 32;
+      iconImg.height = 32;
       iconWrap.appendChild(iconImg);
       rightSide.appendChild(iconWrap);
     }
@@ -709,6 +712,22 @@ function toggleWeatherPanel() {
     if (searchInput) searchInput.value = '';
     // Fetch and render live weather data when panel is opened
     renderWeatherPanel();
+    // Start auto-refresh every 60 seconds while panel is open
+    clearInterval(weatherRefreshInterval);
+    weatherRefreshInterval = setInterval(() => {
+      // Invalidate cache so next render fetches fresh data
+      weatherCache = null;
+      weatherCacheTimestamp = 0;
+      // Only re-render if search bar is empty (don't overwrite active search)
+      const si = document.getElementById('weather-search-input');
+      if (!si || si.value.trim() === '') {
+        renderWeatherPanel();
+      }
+    }, WEATHER_CACHE_DURATION_MS);
+  } else {
+    // Panel is closing — stop auto-refresh
+    clearInterval(weatherRefreshInterval);
+    weatherRefreshInterval = null;
   }
 }
 
