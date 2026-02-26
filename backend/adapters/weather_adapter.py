@@ -1,6 +1,6 @@
 import requests
 
-BASE_URL = "http://transport.scc.lancs.ac.uk"
+BASE_URL = "https://transport.scc.lancs.ac.uk"
 
 
 class WeatherAdapter:
@@ -57,43 +57,59 @@ class WeatherAdapter:
         if "error" in weather_data:
             return weather_data
 
+        # The external API wraps weather data inside a "weather" key with nested
+        # OpenWeatherMap-style structure. Extract the inner data for parsing.
+        w = weather_data.get("weather", weather_data)
+
+        # Weather conditions list (e.g. [{"main": "Rain", "description": "moderate rain", "icon": "10d"}])
+        conditions_list = w.get("weather", [])
+        first_condition = conditions_list[0] if conditions_list else {}
+
+        # Main temperature / atmospheric block
+        main_block = w.get("main", {})
+        wind_block = w.get("wind", {})
+        clouds_block = w.get("clouds", {})
+        coord_block = w.get("coord", {})
+
+        icon_code = first_condition.get("icon", "unknown")
+
         parsed = {
             "location": {
-                "latitude": weather_data.get("lat"),
-                "longitude": weather_data.get("lon"),
+                "latitude": coord_block.get("lat"),
+                "longitude": coord_block.get("lon"),
             },
             "temperature": {
-                "current": weather_data.get("temp"),
-                "feels_like": weather_data.get("feels_like"),
+                "current": main_block.get("temp"),
+                "feels_like": main_block.get("feels_like"),
                 "unit": "Celsius",
             },
             "atmospheric_conditions": {
-                "humidity": weather_data.get("humidity"),
+                "humidity": main_block.get("humidity"),
                 "humidity_unit": "%",
-                "pressure": weather_data.get("pressure"),
+                "pressure": main_block.get("pressure"),
                 "pressure_unit": "hPa",
             },
             "wind": {
-                "speed": weather_data.get("wind_speed"),
+                "speed": wind_block.get("speed"),
                 "speed_unit": "m/s",
-                "direction_degrees": weather_data.get("wind_direction"),
+                "direction_degrees": wind_block.get("deg"),
             },
             "visibility": {
-                "distance": weather_data.get("visibility"),
+                "distance": w.get("visibility"),
                 "distance_unit": "meters",
             },
             "cloud_coverage": {
-                "percentage": weather_data.get("clouds"),
+                "percentage": clouds_block.get("all"),
             },
             "conditions": {
-                "code": weather_data.get("main"),
-                "description": weather_data.get("description"),
+                "code": first_condition.get("main"),
+                "description": first_condition.get("description"),
             },
             "icon": {
-                "code": weather_data.get("icon"),
-                "icon_url": f"/api/weather/icon/{weather_data.get('icon', 'unknown')}",
+                "code": icon_code,
+                "icon_url": f"/api/weather/icon/{icon_code}",
             },
-            "timestamp": weather_data.get("dt"),
+            "timestamp": w.get("dt"),
             "data_age_note": "Data updated every few minutes. Locations binned into areas due to API rate limits.",
         }
         return parsed

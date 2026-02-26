@@ -284,6 +284,142 @@ function initializeMap() {
   return map;
 }
 
+// ============================================================================
+// LIVE WEATHER FUNCTIONALITY
+// ============================================================================
+
+// Weather locations: all 23 map locations with coordinates for API calls
+const weatherLocations = [
+  { name: 'Ambleside', lat: 54.4316, lon: -2.9622 },
+  { name: 'Barrow-in-Furness', lat: 54.1289, lon: -3.2269 },
+  { name: 'Blackburn', lat: 53.7493, lon: -2.4841 },
+  { name: 'Blackpool', lat: 53.8179, lon: -3.0510 },
+  { name: 'Carnforth', lat: 54.1282, lon: -2.7701 },
+  { name: 'Cartmel', lat: 54.2009, lon: -2.9529 },
+  { name: 'Fleetwood', lat: 53.9220, lon: -3.0327 },
+  { name: 'Garstang', lat: 53.9016, lon: -2.7735 },
+  { name: 'Grange-Over-Sands', lat: 54.1931, lon: -2.9095 },
+  { name: 'Heysham', lat: 54.0495, lon: -2.8903 },
+  { name: 'Kendal', lat: 54.3290, lon: -2.7472 },
+  { name: 'Keswick', lat: 54.6010, lon: -3.1376 },
+  { name: 'Kirkby-Lonsdale', lat: 54.2018, lon: -2.5967 },
+  { name: 'Kirkham', lat: 53.7827, lon: -2.8715 },
+  { name: 'Lancaster', lat: 54.0488, lon: -2.8013 },
+  { name: 'Liverpool', lat: 53.4072, lon: -2.9917 },
+  { name: 'Lytham-St-Annes', lat: 53.7485, lon: -2.9991 },
+  { name: 'Manchester', lat: 53.4795, lon: -2.2451 },
+  { name: 'Morecambe', lat: 54.0721, lon: -2.8651 },
+  { name: 'Poulton-le-Fylde', lat: 53.8461, lon: -2.9905 },
+  { name: 'Preston', lat: 53.7593, lon: -2.6993 },
+  { name: 'Windermere', lat: 54.3792, lon: -2.9063 },
+];
+
+// Cache for weather data to avoid repeated API calls
+let weatherCache = null;
+let weatherCacheTimestamp = 0;
+const WEATHER_CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Fetch weather data for all locations from the backend API.
+ * Uses the /api/weather endpoint for each location.
+ * Results are cached for 5 minutes to reduce API load.
+ * @returns {Promise<Array>} Array of { name, weather } objects
+ */
+async function fetchWeatherForAllLocations() {
+  const now = Date.now();
+  if (weatherCache && (now - weatherCacheTimestamp) < WEATHER_CACHE_DURATION_MS) {
+    return weatherCache;
+  }
+
+  const results = await Promise.allSettled(
+    weatherLocations.map(async (loc) => {
+      try {
+        const res = await fetch(`/api/weather?lat=${loc.lat}&lon=${loc.lon}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        return { name: loc.name, weather: data };
+      } catch (err) {
+        console.warn(`Weather fetch failed for ${loc.name}:`, err);
+        return { name: loc.name, weather: null };
+      }
+    })
+  );
+
+  const weatherData = results.map(r => r.status === 'fulfilled' ? r.value : r.reason);
+  weatherCache = weatherData;
+  weatherCacheTimestamp = now;
+  return weatherData;
+}
+
+/**
+ * Render the weather list inside the weather panel with real API data.
+ * Each item displays: location name, weather icon from API, and temperature in °C.
+ */
+async function renderWeatherPanel() {
+  const weatherList = document.getElementById('weather-list');
+  if (!weatherList) return;
+
+  // Show loading state
+  weatherList.innerHTML = '<li class="weather-loading">Loading weather data…</li>';
+
+  try {
+    const weatherData = await fetchWeatherForAllLocations();
+
+    weatherList.innerHTML = '';
+
+    weatherData.forEach(({ name, weather }) => {
+      const li = document.createElement('li');
+
+      // Location name
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'weather-location-name';
+      nameSpan.textContent = name;
+
+      // Right side: icon + temperature
+      const rightSide = document.createElement('span');
+      rightSide.className = 'weather-info';
+
+      if (weather && !weather.error) {
+        // Temperature (integer format)
+        const temp = weather.temperature?.current;
+        const tempSpan = document.createElement('span');
+        tempSpan.className = 'weather-temp';
+        tempSpan.textContent = temp != null ? `${Math.round(temp)}°C` : '--°C';
+
+        // Weather icon from API
+        const iconCode = weather.icon?.code;
+        if (iconCode) {
+          const iconImg = document.createElement('img');
+          iconImg.src = `/api/weather/icon/${iconCode}`;
+          iconImg.alt = weather.conditions?.description || 'weather';
+          iconImg.className = 'weather-icon-img';
+          iconImg.width = 28;
+          iconImg.height = 28;
+          rightSide.appendChild(iconImg);
+        }
+
+        rightSide.appendChild(tempSpan);
+      } else {
+        const errorSpan = document.createElement('span');
+        errorSpan.className = 'weather-temp';
+        errorSpan.textContent = '--°C';
+        rightSide.appendChild(errorSpan);
+      }
+
+      li.appendChild(nameSpan);
+      li.appendChild(rightSide);
+      weatherList.appendChild(li);
+    });
+  } catch (err) {
+    console.error('Failed to load weather data:', err);
+    weatherList.innerHTML = '<li class="weather-loading">Unable to load weather data</li>';
+  }
+}
+
+// ============================================================================
+// END LIVE WEATHER FUNCTIONALITY
+// ============================================================================
+
 // Toggle weather panel visibility
 function toggleWeatherPanel() {
   const weatherPanel = document.querySelector('.weather-panel');
@@ -300,6 +436,8 @@ function toggleWeatherPanel() {
     faqPanel?.classList.add('hidden');
     authModal?.classList.add('hidden');
     accountModal?.classList.add('hidden');
+    // Fetch and render live weather data when panel is opened
+    renderWeatherPanel();
   }
 }
 

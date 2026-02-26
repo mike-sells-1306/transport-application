@@ -57,7 +57,12 @@ This project is a desktop-style web application interface for a regional travel 
 - **Weather Panel:**
   - Opens from the top-right icon button (cloud icon).
   - Weather button has hover effect with darker background and enhanced shadow.
-  - Lists towns and weather icons in a light grey rounded panel.
+  - **Live API Integration:** Fetches real-time weather data from the backend `/api/weather` endpoint for all 22 mapped locations when the panel is opened.
+  - Each location displays: the town/city name, a weather icon fetched from `/api/weather/icon/<code>` matching the current conditions (e.g. rain, clouds, clear sky), and the current temperature in integer °C format.
+  - Weather data is cached for 5 minutes on the client side to reduce API load; reopening the panel within 5 minutes reuses cached data.
+  - A loading state ("Loading weather data…") is shown while API calls are in progress.
+  - If weather data fails to load for a location, a fallback "--°C" is displayed.
+  - The panel is scrollable (max-height 480px) to accommodate all locations.
   - Automatically closes other panels (notifications, FAQ, account modals) when opened.
 
 - **Notifications Panel:**
@@ -104,6 +109,7 @@ The `main.js` file handles:
 - **Location Data:** Array of 23 towns across North West England and the Lake District with accurate town center coordinates, descriptions, and optional images.
 - **Marker Management:** Adds interactive markers with a single popup per marker, including toggle functionality.
 - **Event Listeners:** Sets up click handlers for weather, notification, and marker interactions.
+- **Live Weather:** `fetchWeatherForAllLocations()` calls the `/api/weather` endpoint for each of the 22 weather locations in parallel using `Promise.allSettled()`. Results are cached in memory for 5 minutes. `renderWeatherPanel()` dynamically builds the weather list UI with real icons from `/api/weather/icon/<code>` and integer temperatures.
 - **FAQ Interaction:** Opens the FAQ panel, toggles answers, and closes the panel. When closing, automatically collapses all expanded answers for a clean state on next open.
 - **Panel Toggling:** Functions to show/hide weather and notification panels. All panel-opening functions automatically close other open panels to prevent overlapping UI elements.
 - **Panel Coordination:** When any panel (weather, notifications, FAQ, account) is opened, all other panels are automatically closed to maintain a clean, focused interface.
@@ -256,4 +262,4 @@ L.tileLayer('https://api.mapbox.com/styles/v1/{id}/static/{lon},{lat},{z}/{width
 
 **Author:** [Your Name]  
 **Date:** 19 February 2026  
-**Last Updated:** 19 February 2026 (Leaflet/OpenStreetMap Integration)
+**Last Updated:** 26 February 2026 (Live Weather Panel Integration)

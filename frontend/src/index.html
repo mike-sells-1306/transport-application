@@ -99,22 +99,11 @@
       </div>
     </section>
 
-    <!-- Weather Panel (hidden by default) -->
+    <!-- Weather Panel (hidden by default) - populated dynamically from API -->
     <section class="weather-panel hidden">
       <div class="panel-header">Weather</div>
-      <ul class="weather-list">
-        <li>Barrow-in-Furness <span class="icon-sun"></span></li>
-        <li>Blackburn <span class="icon-cloud"></span></li>
-        <li>Blackpool <span class="icon-rain"></span></li>
-        <li>Clitheroe <span class="icon-sun"></span></li>
-        <li>Garstang <span class="icon-cloud"></span></li>
-        <li>Kendal <span class="icon-rain"></span></li>
-        <li>Kirkby Lonsdale <span class="icon-sun"></span></li>
-        <li>Lancaster <span class="icon-cloud"></span></li>
-        <li>Morecambe <span class="icon-sun"></span></li>
-        <li>Poulton-le-Fylde <span class="icon-cloud"></span></li>
-        <li>Preston <span class="icon-sun"></span></li>
-        <li>Windermere <span class="icon-rain"></span></li>
+      <ul class="weather-list" id="weather-list">
+        <li class="weather-loading">Loading weather data…</li>
       </ul>
     </section>
 
