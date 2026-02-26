@@ -580,6 +580,85 @@ def translate_train_event():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/api/weather/search')
+def weather_search():
+    """
+    Search for locations by name within the map bounds and return weather data.
+    Uses the NPTG gazetteer for location lookup.
+    Query params:
+        q: search string (min 2 chars)
+        limit: max results (default 10, max 20)
+    """
+    try:
+        query = request.args.get('q', '').strip().lower()
+        limit = min(int(request.args.get('limit', 10)), 20)
+
+        if not query or len(query) < 2:
+            return jsonify({"results": []})
+
+        # Map bounds
+        MIN_LAT, MAX_LAT = 53.3665, 54.6200
+        MIN_LON, MAX_LON = -3.5, -2.211
+
+        # Fetch gazetteer data (NPTG locality list)
+        gazetteer = transport_service.get_gazetteer()
+
+        # Filter locations within bounds whose name starts with or contains the query
+        matching = []
+        seen_names = set()
+        for entry in gazetteer:
+            name = entry.get('LocalityName', '')
+            lat = entry.get('Latitude')
+            lon = entry.get('Longitude')
+            if not name or lat is None or lon is None:
+                continue
+            try:
+                lat = float(lat)
+                lon = float(lon)
+            except (ValueError, TypeError):
+                continue
+            if not (MIN_LAT <= lat <= MAX_LAT and MIN_LON <= lon <= MAX_LON):
+                continue
+
+            # Check if location name matches (case-insensitive)
+            name_lower = name.lower()
+            if query not in name_lower:
+                continue
+
+            # Deduplicate by name (some localities appear multiple times)
+            if name_lower in seen_names:
+                continue
+            seen_names.add(name_lower)
+
+            matching.append({
+                'name': name,
+                'lat': lat,
+                'lon': lon,
+            })
+
+            if len(matching) >= limit:
+                break
+
+        # Sort: names starting with query first, then alphabetical
+        matching.sort(key=lambda m: (0 if m['name'].lower().startswith(query) else 1, m['name']))
+
+        # Fetch weather for each matching location
+        results = []
+        for loc in matching:
+            weather_data = transport_service.get_weather(loc['lat'], loc['lon'])
+            results.append({
+                'name': loc['name'],
+                'lat': loc['lat'],
+                'lon': loc['lon'],
+                'weather': weather_data,
+            })
+
+        return jsonify({"results": results})
+    except Exception as e:
+        app.logger.error(f"Weather search error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/weather')
 def weather():
     try:

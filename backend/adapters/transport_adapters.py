@@ -12,18 +12,21 @@ class NPTGAdapter:
 
     def parse_nptg(self, xml_data):
         root = ET.fromstring(xml_data)
+        ns = {'nptg': 'http://www.naptan.org.uk/'}
         gazetteer = []
-        for entry in root.findall("./GazetteerEntry"):
-            code = entry.findtext("NptgLocalityCode")
-            name = entry.findtext("LocalityName")
-            lat = entry.findtext("Latitude")
-            lon = entry.findtext("Longitude")
-            gazetteer.append({
-                "NptgLocalityCode": code,
-                "LocalityName": name,
-                "Latitude": lat,
-                "Longitude": lon
-            })
+        for entry in root.findall('.//nptg:NptgLocality', ns):
+            code = entry.findtext('nptg:NptgLocalityCode', namespaces=ns)
+            name = entry.findtext('nptg:Descriptor/nptg:LocalityName', namespaces=ns)
+            lat = entry.findtext('nptg:Location/nptg:Translation/nptg:Latitude', namespaces=ns)
+            lon = entry.findtext('nptg:Location/nptg:Translation/nptg:Longitude', namespaces=ns)
+            if code and name and lat and lon:
+                gazetteer.append({
+                    "NptgLocalityCode": code,
+                    "LocalityName": name,
+                    "Latitude": lat,
+                    "Longitude": lon
+                })
+        print(f"Parsed {len(gazetteer)} localities from NPTG XML")
         return gazetteer
 
 class NaPTANAdapter:
