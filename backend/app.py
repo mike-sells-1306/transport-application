@@ -601,6 +601,92 @@ def search_stops():
         return jsonify({"error": str(e), "stops": []}), 500
 
 
+def _generate_valid_mock_routes(from_stop, to_stop):
+    """Generate realistic mock routes with valid times"""
+    from datetime import datetime, timedelta
+    import random
+    
+    # Predefined realistic routes for common journeys
+    route_patterns = {
+        ("lancaster", "blackpool"): [
+            {"start_time": "09:15", "end_time": "10:02", "duration_mins": 47, "transport": ["bus"], "changes": 0},
+            {"start_time": "09:30", "end_time": "10:24", "duration_mins": 54, "transport": ["train"], "changes": 0},
+            {"start_time": "10:00", "end_time": "11:14", "duration_mins": 74, "transport": ["bus", "train"], "changes": 1},
+            {"start_time": "11:00", "end_time": "12:15", "duration_mins": 75, "transport": ["bus"], "changes": 0},
+            {"start_time": "11:45", "end_time": "13:30", "duration_mins": 105, "transport": ["bus"], "changes": 0},
+        ],
+        ("blackpool", "preston"): [
+            {"start_time": "08:20", "end_time": "09:15", "duration_mins": 55, "transport": ["bus"], "changes": 0},
+            {"start_time": "09:00", "end_time": "09:45", "duration_mins": 45, "transport": ["train"], "changes": 0},
+            {"start_time": "10:30", "end_time": "11:50", "duration_mins": 80, "transport": ["bus", "train"], "changes": 1},
+            {"start_time": "11:15", "end_time": "12:30", "duration_mins": 75, "transport": ["bus"], "changes": 0},
+            {"start_time": "13:00", "end_time": "14:20", "duration_mins": 80, "transport": ["train"], "changes": 0},
+        ],
+        ("manchester", "liverpool"): [
+            {"start_time": "07:45", "end_time": "08:45", "duration_mins": 60, "transport": ["train"], "changes": 0},
+            {"start_time": "08:30", "end_time": "09:45", "duration_mins": 75, "transport": ["bus"], "changes": 0},
+            {"start_time": "09:00", "end_time": "10:15", "duration_mins": 75, "transport": ["bus"], "changes": 0},
+            {"start_time": "10:00", "end_time": "11:00", "duration_mins": 60, "transport": ["train"], "changes": 0},
+            {"start_time": "14:30", "end_time": "15:50", "duration_mins": 80, "transport": ["bus", "train"], "changes": 1},
+        ],
+        ("preston", "manchester"): [
+            {"start_time": "07:30", "end_time": "08:20", "duration_mins": 50, "transport": ["train"], "changes": 0},
+            {"start_time": "08:15", "end_time": "09:30", "duration_mins": 75, "transport": ["bus"], "changes": 0},
+            {"start_time": "09:45", "end_time": "10:35", "duration_mins": 50, "transport": ["train"], "changes": 0},
+            {"start_time": "10:30", "end_time": "11:50", "duration_mins": 80, "transport": ["bus"], "changes": 0},
+        ],
+        ("manchester", "leeds"): [
+            {"start_time": "08:00", "end_time": "09:15", "duration_mins": 75, "transport": ["bus"], "changes": 0},
+            {"start_time": "08:30", "end_time": "09:30", "duration_mins": 60, "transport": ["train"], "changes": 0},
+            {"start_time": "10:00", "end_time": "11:20", "duration_mins": 80, "transport": ["bus"], "changes": 0},
+        ],
+    }
+    
+    # Normalize stop names to first word for matching
+    from_key = from_stop.lower().split()[0]
+    to_key = to_stop.lower().split()[0]
+    lookup_key = (from_key, to_key)
+    
+    # Return predefined routes if available
+    if lookup_key in route_patterns:
+        return route_patterns[lookup_key]
+    
+    # Generate consistent random routes for unmapped routes
+    random.seed(hash(from_stop + to_stop) % 2**32)
+    routes = []
+    
+    for i in range(random.randint(3, 5)):
+        # Generate start time between 08:00 and 17:00
+        start_hour = random.randint(8, 17)
+        start_min = random.choice([0, 15, 30, 45])  # Realistic minutes
+        
+        # Generate duration 30-120 mins
+        duration = random.choice([30, 45, 50, 60, 75, 90, 105, 120])
+        
+        # Calculate end time properly
+        total_mins = start_hour * 60 + start_min + duration
+        end_hour = total_mins // 60
+        end_min = total_mins % 60
+        
+        # Skip if goes past end of day
+        if end_hour > 23:
+            continue
+        
+        transport_choice = random.choice([["bus"], ["train"], ["bus", "train"]])
+        changes = 1 if len(transport_choice) > 1 else 0
+        
+        routes.append({
+            "start_time": f"{start_hour:02d}:{start_min:02d}",
+            "end_time": f"{end_hour:02d}:{end_min:02d}",
+            "duration_mins": duration,
+            "transport": transport_choice,
+            "changes": changes
+        })
+    
+    # Sort by start time
+    return sorted(routes, key=lambda r: (int(r["start_time"].split(":")[0]), int(r["start_time"].split(":")[1])))
+
+
 @app.route('/api/routes/search', methods=['POST'])
 def search_routes():
     """Search for routes between two stops"""
@@ -619,8 +705,18 @@ def search_routes():
         if not from_name or not to_name:
             return jsonify({"error": "Stop names are required"}), 400
         
-        # Generate mock routes for now (this would connect to a real journey planning API in production)
-        routes = _generate_mock_routes(from_name, to_name)
+        # Attempt to fetch from real API, fallback to mock data if unavailable
+        try:
+            routes_data = transport_service.get_routes(from_name, to_name)
+            if "error" not in routes_data and routes_data.get('routes'):
+                routes = routes_data.get('routes', [])
+            else:
+                # API returned error or empty, use mock data
+                app.logger.info(f"Real API unavailable or no routes found, using mock data for {from_name} → {to_name}")
+                routes = _generate_valid_mock_routes(from_name, to_name)
+        except Exception as e:
+            app.logger.warning(f"Real API fetch failed: {e}, using mock data")
+            routes = _generate_valid_mock_routes(from_name, to_name)
         
         return jsonify({
             "from": from_name,
@@ -632,72 +728,6 @@ def search_routes():
     except Exception as e:
         app.logger.error(f"Route search error: {e}")
         return jsonify({"error": str(e)}), 500
-
-
-def _generate_mock_routes(from_stop, to_stop):
-    """Generate mock routes between two stops for demonstration"""
-    from datetime import datetime, timedelta
-    import random
-    
-    # Define route patterns for common North West routes
-    route_patterns = {
-        ("lancaster", "blackpool"): [
-            {"start_time": "09:15", "end_time": "10:02", "duration_mins": 47, "transport": ["bus"], "changes": 0},
-            {"start_time": "09:30", "end_time": "10:24", "duration_mins": 54, "transport": ["train"], "changes": 0},
-            {"start_time": "10:00", "end_time": "11:14", "duration_mins": 74, "transport": ["bus", "train"], "changes": 1},
-            {"start_time": "10:27", "end_time": "12:05", "duration_mins": 98, "transport": ["bus", "train"], "changes": 1},
-            {"start_time": "11:00", "end_time": "12:15", "duration_mins": 75, "transport": ["bus"], "changes": 0},
-            {"start_time": "11:45", "end_time": "13:30", "duration_mins": 105, "transport": ["bus"], "changes": 0},
-        ],
-        ("blackpool", "preston"): [
-            {"start_time": "08:20", "end_time": "09:15", "duration_mins": 55, "transport": ["bus"], "changes": 0},
-            {"start_time": "09:00", "end_time": "09:45", "duration_mins": 45, "transport": ["train"], "changes": 0},
-            {"start_time": "10:30", "end_time": "11:50", "duration_mins": 80, "transport": ["bus", "train"], "changes": 1},
-            {"start_time": "11:15", "end_time": "12:30", "duration_mins": 75, "transport": ["bus"], "changes": 0},
-            {"start_time": "13:00", "end_time": "14:20", "duration_mins": 80, "transport": ["train"], "changes": 0},
-        ],
-        ("manchester", "liverpool"): [
-            {"start_time": "07:45", "end_time": "08:45", "duration_mins": 60, "transport": ["train"], "changes": 0},
-            {"start_time": "08:30", "end_time": "09:45", "duration_mins": 75, "transport": ["bus"], "changes": 0},
-            {"start_time": "09:00", "end_time": "10:15", "duration_mins": 75, "transport": ["bus"], "changes": 0},
-            {"start_time": "10:00", "end_time": "11:00", "duration_mins": 60, "transport": ["train"], "changes": 0},
-            {"start_time": "14:30", "end_time": "15:50", "duration_mins": 80, "transport": ["bus", "train"], "changes": 1},
-        ],
-    }
-    
-    # Normalize stop names for lookup
-    from_key = from_stop.lower().split()[0]  # Get first word
-    to_key = to_stop.lower().split()[0]
-    lookup_key = (from_key, to_key)
-    
-    # Return predefined routes or generate random ones
-    if lookup_key in route_patterns:
-        return route_patterns[lookup_key]
-    
-    # Generate random routes as fallback
-    random.seed(hash(from_stop + to_stop) % 2**32)  # Consistent results for same route
-    routes = []
-    base_hour = random.randint(8, 15)
-    
-    for i in range(random.randint(3, 6)):
-        start_hour = base_hour + (i * random.randint(1, 2))
-        start_min = random.randint(0, 59)
-        duration = random.randint(40, 120)
-        end_hour = start_hour + duration // 60
-        end_min = (start_min + duration % 60) % 60
-        
-        transport_choice = random.choice([["bus"], ["train"], ["bus", "train"]])
-        changes = 1 if len(transport_choice) > 1 else 0
-        
-        routes.append({
-            "start_time": f"{start_hour:02d}:{start_min:02d}",
-            "end_time": f"{end_hour:02d}:{end_min:02d}",
-            "duration_mins": duration,
-            "transport": transport_choice,
-            "changes": changes
-        })
-    
-    return sorted(routes, key=lambda r: int(r["start_time"].split(":")[0]))
 
 
 @app.route('/api/bus/timetable/<bus_code>')

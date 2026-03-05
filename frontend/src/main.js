@@ -14,6 +14,9 @@ let currentOpenPopup = null;
 // Store map marker references for theme updates
 let mapMarkers = [];
 
+// Store current routes data for sorting
+let currentRoutesData = null;
+
 // Swap button functionality
 function setupSwapButton() {
   const swapBtn = document.querySelector('.journey-swap-btn');
@@ -1418,15 +1421,17 @@ async function searchRoutes() {
 function displayRoutesModal(data) {
   const modal = document.getElementById('route-modal');
   const modalHeader = document.querySelector('.route-modal-header');
-  const routeList = document.querySelector('.route-list');
+  const sortSelect = document.getElementById('sort');
   
-  if (!modal || !routeList) {
-    console.error('Route modal or route list not found');
+  if (!modal) {
+    console.error('Route modal not found');
     return;
   }
 
+  // Store the routes data globally for sorting
+  currentRoutesData = data;
+
   // Update the modal header with from/to information
-  // Get the text node and update it (excluding the close button)
   const headerText = document.createTextNode(`Routes from ${data.from} to ${data.to}`);
   
   // Clear previous content but preserve the close button
@@ -1437,11 +1442,72 @@ function displayRoutesModal(data) {
     modalHeader.appendChild(closeBtn); // Re-add the close button at the end
   }
 
+  // Reset sort dropdown to "Fastest"
+  if (sortSelect) {
+    sortSelect.value = 'Fastest';
+  }
+
+  // Render the routes with default (fastest) sorting
+  renderRoutesTable(data.routes);
+
+  // Show the modal by removing the hidden class
+  modal.classList.remove('hidden');
+}
+
+/**
+ * Sort routes based on the selected criteria
+ */
+function sortRoutes(sortMethod, routes) {
+  const routesCopy = [...routes];
+  
+  switch (sortMethod) {
+    case 'Fastest':
+      // Sort by duration (ascending)
+      return routesCopy.sort((a, b) => a.duration_mins - b.duration_mins);
+    
+    case 'Cheapest':
+      // Sort by number of changes (fewer is "cheaper" in terms of complexity/cost)
+      // Then by duration as secondary sort
+      return routesCopy.sort((a, b) => {
+        if (a.changes !== b.changes) {
+          return a.changes - b.changes;
+        }
+        return a.duration_mins - b.duration_mins;
+      });
+    
+    case 'Fewest Changes':
+      // Sort by number of changes (ascending)
+      // Then by start time as secondary sort
+      return routesCopy.sort((a, b) => {
+        if (a.changes !== b.changes) {
+          return a.changes - b.changes;
+        }
+        const aTime = parseInt(a.start_time.replace(':', ''));
+        const bTime = parseInt(b.start_time.replace(':', ''));
+        return aTime - bTime;
+      });
+    
+    default:
+      return routesCopy;
+  }
+}
+
+/**
+ * Render the routes table with current data and sorting
+ */
+function renderRoutesTable(routes) {
+  const routeList = document.querySelector('.route-list');
+  
+  if (!routeList) {
+    console.error('Route list not found');
+    return;
+  }
+
   // Clear existing routes
   routeList.innerHTML = '';
 
   // Add each route as a row
-  data.routes.forEach((route, index) => {
+  routes.forEach((route, index) => {
     const routeRow = document.createElement('div');
     routeRow.className = 'route-row' + (index % 2 === 1 ? ' alt' : '');
 
@@ -1485,9 +1551,6 @@ function displayRoutesModal(data) {
 
     routeList.appendChild(routeRow);
   });
-
-  // Show the modal by removing the hidden class
-  modal.classList.remove('hidden');
 }
 
 // ============================================================================
@@ -1520,10 +1583,22 @@ document.addEventListener('DOMContentLoaded', function() {
   // Set up route modal close button
   const closeRouteModalBtn = document.getElementById('close-route-modal');
   const routeModal = document.getElementById('route-modal');
+  const sortSelect = document.getElementById('sort');
   
   if (closeRouteModalBtn && routeModal) {
     closeRouteModalBtn.addEventListener('click', () => {
       routeModal.classList.add('hidden');
+    });
+  }
+
+  // Set up sort dropdown for routes
+  if (sortSelect) {
+    sortSelect.addEventListener('change', (e) => {
+      if (currentRoutesData && currentRoutesData.routes) {
+        const sortMethod = e.target.value;
+        const sortedRoutes = sortRoutes(sortMethod, currentRoutesData.routes);
+        renderRoutesTable(sortedRoutes);
+      }
     });
   }
 

@@ -1,4 +1,4 @@
-from adapters.transport_adapters import NPTGAdapter, NaPTANAdapter, BusAdapter, RailAdapter
+from adapters.transport_adapters import NPTGAdapter, NaPTANAdapter, BusAdapter, RailAdapter, JourneyPlannerAdapter
 from adapters.weather_adapter import WeatherAdapter
 from datetime import datetime, timedelta
 
@@ -8,6 +8,7 @@ class TransportService:
         self.naptan = NaPTANAdapter()
         self.bus = BusAdapter()
         self.rail = RailAdapter()
+        self.journey_planner = JourneyPlannerAdapter()
         self.weather = WeatherAdapter()
         
         # Cache for NaPTAN data (expires after 1 hour)
@@ -45,6 +46,10 @@ class TransportService:
 
     def get_rail_corpus(self):
         return self.rail.fetch_corpus()
+
+    def get_routes(self, from_name, to_name, date=None, time=None):
+        """Get routes between two stops from the journey planner API"""
+        return self.journey_planner.fetch_routes(from_name, to_name, date, time)
 
     def get_weather(self, latitude: float, longitude: float):
         raw_data = self.weather.fetch_weather(latitude, longitude)

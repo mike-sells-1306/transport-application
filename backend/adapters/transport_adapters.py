@@ -266,6 +266,37 @@ class RailAdapter:
             print(f"Error fetching rail corpus: {e}")
             return {"error": str(e)}
 
+class JourneyPlannerAdapter:
+    """Adapter for journey planning API to fetch routes between two locations"""
+    def fetch_routes(self, from_name, to_name, date=None, time=None):
+        """
+        Fetch routes from the transport API.
+        Args:
+            from_name: Origin stop name
+            to_name: Destination stop name
+            date: Optional date in YYYY-MM-DD format
+            time: Optional time in HH:MM format
+        Returns:
+            Dictionary with routes array and metadata
+        """
+        url = f"{BASE_URL}/journey/plan"
+        params = {
+            "from": from_name,
+            "to": to_name,
+        }
+        if date:
+            params["date"] = date
+        if time:
+            params["time"] = time
+        
+        try:
+            response = requests.get(url, params=params, timeout=15, allow_redirects=True)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            print(f"Error fetching routes from journey planner: {e}")
+            return {"error": str(e), "routes": []}
+
 # For live feeds (STOMP/AMQP), placeholder for future implementation
 class LiveFeedAdapter:
     def subscribe_train_mvt(self):
