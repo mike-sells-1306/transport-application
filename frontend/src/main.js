@@ -270,16 +270,22 @@ function initializeMap() {
     });
   });
 
-  // Set max bounds with edges at: far right Manchester (east), bottom Liverpool (south), 
-  // most western coast (west), top Keswick (north). Prevent viewing beyond these limits.
-  const bounds = L.latLngBounds(
-    L.latLng(53.3665, -3.5),      // Southwest: bottom of Liverpool, most western coast
-    L.latLng(54.6200, -2.211)     // Northeast: top of Keswick, far right of Manchester
+  // Maximum panning bounds: generous area around all locations.
+  // This must be larger than the location extent so that Leaflet's popup
+  // autoPan can scroll the map to reveal popups near the edges (e.g. Keswick).
+  const maxBounds = L.latLngBounds(
+    L.latLng(53.0, -3.7),         // Southwest: well south of Liverpool, west of Barrow coast
+    L.latLng(55.2, -1.9)          // Northeast: well above Keswick popup, east of Manchester
   );
-  map.setMaxBounds(bounds);
+  map.setMaxBounds(maxBounds);
   
-  // Fit map to bounds with padding to ensure bounds are visible
-  map.fitBounds(bounds, { padding: [50, 50] });
+  // Initial view: fit to the actual location extent (tighter than maxBounds)
+  // so all red-dot markers are visible with comfortable padding.
+  const locationBounds = L.latLngBounds(
+    L.latLng(53.38, -3.28),       // Southwest of locations (Liverpool / Barrow)
+    L.latLng(54.65, -2.20)        // Northeast of locations (Keswick / Manchester)
+  );
+  map.fitBounds(locationBounds, { padding: [50, 50] });
   
   // Set zoom constraints to prevent seeing beyond bounds at any zoom level
   map.setMinZoom(9);
@@ -288,7 +294,7 @@ function initializeMap() {
   // Add responsive zoom: when window is resized (including fullscreen), 
   // adjust zoom to maintain the same geographic bounds visibility
   window.addEventListener('resize', function() {
-    map.fitBounds(bounds, { padding: [50, 50] });
+    map.fitBounds(locationBounds, { padding: [50, 50] });
   });
 
   return map;

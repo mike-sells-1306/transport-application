@@ -1,4 +1,5 @@
 import os
+import threading
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
@@ -99,6 +100,29 @@ class UserWeather(db.Model):
 
     user_id = db.Column("userID", db.Integer, db.ForeignKey("User.userID", ondelete="CASCADE"), primary_key=True)
     location = db.Column(db.String(100), primary_key=True)
+
+
+class StopCache(db.Model):
+    """Cached NaPTAN stop data loaded from the API on startup.
+    Queries are served from this table so the external API is not
+    hit on every keystroke."""
+    __tablename__ = "StopCache"
+
+    atco_code = db.Column(db.String(20), primary_key=True)
+    naptan_code = db.Column(db.String(20), default="")
+    common_name = db.Column(db.String(255), nullable=False)
+    indicator = db.Column(db.String(100), default="")
+    locality_name = db.Column(db.String(255), default="")
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    stop_type = db.Column(db.String(10), default="bus")
+    # Pre-computed lowercase searchable text: "commonname indicator localityname"
+    search_text = db.Column(db.Text, default="")
+
+
+# Flag indicating whether the stop cache has finished loading
+_stop_cache_ready = False
+_stop_cache_lock = threading.Lock()
 
 
 def _serialize_user(user: User):
@@ -464,82 +488,114 @@ def naptan():
 
 @app.route('/api/stops/search')
 def search_stops():
-    """Search for bus and train stops within map bounds with autocomplete support"""
+    """Search for bus and train stops within map bounds with autocomplete support.
+    Uses the local StopCache database when available, falling back to the live
+    NaPTAN API if the cache has not finished loading yet.
+    Matching is word-order-independent: every word in the query must appear
+    somewhere in the stop name or locality, but not necessarily in order.
+    For example, 'Lancaster Under' will match 'underpass (by) Lancaster'."""
     try:
         query = request.args.get('q', '').strip().lower()
         limit = min(int(request.args.get('limit', 10)), 50)
-        
-        # Map bounds: SW (53.3665, -3.5) to NE (54.6200, -2.211)
-        MIN_LAT, MAX_LAT = 53.3665, 54.6200
-        MIN_LON, MAX_LON = -3.5, -2.211
-        
+
+        # Map bounds (matches frontend maxBounds)
+        MIN_LAT, MAX_LAT = 53.0, 55.2
+        MIN_LON, MAX_LON = -3.7, -1.9
+
         if not query or len(query) < 2:
             return jsonify({"stops": []})
-        
-        # Get NaPTAN data from transport service
-        app.logger.info(f"Fetching NaPTAN data for query: {query}")
+
+        # Split query into individual words for order-independent matching
+        query_words = query.split()
+
+        # ---------- Try the database cache first ----------
+        global _stop_cache_ready
+        if _stop_cache_ready:
+            app.logger.info(f"Searching stop cache DB for: {query}")
+            try:
+                # Build SQLAlchemy filter: every word must appear in search_text
+                filters = [
+                    StopCache.latitude >= MIN_LAT,
+                    StopCache.latitude <= MAX_LAT,
+                    StopCache.longitude >= MIN_LON,
+                    StopCache.longitude <= MAX_LON,
+                ]
+                for word in query_words:
+                    filters.append(StopCache.search_text.contains(word))
+
+                results = (
+                    StopCache.query
+                    .filter(*filters)
+                    .limit(limit)
+                    .all()
+                )
+
+                matching_stops = []
+                for stop in results:
+                    display_name = stop.common_name
+                    if stop.indicator:
+                        display_name += f" ({stop.indicator})"
+                    if stop.locality_name and stop.locality_name not in display_name:
+                        display_name += f", {stop.locality_name}"
+                    matching_stops.append({
+                        'name': display_name,
+                        'atcoCode': stop.atco_code,
+                        'lat': stop.latitude,
+                        'lon': stop.longitude,
+                        'stopType': stop.stop_type,
+                    })
+
+                app.logger.info(f"Returning {len(matching_stops)} stops from DB cache for '{query}'")
+                return jsonify({"stops": matching_stops})
+            except Exception as db_err:
+                app.logger.warning(f"StopCache query failed, falling back to API: {db_err}")
+
+        # ---------- Fallback: live API fetch (same as original) ----------
+        app.logger.info(f"Cache not ready, fetching NaPTAN data for query: {query}")
         naptan_data = transport_service.get_naptan(full=False)
-        app.logger.info(f"NaPTAN data type: {type(naptan_data)}, keys: {naptan_data.keys() if isinstance(naptan_data, dict) else 'N/A'}")
-        
-        # Filter stops within bounds and matching query
-        matching_stops = []
-        
-        # naptan_data should be a dict with 'stops' key
         stops_list = naptan_data.get('stops', []) if isinstance(naptan_data, dict) else naptan_data
-        
-        app.logger.info(f"Stops list length: {len(stops_list) if stops_list else 0}")
-        
+
+        matching_stops = []
         if stops_list:
             for stop in stops_list:
-                # Extract coordinates
                 lat = stop.get('Latitude')
                 lon = stop.get('Longitude')
-                
-                # Skip if coordinates missing
                 if lat is None or lon is None:
                     continue
-                
-                # Convert to float
                 try:
                     lat = float(lat)
                     lon = float(lon)
                 except (ValueError, TypeError):
                     continue
-                
-                # Check if within bounds
                 if not (MIN_LAT <= lat <= MAX_LAT and MIN_LON <= lon <= MAX_LON):
                     continue
-                
-                # Get stop name and code
+
                 stop_name = stop.get('CommonName', '').lower()
-                stop_indicator = stop.get('Indicator', '')
-                stop_locality = stop.get('LocalityName', '')
-                atco_code = stop.get('ATCOCode', '')
-                
-                # Check if query matches stop name or locality
-                if query in stop_name or query in stop_locality.lower():
-                    # Create display name
+                stop_locality = stop.get('LocalityName', '').lower()
+                combined = f"{stop_name} {stop_locality}"
+
+                # Word-order-independent matching
+                if all(w in combined for w in query_words):
                     display_name = stop.get('CommonName', '')
+                    stop_indicator = stop.get('Indicator', '')
+                    stop_locality_raw = stop.get('LocalityName', '')
                     if stop_indicator:
                         display_name += f" ({stop_indicator})"
-                    if stop_locality and stop_locality not in display_name:
-                        display_name += f", {stop_locality}"
-                    
+                    if stop_locality_raw and stop_locality_raw not in display_name:
+                        display_name += f", {stop_locality_raw}"
                     matching_stops.append({
                         'name': display_name,
-                        'atcoCode': atco_code,
+                        'atcoCode': stop.get('ATCOCode', ''),
                         'lat': lat,
                         'lon': lon,
-                        'stopType': stop.get('StopType', 'bus')
+                        'stopType': stop.get('StopType', 'bus'),
                     })
-                
-                # Stop once we have enough results
                 if len(matching_stops) >= limit:
                     break
-        
-        app.logger.info(f"Returning {len(matching_stops)} matching stops for query '{query}'")
+
+        app.logger.info(f"Returning {len(matching_stops)} stops (API fallback) for '{query}'")
         return jsonify({"stops": matching_stops})
-        
+
     except Exception as e:
         app.logger.error(f"Stop search error: {e}")
         return jsonify({"error": str(e), "stops": []}), 500
@@ -701,9 +757,9 @@ def weather_search():
         if not query or len(query) < 2:
             return jsonify({"results": []})
 
-        # Map bounds
-        MIN_LAT, MAX_LAT = 53.3665, 54.6200
-        MIN_LON, MAX_LON = -3.5, -2.211
+        # Map bounds (matches frontend maxBounds)
+        MIN_LAT, MAX_LAT = 53.0, 55.2
+        MIN_LON, MAX_LON = -3.7, -1.9
 
         # Fetch gazetteer data (NPTG locality list)
         gazetteer = transport_service.get_gazetteer()
@@ -871,6 +927,151 @@ def serve_static(path):
 # To initialize: python -c "from app import app, db; app.app_context().push(); db.create_all()"
 # with app.app_context():
 #     db.create_all()
+
+
+# ---------------------------------------------------------------------------
+# Background stop-cache loader
+# ---------------------------------------------------------------------------
+def _load_stop_cache():
+    """Fetch all NaPTAN stops from the external API *and* the supplemental
+    stop list, then insert every stop into the local StopCache table.
+    Runs once in a background thread so the first request is not blocked
+    by the potentially slow XML download.
+
+    The supplemental stops are always loaded so that every red-dot location
+    on the map (Liverpool, Manchester, Keswick, …) is guaranteed to have
+    bus/train stop entries in the database, regardless of whether the
+    upstream NaPTAN feed covers those areas."""
+    global _stop_cache_ready
+    with app.app_context():
+        try:
+            # Map bounds (matches frontend maxBounds)
+            MIN_LAT, MAX_LAT = 53.0, 55.2
+            MIN_LON, MAX_LON = -3.7, -1.9
+
+            # ---- 1. Fetch from external API ----
+            api_stops = []
+            try:
+                app.logger.info("StopCache: Fetching NaPTAN data from API …")
+                naptan_data = transport_service.get_naptan(full=False)
+                raw = naptan_data.get("stops", []) if isinstance(naptan_data, dict) else naptan_data
+                if raw:
+                    api_stops = list(raw)
+                app.logger.info(f"StopCache: API returned {len(api_stops)} stops")
+            except Exception as api_err:
+                app.logger.warning(f"StopCache: API fetch failed – {api_err}")
+
+            # ---- 2. Always include the supplemental (static) stops ----
+            supplemental = transport_service.naptan._get_supplemental_stops()
+            app.logger.info(f"StopCache: {len(supplemental)} supplemental stops available")
+
+            # Merge: API stops first, then supplemental (skip duplicates)
+            seen_codes = set()
+            all_stops = []
+            for stop in api_stops + supplemental:
+                code = stop.get("ATCOCode", "")
+                if code in seen_codes:
+                    continue
+                seen_codes.add(code)
+                all_stops.append(stop)
+
+            app.logger.info(f"StopCache: {len(all_stops)} unique stops after merge")
+
+            # ---- 3. Wipe previous cache and bulk-insert ----
+            db.session.query(StopCache).delete()
+            db.session.flush()
+
+            inserted = 0
+            for stop in all_stops:
+                lat = stop.get("Latitude")
+                lon = stop.get("Longitude")
+                if lat is None or lon is None:
+                    continue
+                try:
+                    lat = float(lat)
+                    lon = float(lon)
+                except (ValueError, TypeError):
+                    continue
+                if not (MIN_LAT <= lat <= MAX_LAT and MIN_LON <= lon <= MAX_LON):
+                    continue
+
+                common_name = stop.get("CommonName", "")
+                indicator = stop.get("Indicator", "")
+                locality_name = stop.get("LocalityName", "")
+
+                # Build a searchable text blob (lowercase) used by the query
+                search_text = f"{common_name} {indicator} {locality_name}".lower()
+
+                db.session.add(StopCache(
+                    atco_code=stop.get("ATCOCode", ""),
+                    naptan_code=stop.get("NaptanCode", ""),
+                    common_name=common_name,
+                    indicator=indicator,
+                    locality_name=locality_name,
+                    latitude=lat,
+                    longitude=lon,
+                    stop_type=stop.get("StopType", "bus"),
+                    search_text=search_text,
+                ))
+                inserted += 1
+
+            db.session.commit()
+
+            with _stop_cache_lock:
+                _stop_cache_ready = True
+
+            app.logger.info(f"StopCache: Successfully loaded {inserted} stops into database")
+        except Exception as exc:
+            app.logger.error(f"StopCache: Background load failed – {exc}")
+            db.session.rollback()
+
+            # Last-resort: try to load *just* the supplemental stops so the
+            # database is never empty.
+            try:
+                app.logger.info("StopCache: Attempting fallback load of supplemental stops only …")
+                db.session.query(StopCache).delete()
+                db.session.flush()
+                count = 0
+                for stop in transport_service.naptan._get_supplemental_stops():
+                    lat = stop.get("Latitude")
+                    lon = stop.get("Longitude")
+                    if lat is None or lon is None:
+                        continue
+                    try:
+                        lat_f = float(lat)
+                        lon_f = float(lon)
+                    except (ValueError, TypeError):
+                        continue
+
+                    common_name = stop.get("CommonName", "")
+                    indicator = stop.get("Indicator", "")
+                    locality_name = stop.get("LocalityName", "")
+                    search_text = f"{common_name} {indicator} {locality_name}".lower()
+
+                    db.session.add(StopCache(
+                        atco_code=stop.get("ATCOCode", ""),
+                        naptan_code=stop.get("NaptanCode", ""),
+                        common_name=common_name,
+                        indicator=indicator,
+                        locality_name=locality_name,
+                        latitude=lat_f,
+                        longitude=lon_f,
+                        stop_type=stop.get("StopType", "bus"),
+                        search_text=search_text,
+                    ))
+                    count += 1
+                db.session.commit()
+                with _stop_cache_lock:
+                    _stop_cache_ready = True
+                app.logger.info(f"StopCache: Fallback loaded {count} supplemental stops")
+            except Exception as fallback_err:
+                app.logger.error(f"StopCache: Fallback load also failed – {fallback_err}")
+                db.session.rollback()
+
+
+# Kick off the background loader (daemon thread so it won't prevent shutdown)
+_stop_loader_thread = threading.Thread(target=_load_stop_cache, daemon=True)
+_stop_loader_thread.start()
 
 
 if __name__ == "__main__":
