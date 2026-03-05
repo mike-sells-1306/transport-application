@@ -1462,29 +1462,23 @@ function sortRoutes(sortMethod, routes) {
   
   switch (sortMethod) {
     case 'Fastest':
-      // Sort by duration (ascending)
-      return routesCopy.sort((a, b) => a.duration_mins - b.duration_mins);
+      // Sort by duration (ascending), then by start time
+      return routesCopy.sort((a, b) => {
+        if (a.duration_mins !== b.duration_mins) {
+          return a.duration_mins - b.duration_mins;
+        }
+        const aTime = parseInt(a.start_time.replace(':', ''));
+        const bTime = parseInt(b.start_time.replace(':', ''));
+        return aTime - bTime;
+      });
     
-    case 'Cheapest':
-      // Sort by number of changes (fewer is "cheaper" in terms of complexity/cost)
-      // Then by duration as secondary sort
+    case 'Fewest Changes':
+      // Sort by number of changes (ascending), then by duration
       return routesCopy.sort((a, b) => {
         if (a.changes !== b.changes) {
           return a.changes - b.changes;
         }
         return a.duration_mins - b.duration_mins;
-      });
-    
-    case 'Fewest Changes':
-      // Sort by number of changes (ascending)
-      // Then by start time as secondary sort
-      return routesCopy.sort((a, b) => {
-        if (a.changes !== b.changes) {
-          return a.changes - b.changes;
-        }
-        const aTime = parseInt(a.start_time.replace(':', ''));
-        const bTime = parseInt(b.start_time.replace(':', ''));
-        return aTime - bTime;
       });
     
     default:
@@ -1493,7 +1487,103 @@ function sortRoutes(sortMethod, routes) {
 }
 
 /**
- * Render the routes table with current data and sorting
+ * Format a duration in minutes as human-readable text
+ */
+function formatDuration(mins) {
+  if (mins < 60) return `${mins} min`;
+  const hours = Math.floor(mins / 60);
+  const remainder = mins % 60;
+  return remainder > 0 ? `${hours}h ${remainder} min` : `${hours}h`;
+}
+
+/**
+ * Build a walking-leg element for the detail panel
+ */
+function buildWalkLeg(leg) {
+  const el = document.createElement('div');
+  el.className = 'route-detail-leg route-detail-walk';
+  el.innerHTML = `
+    <span class="leg-icon icon-walk"></span>
+    <div class="leg-info">
+      <div class="leg-summary">Walk ${leg.distance_m}m • ${leg.duration_mins} min</div>
+      <div class="leg-stops">${leg.from_stop} → ${leg.to_stop}</div>
+    </div>
+    <span class="leg-time">${leg.depart} – ${leg.arrive}</span>
+  `;
+  return el;
+}
+
+/**
+ * Build a transport (bus / train) leg element for the detail panel
+ */
+function buildTransportLeg(leg) {
+  const el = document.createElement('div');
+  el.className = 'route-detail-leg route-detail-ride';
+
+  const modeIcon = leg.mode === 'bus' ? 'icon-bus' : 'icon-train';
+  const service = leg.service || leg.mode;
+
+  let intermediateHTML = '';
+  if (leg.intermediate_stops && leg.intermediate_stops.length > 0) {
+    const stopsHTML = leg.intermediate_stops
+      .map(s => `<li><span class="intermediate-time">${s.time}</span> ${s.name}</li>`)
+      .join('');
+    intermediateHTML = `<ul class="intermediate-stops">${stopsHTML}</ul>`;
+  }
+
+  el.innerHTML = `
+    <span class="leg-icon ${modeIcon}"></span>
+    <div class="leg-info">
+      <div class="leg-summary">${service} • ${leg.duration_mins} min</div>
+      <div class="leg-stops">${leg.from_stop} → ${leg.to_stop}</div>
+      ${intermediateHTML}
+    </div>
+    <span class="leg-time">${leg.depart} – ${leg.arrive}</span>
+  `;
+  return el;
+}
+
+/**
+ * Toggle the expanded detail view for a route row
+ */
+function toggleRouteDetail(routeRow, route) {
+  const existingDetail = routeRow.nextElementSibling;
+
+  // If already expanded, collapse it
+  if (existingDetail && existingDetail.classList.contains('route-detail')) {
+    existingDetail.remove();
+    routeRow.classList.remove('expanded');
+    return;
+  }
+
+  // Collapse any other open detail
+  document.querySelectorAll('.route-detail').forEach(d => d.remove());
+  document.querySelectorAll('.route-row.expanded').forEach(r => r.classList.remove('expanded'));
+
+  // Build the detail panel
+  const detail = document.createElement('div');
+  detail.className = 'route-detail';
+
+  if (route.legs && route.legs.length > 0) {
+    route.legs.forEach(leg => {
+      if (leg.mode === 'walk') {
+        detail.appendChild(buildWalkLeg(leg));
+      } else {
+        detail.appendChild(buildTransportLeg(leg));
+      }
+    });
+  } else {
+    detail.innerHTML = '<div class="route-detail-empty">No detailed leg information available for this route.</div>';
+  }
+
+  // Insert detail right after the clicked row
+  routeRow.after(detail);
+  routeRow.classList.add('expanded');
+}
+
+/**
+ * Render the routes table with current data and sorting.
+ * Each row is clickable to expand detailed leg information.
  */
 function renderRoutesTable(routes) {
   const routeList = document.querySelector('.route-list');
@@ -1503,51 +1593,68 @@ function renderRoutesTable(routes) {
     return;
   }
 
-  // Clear existing routes
+  // Clear existing routes (including any open details)
   routeList.innerHTML = '';
 
-  // Add each route as a row
+  if (!routes || routes.length === 0) {
+    routeList.innerHTML = '<div class="route-row">No routes found for this journey.</div>';
+    return;
+  }
+
+  // Add each route as a clickable row
   routes.forEach((route, index) => {
     const routeRow = document.createElement('div');
     routeRow.className = 'route-row' + (index % 2 === 1 ? ' alt' : '');
+    routeRow.style.cursor = 'pointer';
+    routeRow.title = 'Click to view route details';
 
-    // Create transport icons
-    const transportIcons = route.transport.map(transport => {
+    // Build transport icons container (shows full chain, e.g. bus → train → bus)
+    const iconsContainer = document.createElement('span');
+    iconsContainer.className = 'route-transport-icons';
+
+    route.transport.forEach((mode, i) => {
+      if (i > 0) {
+        const arrow = document.createElement('span');
+        arrow.className = 'transport-arrow';
+        arrow.textContent = '›';
+        iconsContainer.appendChild(arrow);
+      }
       const icon = document.createElement('span');
-      icon.className = transport === 'bus' ? 'icon-bus' : 'icon-train';
-      return icon;
+      icon.className = mode === 'bus' ? 'icon-bus' : 'icon-train';
+      iconsContainer.appendChild(icon);
     });
 
-    // Create time display
+    // Changes badge
+    if (route.changes > 0) {
+      const badge = document.createElement('span');
+      badge.className = 'changes-badge';
+      badge.textContent = `${route.changes} change${route.changes > 1 ? 's' : ''}`;
+      iconsContainer.appendChild(badge);
+    }
+
+    // Time display
     const timesSpan = document.createElement('span');
     timesSpan.className = 'route-times';
     timesSpan.textContent = `${route.start_time} − ${route.end_time}`;
 
-    // Create duration display
+    // Duration display
     const durationSpan = document.createElement('span');
     durationSpan.className = 'route-duration';
-    
-    // Format duration
-    let durationText;
-    if (route.duration_mins < 60) {
-      durationText = `${route.duration_mins} min`;
-    } else {
-      const hours = Math.floor(route.duration_mins / 60);
-      const mins = route.duration_mins % 60;
-      durationText = mins > 0 ? `${hours}h ${mins} min` : `${hours}h`;
-    }
-    durationSpan.textContent = durationText;
+    durationSpan.textContent = formatDuration(route.duration_mins);
 
-    // Append elements to the route row
-    routeRow.appendChild(transportIcons[0]); // First transport icon
-    
-    // If there are multiple transports (transfer), add the second icon
-    if (transportIcons.length > 1) {
-      routeRow.appendChild(transportIcons[1]);
-    }
-    
+    // Expand indicator
+    const expandIcon = document.createElement('span');
+    expandIcon.className = 'route-expand-icon';
+    expandIcon.textContent = '▼';
+
+    // Assemble the row
+    routeRow.appendChild(iconsContainer);
     routeRow.appendChild(timesSpan);
     routeRow.appendChild(durationSpan);
+    routeRow.appendChild(expandIcon);
+
+    // Click handler to toggle detail panel
+    routeRow.addEventListener('click', () => toggleRouteDetail(routeRow, route));
 
     routeList.appendChild(routeRow);
   });

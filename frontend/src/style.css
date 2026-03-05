@@ -555,6 +555,139 @@ body {
   margin-left: auto;
 }
 
+/* Transport icons container (shows bus → train chain) */
+.route-transport-icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 60px;
+}
+.transport-arrow {
+  font-size: 1.2rem;
+  opacity: 0.7;
+  line-height: 1;
+}
+.changes-badge {
+  font-size: 0.72rem;
+  background: rgba(255,255,255,0.22);
+  border-radius: 8px;
+  padding: 2px 7px;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+/* Expand icon on the right of each route row */
+.route-expand-icon {
+  font-size: 0.7rem;
+  opacity: 0.6;
+  transition: transform 0.25s ease;
+  margin-left: 8px;
+}
+.route-row.expanded .route-expand-icon {
+  transform: rotate(180deg);
+}
+.route-row {
+  transition: background 0.15s ease;
+}
+.route-row:hover {
+  background: rgba(255,255,255,0.18);
+}
+.route-row.expanded {
+  background: rgba(255,255,255,0.2);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* Expanded route detail panel */
+.route-detail {
+  background: rgba(0,0,0,0.12);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: slideDown 0.2s ease-out;
+  margin-top: -4px;
+  margin-bottom: 4px;
+}
+@keyframes slideDown {
+  from { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; }
+  to   { opacity: 1; max-height: 600px; padding-top: 14px; padding-bottom: 14px; }
+}
+.route-detail-empty {
+  opacity: 0.7;
+  font-style: italic;
+  padding: 8px 0;
+}
+
+/* Individual leg in detail panel */
+.route-detail-leg {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.92rem;
+}
+.route-detail-ride {
+  background: rgba(255,255,255,0.08);
+}
+.route-detail-walk {
+  background: transparent;
+  opacity: 0.85;
+}
+.route-detail-leg .leg-icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+}
+.route-detail-leg .leg-info {
+  flex: 1;
+  min-width: 0;
+}
+.route-detail-leg .leg-summary {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.route-detail-leg .leg-stops {
+  font-size: 0.84rem;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+.route-detail-leg .leg-time {
+  font-size: 0.84rem;
+  font-weight: 500;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+/* Intermediate stops list */
+.intermediate-stops {
+  list-style: none;
+  padding: 4px 0 0 0;
+  margin: 0;
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+.intermediate-stops li {
+  padding: 2px 0;
+  border-left: 2px solid rgba(255,255,255,0.3);
+  padding-left: 10px;
+  margin-left: 2px;
+}
+.intermediate-stops .intermediate-time {
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+/* Walk icon */
+.icon-walk {
+  width: 22px; height: 22px;
+  background: url('data:image/svg+xml;utf8,<svg fill="white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="2"/><path d="M10.27 7.2A2 2 0 0112 6c.63 0 1.2.3 1.57.78l1.57 2.36A2 2 0 0116.73 10H18v2h-1.27a4 4 0 01-3.32-1.78L13 9.6l-.67 2L14 13.2V20h-2v-6l-1.67-1.67L9 18H7l2.67-8.33L8.5 12.5 7 11l3.27-3.8z"/></svg>') center/contain no-repeat;
+  display: inline-block;
+}
+
 /* Weather Panel */
 .weather-panel {
   position: absolute;
