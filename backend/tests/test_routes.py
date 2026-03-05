@@ -5,7 +5,9 @@ Covers:
     • POST /api/routes/search happy-path and validation
     • Response schema: routes include legs with walk / ride segments
     • Sorting: Fastest vs Fewest Changes
-    • Mock route generation for known and unknown stop pairs
+    • Distance-aware mock route generation (walk-only, bus, train)
+    • Real bus service names (Stagecoach 1, 1A, 4, 41, 100, etc.)
+    • Current-time-anchored departures
 """
 
 import json
@@ -19,6 +21,31 @@ def client():
     app.config["TESTING"] = True
     with app.test_client() as c:
         yield c
+
+
+# ── Coordinates for test stops ─────────────────────────────────────────
+
+# Very close together (< 1 km) – both in Lancaster city centre
+COMMON_GARDEN = {"name": "Common Garden Street (Stop A), Lancaster",
+                 "lat": 54.0487, "lon": -2.7990}
+UNDERPASS = {"name": "Underpass (by), Lancaster",
+             "lat": 54.0481, "lon": -2.8010}
+
+# Medium distance (~3 km) – Lancaster centre to Lancaster University
+LANCASTER_CENTRE = {"name": "Lancaster Bus Station",
+                    "lat": 54.0490, "lon": -2.7997}
+LANCASTER_UNI = {"name": "Lancaster University",
+                 "lat": 54.0104, "lon": -2.7848}
+
+# Regional (~30 km) – Lancaster to Preston
+LANCASTER = {"name": "Lancaster Railway Station",
+             "lat": 54.0488, "lon": -2.8074}
+PRESTON = {"name": "Preston Railway Station",
+           "lat": 53.7568, "lon": -2.7084}
+
+# Long distance (~80 km) – Lancaster to Manchester
+MANCHESTER = {"name": "Manchester Piccadilly",
+              "lat": 53.4774, "lon": -2.2309}
 
 
 # ── Endpoint validation ────────────────────────────────────────────────
@@ -57,13 +84,10 @@ def test_route_search_empty_names(client):
 
 
 def test_route_search_returns_routes(client):
-    """Known pair Lancaster → Blackpool should return routes with legs."""
+    """Route search with valid stops should return routes with legs."""
     resp = client.post(
         "/api/routes/search",
-        json={
-            "from": {"name": "Lancaster Bus Station"},
-            "to": {"name": "Blackpool North Bus Station"},
-        },
+        json={"from": LANCASTER_CENTRE, "to": LANCASTER_UNI},
     )
     assert resp.status_code == 200
     data = json.loads(resp.data)
@@ -80,10 +104,7 @@ def test_route_contains_required_fields(client):
     transport, changes, and legs."""
     resp = client.post(
         "/api/routes/search",
-        json={
-            "from": {"name": "Lancaster"},
-            "to": {"name": "Blackpool"},
-        },
+        json={"from": LANCASTER_CENTRE, "to": LANCASTER_UNI},
     )
     data = json.loads(resp.data)
     route = data["routes"][0]
@@ -96,10 +117,7 @@ def test_route_legs_structure(client):
     """Legs should be a list of dicts with mode, from_stop, to_stop, depart, arrive."""
     resp = client.post(
         "/api/routes/search",
-        json={
-            "from": {"name": "Lancaster"},
-            "to": {"name": "Blackpool"},
-        },
+        json={"from": LANCASTER_CENTRE, "to": LANCASTER_UNI},
     )
     data = json.loads(resp.data)
     route = data["routes"][0]
@@ -122,10 +140,7 @@ def test_walking_leg_has_distance(client):
     """Walking legs must include a distance_m field."""
     resp = client.post(
         "/api/routes/search",
-        json={
-            "from": {"name": "Lancaster"},
-            "to": {"name": "Blackpool"},
-        },
+        json={"from": COMMON_GARDEN, "to": UNDERPASS},
     )
     data = json.loads(resp.data)
     route = data["routes"][0]
@@ -141,14 +156,16 @@ def test_transport_leg_has_service_and_intermediates(client):
     """Bus / train legs must include service and intermediate_stops."""
     resp = client.post(
         "/api/routes/search",
-        json={
-            "from": {"name": "Lancaster"},
-            "to": {"name": "Blackpool"},
-        },
+        json={"from": LANCASTER_CENTRE, "to": LANCASTER_UNI},
     )
     data = json.loads(resp.data)
-    route = data["routes"][0]
-    ride_legs = [l for l in route["legs"] if l["mode"] in ("bus", "train")]
+
+    # Find a route that has bus/train legs
+    ride_legs = []
+    for route in data["routes"]:
+        ride_legs = [l for l in route["legs"] if l["mode"] in ("bus", "train")]
+        if ride_legs:
+            break
 
     assert len(ride_legs) > 0, "Expected at least one transport leg"
     for rl in ride_legs:
@@ -157,46 +174,123 @@ def test_transport_leg_has_service_and_intermediates(client):
         assert isinstance(rl["intermediate_stops"], list)
 
 
-# ── Mock route generator ───────────────────────────────────────────────
+# ── Distance-aware route generation ───────────────────────────────────
 
 
-def test_mock_routes_known_pair():
-    """Lancaster → Blackpool should return predefined routes with legs."""
-    routes = _generate_valid_mock_routes("Lancaster Bus Station", "Blackpool North")
+def test_very_short_distance_walk_only():
+    """Stops < 1 km apart should primarily generate walk-only options."""
+    routes = _generate_valid_mock_routes(
+        COMMON_GARDEN["name"], UNDERPASS["name"],
+        from_lat=COMMON_GARDEN["lat"], from_lon=COMMON_GARDEN["lon"],
+        to_lat=UNDERPASS["lat"], to_lon=UNDERPASS["lon"],
+    )
     assert len(routes) >= 3
+
+    # Most routes should be walk-only (transport list empty)
+    walk_only = [r for r in routes if r["transport"] == []]
+    assert len(walk_only) >= 2, "Short distance should have walk-only options"
+
+    # Walk-only routes should be short (< 15 min)
+    for r in walk_only:
+        assert r["duration_mins"] <= 15, \
+            f"Walk between nearby stops should be < 15 min, got {r['duration_mins']}"
+
+
+def test_very_short_distance_no_train():
+    """Stops < 1 km apart should NEVER show a train option."""
+    routes = _generate_valid_mock_routes(
+        COMMON_GARDEN["name"], UNDERPASS["name"],
+        from_lat=COMMON_GARDEN["lat"], from_lon=COMMON_GARDEN["lon"],
+        to_lat=UNDERPASS["lat"], to_lon=UNDERPASS["lon"],
+    )
     for r in routes:
-        assert "legs" in r
-        assert len(r["legs"]) > 0
+        assert "train" not in r["transport"], \
+            "Train should not appear for very short distances"
 
 
-def test_mock_routes_unknown_pair():
-    """An unmapped pair should still produce valid routes."""
-    routes = _generate_valid_mock_routes("Ambleside Waterhead", "Cartmel Village")
-    assert len(routes) >= 2
+def test_medium_distance_bus_routes():
+    """Stops 1-5 km apart should return bus routes."""
+    routes = _generate_valid_mock_routes(
+        LANCASTER_CENTRE["name"], LANCASTER_UNI["name"],
+        from_lat=LANCASTER_CENTRE["lat"], from_lon=LANCASTER_CENTRE["lon"],
+        to_lat=LANCASTER_UNI["lat"], to_lon=LANCASTER_UNI["lon"],
+    )
+    assert len(routes) >= 3
+
+    bus_routes = [r for r in routes if "bus" in r["transport"]]
+    assert len(bus_routes) >= 2, "Medium distance should have bus options"
+
+    # No trains for 3 km journey
     for r in routes:
-        assert "start_time" in r
-        assert "end_time" in r
-        assert "duration_mins" in r
-        assert "legs" in r
+        assert "train" not in r["transport"], \
+            "Train should not appear for short bus-distance journeys"
 
 
-def test_mock_routes_deterministic():
-    """The same inputs should always produce the same output (seeded random)."""
-    r1 = _generate_valid_mock_routes("FooStop", "BarStop")
-    r2 = _generate_valid_mock_routes("FooStop", "BarStop")
-    assert r1 == r2
+def test_long_distance_includes_train():
+    """Stops > 15 km apart should include train options."""
+    routes = _generate_valid_mock_routes(
+        LANCASTER["name"], MANCHESTER["name"],
+        from_lat=LANCASTER["lat"], from_lon=LANCASTER["lon"],
+        to_lat=MANCHESTER["lat"], to_lon=MANCHESTER["lon"],
+    )
+    assert len(routes) >= 3
+
+    train_routes = [r for r in routes if "train" in r["transport"]]
+    assert len(train_routes) >= 1, "Long distance should have train options"
+
+
+def test_regional_distance_bus_options():
+    """Stops 5-15 km apart should return bus options."""
+    routes = _generate_valid_mock_routes(
+        LANCASTER["name"], PRESTON["name"],
+        from_lat=LANCASTER["lat"], from_lon=LANCASTER["lon"],
+        to_lat=PRESTON["lat"], to_lon=PRESTON["lon"],
+    )
+    assert len(routes) >= 3
+
+    bus_routes = [r for r in routes if "bus" in r["transport"]]
+    assert len(bus_routes) >= 1, "Regional distance should have bus options"
+
+
+# ── Real service names ─────────────────────────────────────────────────
+
+
+def test_uses_real_bus_service_names():
+    """Routes should use real Stagecoach service names, not 'Service XX'."""
+    routes = _generate_valid_mock_routes(
+        LANCASTER_CENTRE["name"], LANCASTER_UNI["name"],
+        from_lat=LANCASTER_CENTRE["lat"], from_lon=LANCASTER_CENTRE["lon"],
+        to_lat=LANCASTER_UNI["lat"], to_lon=LANCASTER_UNI["lon"],
+    )
+    for route in routes:
+        for leg in route["legs"]:
+            if leg["mode"] == "bus":
+                service = leg["service"]
+                assert "Stagecoach" in service or "Service 555" in service, \
+                    f"Expected real service name, got '{service}'"
+
+
+# ── Generic structure tests ────────────────────────────────────────────
 
 
 def test_mock_routes_sorted_by_start_time():
     """Routes should be sorted by start time ascending."""
-    routes = _generate_valid_mock_routes("Kendal", "Windermere")
+    routes = _generate_valid_mock_routes(
+        LANCASTER_CENTRE["name"], LANCASTER_UNI["name"],
+        from_lat=LANCASTER_CENTRE["lat"], from_lon=LANCASTER_CENTRE["lon"],
+        to_lat=LANCASTER_UNI["lat"], to_lon=LANCASTER_UNI["lon"],
+    )
     times = [r["start_time"] for r in routes]
     assert times == sorted(times)
 
 
 def test_mock_routes_duration_consistency():
     """duration_mins should equal end_time minus start_time."""
-    routes = _generate_valid_mock_routes("Preston", "Manchester")
+    routes = _generate_valid_mock_routes(
+        LANCASTER["name"], PRESTON["name"],
+        from_lat=LANCASTER["lat"], from_lon=LANCASTER["lon"],
+        to_lat=PRESTON["lat"], to_lon=PRESTON["lon"],
+    )
     for r in routes:
         sh, sm = map(int, r["start_time"].split(":"))
         eh, em = map(int, r["end_time"].split(":"))
@@ -204,6 +298,16 @@ def test_mock_routes_duration_consistency():
         assert r["duration_mins"] == expected, (
             f"duration_mins={r['duration_mins']} but time span={expected}"
         )
+
+
+def test_mock_routes_without_coordinates():
+    """Without lat/lon the generator should still produce valid routes."""
+    routes = _generate_valid_mock_routes("FooStop", "BarStop")
+    assert len(routes) >= 2
+    for r in routes:
+        assert "start_time" in r
+        assert "legs" in r
+        assert len(r["legs"]) > 0
 
 
 # ── Sorting logic ──────────────────────────────────────────────────────
@@ -219,7 +323,11 @@ def _sort_fewest_changes(routes):
 
 def test_sort_fastest():
     """Fastest sort should order by duration ascending, then start_time."""
-    routes = _generate_valid_mock_routes("Lancaster", "Blackpool")
+    routes = _generate_valid_mock_routes(
+        LANCASTER["name"], PRESTON["name"],
+        from_lat=LANCASTER["lat"], from_lon=LANCASTER["lon"],
+        to_lat=PRESTON["lat"], to_lon=PRESTON["lon"],
+    )
     sorted_routes = _sort_fastest(routes)
     for i in range(len(sorted_routes) - 1):
         a, b = sorted_routes[i], sorted_routes[i + 1]
@@ -231,7 +339,11 @@ def test_sort_fastest():
 
 def test_sort_fewest_changes():
     """Fewest-changes sort should order by changes ascending, then duration."""
-    routes = _generate_valid_mock_routes("Lancaster", "Blackpool")
+    routes = _generate_valid_mock_routes(
+        LANCASTER["name"], PRESTON["name"],
+        from_lat=LANCASTER["lat"], from_lon=LANCASTER["lon"],
+        to_lat=PRESTON["lat"], to_lon=PRESTON["lon"],
+    )
     sorted_routes = _sort_fewest_changes(routes)
     for i in range(len(sorted_routes) - 1):
         a, b = sorted_routes[i], sorted_routes[i + 1]
@@ -241,15 +353,24 @@ def test_sort_fewest_changes():
         )
 
 
-# ── Reverse route coverage ─────────────────────────────────────────────
+# ── Coordinates passed via endpoint ────────────────────────────────────
 
 
-def test_reverse_route_pair():
-    """Predefined routes should exist for both directions of a pair."""
-    forward = _generate_valid_mock_routes("Lancaster", "Preston")
-    reverse = _generate_valid_mock_routes("Preston", "Lancaster")
-    assert len(forward) >= 2
-    assert len(reverse) >= 2
-    # They should be different sets of routes
-    assert forward[0]["start_time"] != reverse[0]["start_time"] or \
-           forward[0]["transport"] != reverse[0]["transport"]
+def test_endpoint_passes_coordinates(client):
+    """Endpoint should pass lat/lon to the generator for distance calculation."""
+    resp = client.post(
+        "/api/routes/search",
+        json={
+            "from": COMMON_GARDEN,
+            "to": UNDERPASS,
+        },
+    )
+    assert resp.status_code == 200
+    data = json.loads(resp.data)
+
+    # Very close stops - should have walk-only routes and no trains
+    routes = data["routes"]
+    assert len(routes) >= 3
+    for r in routes:
+        assert "train" not in r["transport"], \
+            "Nearby stops should not show train routes via the endpoint"

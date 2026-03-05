@@ -1447,8 +1447,9 @@ function displayRoutesModal(data) {
     sortSelect.value = 'Fastest';
   }
 
-  // Render the routes with default (fastest) sorting
-  renderRoutesTable(data.routes);
+  // Render the routes with default (fastest) sorting applied
+  const sorted = sortRoutes('Fastest', data.routes);
+  renderRoutesTable(sorted);
 
   // Show the modal by removing the hidden class
   modal.classList.remove('hidden');
