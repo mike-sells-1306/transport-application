@@ -28,7 +28,9 @@ FRONTEND_DIR = Path(__file__).parent.parent / "frontend" / "src"
 
 app = Flask(__name__, static_folder=str(FRONTEND_DIR), static_url_path="")
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-change-me")
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///transport.db")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
+    "DATABASE_URL", "sqlite:////tmp/transport.db"
+)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["AUTH_TOKEN_MAX_AGE_SECONDS"] = int(os.getenv("AUTH_TOKEN_MAX_AGE_SECONDS", "86400"))
 # Increase SQLite timeout for network drive compatibility
@@ -601,459 +603,15 @@ def search_stops():
         return jsonify({"error": str(e), "stops": []}), 500
 
 
-def _generate_valid_mock_routes(from_stop, to_stop, from_lat=None, from_lon=None,
-                                to_lat=None, to_lon=None):
-    """Generate realistic mock routes based on distance between stops.
-
-    Uses Haversine distance to decide which transport modes are plausible:
-      • < 1 km   → walk-only options
-      • 1–5 km   → single local bus + walk-only
-      • 5–15 km  → bus (possibly with one change)
-      • > 15 km  → bus and / or train combinations
-
-    Departure times are anchored to the current clock time so results
-    always look fresh.
-
-    Leg schema
-    ----------
-    Walking leg::
-
-        {
-            "mode": "walk",
-            "from_stop": "...",
-            "to_stop": "...",
-            "depart": "HH:MM",
-            "arrive": "HH:MM",
-            "duration_mins": int,
-            "distance_m": int
-        }
-
-    Transport leg::
-
-        {
-            "mode": "bus" | "train",
-            "service": "Stagecoach 1A",
-            "from_stop": "...",
-            "to_stop": "...",
-            "depart": "HH:MM",
-            "arrive": "HH:MM",
-            "duration_mins": int,
-            "intermediate_stops": [{"name": "...", "time": "HH:MM"}, ...]
-        }
-    """
-    import math, random
-    from datetime import datetime as _dt
-
-    # ------------------------------------------------------------------
-    # Haversine distance (km)
-    # ------------------------------------------------------------------
-    def _haversine(lat1, lon1, lat2, lon2):
-        R = 6371.0
-        la1, lo1, la2, lo2 = map(math.radians, [lat1, lon1, lat2, lon2])
-        dlat = la2 - la1
-        dlon = lo2 - lo1
-        a = math.sin(dlat / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin(dlon / 2) ** 2
-        return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-
-    # ------------------------------------------------------------------
-    # Time helpers
-    # ------------------------------------------------------------------
-    def _fmt(total_mins):
-        """Minutes since midnight → 'HH:MM'"""
-        h = (total_mins // 60) % 24
-        m = total_mins % 60
-        return f"{h:02d}:{m:02d}"
-
-    def _walk(frm, to, depart_mins, walk_mins, dist_m):
-        return {
-            "mode": "walk",
-            "from_stop": frm,
-            "to_stop": to,
-            "depart": _fmt(depart_mins),
-            "arrive": _fmt(depart_mins + walk_mins),
-            "duration_mins": walk_mins,
-            "distance_m": dist_m,
-        }
-
-    def _ride(mode, service, frm, to, depart_mins, arrive_mins, intermediates=None):
-        return {
-            "mode": mode,
-            "service": service,
-            "from_stop": frm,
-            "to_stop": to,
-            "depart": _fmt(depart_mins),
-            "arrive": _fmt(arrive_mins),
-            "duration_mins": arrive_mins - depart_mins,
-            "intermediate_stops": intermediates or [],
-        }
-
-    def _summarise(legs):
-        transport_modes = []
-        changes = 0
-        prev_was_ride = False
-        for leg in legs:
-            if leg["mode"] in ("bus", "train"):
-                if leg["mode"] not in transport_modes:
-                    transport_modes.append(leg["mode"])
-                if prev_was_ride:
-                    changes += 1
-                prev_was_ride = True
-            else:
-                prev_was_ride = False
-        sh, sm = map(int, legs[0]["depart"].split(":"))
-        eh, em = map(int, legs[-1]["arrive"].split(":"))
-        duration = (eh * 60 + em) - (sh * 60 + sm)
-        return {
-            "start_time": legs[0]["depart"],
-            "end_time": legs[-1]["arrive"],
-            "duration_mins": duration,
-            "transport": transport_modes,
-            "changes": changes,
-            "legs": legs,
-        }
-
-    # ------------------------------------------------------------------
-    # Calculate distance between stops
-    # ------------------------------------------------------------------
-    if from_lat is not None and to_lat is not None:
-        dist_km = _haversine(from_lat, from_lon, to_lat, to_lon)
-    else:
-        # Fallback: guess a medium distance if coordinates not supplied
-        dist_km = 8.0
-
-    # ------------------------------------------------------------------
-    # Real bus services by area / corridor
-    # ------------------------------------------------------------------
-    lancaster_local_services = [
-        ("Stagecoach 1", [
-            {"name": "Common Garden Street (Stop A), Lancaster", "offset_frac": 0.3},
-            {"name": "Lancaster Bus Station", "offset_frac": 0.5},
-            {"name": "Lancaster University", "offset_frac": 0.8},
-        ]),
-        ("Stagecoach 1A", [
-            {"name": "Lancaster Bus Station", "offset_frac": 0.35},
-            {"name": "Hala", "offset_frac": 0.6},
-            {"name": "Lancaster University", "offset_frac": 0.85},
-        ]),
-        ("Stagecoach 4", [
-            {"name": "Lancaster Bus Station", "offset_frac": 0.3},
-            {"name": "Scale Hall", "offset_frac": 0.6},
-            {"name": "Heysham", "offset_frac": 0.9},
-        ]),
-    ]
-
-    lancaster_regional_services = [
-        ("Stagecoach 100", [
-            {"name": "Lancaster Bus Station", "offset_frac": 0.15},
-            {"name": "Lancaster University", "offset_frac": 0.3},
-            {"name": "Carnforth", "offset_frac": 0.55},
-            {"name": "Morecambe Bus Station", "offset_frac": 0.85},
-        ]),
-        ("Stagecoach 41", [
-            {"name": "Lancaster Bus Station", "offset_frac": 0.1},
-            {"name": "Garstang", "offset_frac": 0.4},
-            {"name": "Preston Bus Station", "offset_frac": 0.85},
-        ]),
-        ("Stagecoach 42", [
-            {"name": "Lancaster Bus Station", "offset_frac": 0.1},
-            {"name": "Galgate", "offset_frac": 0.3},
-            {"name": "Garstang", "offset_frac": 0.5},
-            {"name": "Preston Bus Station", "offset_frac": 0.85},
-        ]),
-    ]
-
-    inter_city_services = [
-        ("Stagecoach 40", [
-            {"name": "Lancaster Bus Station", "offset_frac": 0.1},
-            {"name": "Garstang", "offset_frac": 0.35},
-            {"name": "Preston Bus Station", "offset_frac": 0.7},
-        ]),
-        ("Service 555", [
-            {"name": "Lancaster Bus Station", "offset_frac": 0.1},
-            {"name": "Carnforth", "offset_frac": 0.3},
-            {"name": "Kendal Bus Station", "offset_frac": 0.6},
-            {"name": "Windermere", "offset_frac": 0.85},
-        ]),
-    ]
-
-    train_services = [
-        ("Northern Rail", [
-            {"name": "Lancaster Railway Station", "offset_frac": 0.15},
-            {"name": "Carnforth Railway Station", "offset_frac": 0.35},
-            {"name": "Kendal Railway Station", "offset_frac": 0.65},
-            {"name": "Windermere Railway Station", "offset_frac": 0.9},
-        ]),
-        ("Avanti West Coast", [
-            {"name": "Lancaster Railway Station", "offset_frac": 0.1},
-            {"name": "Preston Railway Station", "offset_frac": 0.4},
-            {"name": "Wigan North Western", "offset_frac": 0.65},
-            {"name": "Manchester Piccadilly", "offset_frac": 0.9},
-        ]),
-        ("TransPennine Express", [
-            {"name": "Lancaster Railway Station", "offset_frac": 0.15},
-            {"name": "Preston Railway Station", "offset_frac": 0.45},
-            {"name": "Manchester Airport", "offset_frac": 0.85},
-        ]),
-    ]
-
-    # ------------------------------------------------------------------
-    # Determine base time (anchor to the current clock, rounded down to
-    # nearest 5 minutes, then generate departures over the next ~2 hours)
-    # ------------------------------------------------------------------
-    now = _dt.now()
-    base_mins = now.hour * 60 + (now.minute // 5) * 5  # rounded down to 5-min mark
-
-    random.seed(hash(from_stop + to_stop + str(now.hour)) % 2**32)
-
-    # ------------------------------------------------------------------
-    # Choose which service pool to draw from based on distance
-    # ------------------------------------------------------------------
-    routes = []
-
-    # Walking speed: ~80 m/min  ≈ 4.8 km/h
-    walk_speed_m_per_min = 80
-
-    if dist_km < 1.0:
-        # ------- Very short: walk-only options ---------
-        walk_m = int(dist_km * 1000)
-        walk_mins = max(3, int(walk_m / walk_speed_m_per_min))
-
-        for offset in [5, 10, 15]:
-            dep = base_mins + offset
-            routes.append(_summarise([
-                _walk(from_stop, to_stop, dep, walk_mins, walk_m),
-            ]))
-
-        # One bus option (if a bus happens to pass)
-        svc_name, intermediates = random.choice(lancaster_local_services)
-        dep = base_mins + 8
-        walk1 = 2
-        ride_dur = max(3, walk_mins - 1)
-        routes.append(_summarise([
-            _walk(from_stop, f"Nearest bus stop", dep, walk1, 120),
-            _ride("bus", svc_name, "Nearest bus stop", f"Nearest bus stop to destination",
-                  dep + walk1, dep + walk1 + ride_dur, []),
-            _walk(f"Nearest bus stop to destination", to_stop,
-                  dep + walk1 + ride_dur, 2, 100),
-        ]))
-
-    elif dist_km < 5.0:
-        # ------- Short-medium: local bus routes ---------
-        walk_m = int(dist_km * 1000)
-        walk_mins = max(5, int(walk_m / walk_speed_m_per_min))
-
-        # Walk-only option (if reasonable)
-        if dist_km < 3.0:
-            dep = base_mins + 5
-            routes.append(_summarise([
-                _walk(from_stop, to_stop, dep, walk_mins, walk_m),
-            ]))
-
-        # 3-4 bus options at different times
-        available = lancaster_local_services + lancaster_regional_services
-        random.shuffle(available)
-        for i, offset in enumerate([5, 20, 35, 55]):
-            svc_name, svc_stops = available[i % len(available)]
-            dep = base_mins + offset
-            walk1_mins = random.randint(2, 5)
-            walk1_m = walk1_mins * walk_speed_m_per_min
-
-            # Bus ride duration proportional to distance
-            ride_dur = max(5, int(dist_km * random.uniform(2.5, 4.0)))
-
-            # Pick 1-2 intermediate stops
-            n_int = min(len(svc_stops), random.randint(1, 2))
-            int_stops = random.sample(svc_stops, n_int)
-            int_stops.sort(key=lambda s: s["offset_frac"])
-            ride_start = dep + walk1_mins
-            intermediates = [
-                {"name": s["name"], "time": _fmt(int(ride_start + ride_dur * s["offset_frac"]))}
-                for s in int_stops
-            ]
-
-            walk2_mins = random.randint(2, 4)
-            walk2_m = walk2_mins * walk_speed_m_per_min
-            ride_end = ride_start + ride_dur
-
-            routes.append(_summarise([
-                _walk(from_stop, f"Nearby bus stop", dep, walk1_mins, walk1_m),
-                _ride("bus", svc_name, "Nearby bus stop",
-                      f"Bus stop near destination",
-                      ride_start, ride_end, intermediates),
-                _walk(f"Bus stop near destination", to_stop,
-                      ride_end, walk2_mins, walk2_m),
-            ]))
-
-    elif dist_km < 15.0:
-        # ------- Medium: regional bus, possibly with a change ---------
-        available = lancaster_regional_services + inter_city_services
-        random.shuffle(available)
-
-        for i, offset in enumerate([5, 20, 40, 65]):
-            svc_name, svc_stops = available[i % len(available)]
-            dep = base_mins + offset
-            walk1_mins = random.randint(3, 6)
-            walk1_m = walk1_mins * walk_speed_m_per_min
-
-            ride_dur = max(12, int(dist_km * random.uniform(2.0, 3.5)))
-            ride_start = dep + walk1_mins
-
-            n_int = min(len(svc_stops), random.randint(1, 3))
-            int_stops = random.sample(svc_stops, n_int)
-            int_stops.sort(key=lambda s: s["offset_frac"])
-            intermediates = [
-                {"name": s["name"], "time": _fmt(int(ride_start + ride_dur * s["offset_frac"]))}
-                for s in int_stops
-            ]
-
-            walk2_mins = random.randint(2, 5)
-            walk2_m = walk2_mins * walk_speed_m_per_min
-            ride_end = ride_start + ride_dur
-
-            routes.append(_summarise([
-                _walk(from_stop, f"Nearby bus stop", dep, walk1_mins, walk1_m),
-                _ride("bus", svc_name, "Nearby bus stop",
-                      f"Bus stop near destination",
-                      ride_start, ride_end, intermediates),
-                _walk(f"Bus stop near destination", to_stop,
-                      ride_end, walk2_mins, walk2_m),
-            ]))
-
-        # One option with a change
-        svc1_name, svc1_stops = random.choice(lancaster_regional_services)
-        svc2_name, svc2_stops = random.choice(inter_city_services)
-        dep = base_mins + 30
-        walk1_mins = 4
-        ride1_dur = max(8, int(dist_km * 1.2))
-        ride1_start = dep + walk1_mins
-        ride1_end = ride1_start + ride1_dur
-
-        transfer_stop = random.choice(svc1_stops)["name"]
-        transfer_walk = 3
-        ride2_dur = max(8, int(dist_km * 0.8))
-        ride2_start = ride1_end + transfer_walk
-        ride2_end = ride2_start + ride2_dur
-        walk2_mins = 3
-
-        routes.append(_summarise([
-            _walk(from_stop, "Nearby bus stop", dep, walk1_mins, walk1_mins * walk_speed_m_per_min),
-            _ride("bus", svc1_name, "Nearby bus stop", transfer_stop,
-                  ride1_start, ride1_end,
-                  [{"name": svc1_stops[0]["name"],
-                    "time": _fmt(int(ride1_start + ride1_dur * 0.5))}]),
-            _walk(transfer_stop, f"Connecting bus stop", ride1_end, transfer_walk, 200),
-            _ride("bus", svc2_name, "Connecting bus stop",
-                  "Bus stop near destination",
-                  ride2_start, ride2_end,
-                  [{"name": svc2_stops[0]["name"],
-                    "time": _fmt(int(ride2_start + ride2_dur * 0.5))}]),
-            _walk("Bus stop near destination", to_stop,
-                  ride2_end, walk2_mins, walk2_mins * walk_speed_m_per_min),
-        ]))
-
-    else:
-        # ------- Long distance: bus and/or train ---------
-        # Direct train options
-        for i, offset in enumerate([10, 45]):
-            svc_name, svc_stops = train_services[i % len(train_services)]
-            dep = base_mins + offset
-            walk1_mins = random.randint(5, 8)
-            walk1_m = walk1_mins * walk_speed_m_per_min
-
-            # Train speed: ~1.5-2.5 min per km
-            ride_dur = max(15, int(dist_km * random.uniform(1.2, 2.0)))
-            ride_start = dep + walk1_mins
-
-            n_int = min(len(svc_stops), random.randint(1, 3))
-            int_stops = random.sample(svc_stops, n_int)
-            int_stops.sort(key=lambda s: s["offset_frac"])
-            intermediates = [
-                {"name": s["name"], "time": _fmt(int(ride_start + ride_dur * s["offset_frac"]))}
-                for s in int_stops
-            ]
-
-            walk2_mins = random.randint(3, 6)
-            walk2_m = walk2_mins * walk_speed_m_per_min
-            ride_end = ride_start + ride_dur
-
-            routes.append(_summarise([
-                _walk(from_stop, "Nearby railway station", dep, walk1_mins, walk1_m),
-                _ride("train", svc_name, "Nearby railway station",
-                      "Railway station near destination",
-                      ride_start, ride_end, intermediates),
-                _walk("Railway station near destination", to_stop,
-                      ride_end, walk2_mins, walk2_m),
-            ]))
-
-        # Direct bus (slower but cheaper)
-        svc_name, svc_stops = random.choice(inter_city_services + lancaster_regional_services)
-        dep = base_mins + 15
-        walk1_mins = 5
-        ride_dur = max(25, int(dist_km * random.uniform(2.5, 4.0)))
-        ride_start = dep + walk1_mins
-        ride_end = ride_start + ride_dur
-
-        n_int = min(len(svc_stops), random.randint(2, 3))
-        int_stops = random.sample(svc_stops, n_int)
-        int_stops.sort(key=lambda s: s["offset_frac"])
-        intermediates = [
-            {"name": s["name"], "time": _fmt(int(ride_start + ride_dur * s["offset_frac"]))}
-            for s in int_stops
-        ]
-        walk2_mins = 4
-
-        routes.append(_summarise([
-            _walk(from_stop, "Nearby bus stop", dep, walk1_mins, walk1_mins * walk_speed_m_per_min),
-            _ride("bus", svc_name, "Nearby bus stop",
-                  "Bus stop near destination",
-                  ride_start, ride_end, intermediates),
-            _walk("Bus stop near destination", to_stop,
-                  ride_end, walk2_mins, walk2_mins * walk_speed_m_per_min),
-        ]))
-
-        # Bus → Train combination
-        svc_bus, bus_stops = random.choice(lancaster_regional_services)
-        svc_train, train_stops = random.choice(train_services)
-        dep = base_mins + 25
-        walk1_mins = 4
-        ride1_dur = max(10, int(dist_km * 0.8))
-        ride1_start = dep + walk1_mins
-        ride1_end = ride1_start + ride1_dur
-
-        transfer_stop_name = random.choice(bus_stops)["name"]
-        transfer_walk = random.randint(5, 8)
-        ride2_dur = max(15, int(dist_km * 1.0))
-        ride2_start = ride1_end + transfer_walk
-        ride2_end = ride2_start + ride2_dur
-        walk2_mins = 5
-
-        routes.append(_summarise([
-            _walk(from_stop, "Nearby bus stop", dep, walk1_mins, walk1_mins * walk_speed_m_per_min),
-            _ride("bus", svc_bus, "Nearby bus stop", transfer_stop_name,
-                  ride1_start, ride1_end,
-                  [{"name": bus_stops[0]["name"],
-                    "time": _fmt(int(ride1_start + ride1_dur * 0.5))}]),
-            _walk(transfer_stop_name, "Railway station", ride1_end, transfer_walk,
-                  transfer_walk * walk_speed_m_per_min),
-            _ride("train", svc_train, "Railway station",
-                  "Railway station near destination",
-                  ride2_start, ride2_end,
-                  [{"name": train_stops[0]["name"],
-                    "time": _fmt(int(ride2_start + ride2_dur * 0.4))}]),
-            _walk("Railway station near destination", to_stop,
-                  ride2_end, walk2_mins, walk2_mins * walk_speed_m_per_min),
-        ]))
-
-    # Sort by start time
-    return sorted(routes, key=lambda r: (
-        int(r["start_time"].split(":")[0]),
-        int(r["start_time"].split(":")[1]),
-    ))
-
-
 @app.route('/api/routes/search', methods=['POST'])
 def search_routes():
-    """Search for routes between two stops"""
+    """Search for routes between two stops using real transport API data.
+
+    The route planner fetches **live** rail departure boards from the SCC
+    transport API and combines them with a curated bus-service knowledge
+    base to return multi-modal route options with real times, operators,
+    and intermediate stops.
+    """
     try:
         data = request.get_json(silent=True) or {}
         from_stop = data.get('from', {})
@@ -1084,28 +642,19 @@ def search_routes():
         except (ValueError, TypeError):
             from_lat = from_lon = to_lat = to_lon = None
 
-        # Attempt to fetch from real API, fallback to mock data if unavailable
-        try:
-            routes_data = transport_service.get_routes(from_name, to_name)
-            if "error" not in routes_data and routes_data.get('routes'):
-                routes = routes_data.get('routes', [])
-            else:
-                app.logger.info(
-                    f"Real API unavailable or no routes found, "
-                    f"using mock data for {from_name} -> {to_name}"
-                )
-                routes = _generate_valid_mock_routes(
-                    from_name, to_name,
-                    from_lat=from_lat, from_lon=from_lon,
-                    to_lat=to_lat, to_lon=to_lon,
-                )
-        except Exception as e:
-            app.logger.warning(f"Real API fetch failed: {e}, using mock data")
-            routes = _generate_valid_mock_routes(
-                from_name, to_name,
-                from_lat=from_lat, from_lon=from_lon,
-                to_lat=to_lat, to_lon=to_lon,
-            )
+        app.logger.info(
+            f"Route search: {from_name} → {to_name}  "
+            f"({from_lat},{from_lon}) → ({to_lat},{to_lon})"
+        )
+
+        routes_data = transport_service.get_routes(
+            from_name, to_name,
+            from_lat=from_lat, from_lon=from_lon,
+            to_lat=to_lat, to_lon=to_lon,
+        )
+        routes = routes_data.get('routes', [])
+
+        app.logger.info(f"Route planner returned {len(routes)} routes")
 
         return jsonify({
             "from": from_name,
@@ -1145,6 +694,17 @@ def rail_corpus():
         return jsonify(data)
     except Exception as e:
         app.logger.error(f"Rail corpus error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/rail/departures/<crs_code>')
+def rail_departures(crs_code):
+    """Get real-time rail departures for a station by CRS code."""
+    try:
+        data = transport_service.get_rail_departures(crs_code.upper())
+        return jsonify(data)
+    except Exception as e:
+        app.logger.error(f"Rail departures error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -1341,10 +901,10 @@ def serve_static(path):
     return send_from_directory(app.static_folder, "index.html")
 
 
-# Database tables created on first run (disabled on network drives due to locking issues)
-# To initialize: python -c "from app import app, db; app.app_context().push(); db.create_all()"
-# with app.app_context():
-#     db.create_all()
+# Database tables – created on first run.
+# Using /tmp for SQLite to avoid network-drive locking issues.
+with app.app_context():
+    db.create_all()
 
 
 # ---------------------------------------------------------------------------

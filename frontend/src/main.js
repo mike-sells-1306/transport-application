@@ -1515,6 +1515,22 @@ function buildWalkLeg(leg) {
 }
 
 /**
+ * Build a wait/transfer-leg element for the detail panel
+ */
+function buildWaitLeg(leg) {
+  const el = document.createElement('div');
+  el.className = 'route-detail-leg route-detail-wait';
+  el.innerHTML = `
+    <span class="leg-icon icon-walk"></span>
+    <div class="leg-info">
+      <div class="leg-summary">Change at ${leg.from_stop} • ${leg.duration_mins} min wait</div>
+    </div>
+    <span class="leg-time">${leg.depart} – ${leg.arrive}</span>
+  `;
+  return el;
+}
+
+/**
  * Build a transport (bus / train) leg element for the detail panel
  */
 function buildTransportLeg(leg) {
@@ -1569,6 +1585,8 @@ function toggleRouteDetail(routeRow, route) {
     route.legs.forEach(leg => {
       if (leg.mode === 'walk') {
         detail.appendChild(buildWalkLeg(leg));
+      } else if (leg.mode === 'wait') {
+        detail.appendChild(buildWaitLeg(leg));
       } else {
         detail.appendChild(buildTransportLeg(leg));
       }

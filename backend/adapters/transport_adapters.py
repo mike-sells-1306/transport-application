@@ -145,7 +145,7 @@ class NaPTANAdapter:
             {"ATCOCode": "2400LAC30001", "NaptanCode": "lanwtlan", "CommonName": "Lancaster Bus Station", "Indicator": "Bay 1", "LocalityName": "Lancaster", "Latitude": "54.0488", "Longitude": "-2.8013", "StopType": "bus"},
             {"ATCOCode": "2400LAC30002", "NaptanCode": "lanwtla2", "CommonName": "Lancaster Bus Station", "Indicator": "Bay 2", "LocalityName": "Lancaster", "Latitude": "54.0490", "Longitude": "-2.8015", "StopType": "bus"},
             {"ATCOCode": "9100LANC", "NaptanCode": "lancrail", "CommonName": "Lancaster Railway Station", "Indicator": "", "LocalityName": "Lancaster", "Latitude": "54.0488", "Longitude": "-2.8013", "StopType": "rail"},
-            {"ATCOCode": "2400LAC30010", "NaptanCode": "lanwtlup", "CommonName": "Underpass", "Indicator": "by", "LocalityName": "Lancaster", "Latitude": "54.0465", "Longitude": "-2.8001", "StopType": "bus"},
+            {"ATCOCode": "2400LAC30010", "NaptanCode": "lanwtlup", "CommonName": "Underpass", "Indicator": "by", "LocalityName": "Lancaster", "Latitude": "54.010236", "Longitude": "-2.785501", "StopType": "bus"},
             {"ATCOCode": "2400LAC30011", "NaptanCode": "lanwtlcv", "CommonName": "Lancaster University", "Indicator": "Main Entrance", "LocalityName": "Lancaster", "Latitude": "54.0104", "Longitude": "-2.7856", "StopType": "bus"},
             # --- Morecambe ---
             {"ATCOCode": "2400LAD40001", "NaptanCode": "lanwtmor", "CommonName": "Morecambe Bus Station", "Indicator": "Stop A", "LocalityName": "Morecambe", "Latitude": "54.0721", "Longitude": "-2.8651", "StopType": "bus"},
@@ -266,47 +266,1275 @@ class RailAdapter:
             print(f"Error fetching rail corpus: {e}")
             return {"error": str(e)}
 
-class JourneyPlannerAdapter:
-    """Adapter for journey planning API to fetch routes between two locations"""
-    def fetch_routes(self, from_name, to_name, date=None, time=None):
+class RailDeparturesAdapter:
+    """Fetches and parses real-time rail departure boards from the SCC API.
+
+    Endpoint: /rail/departures/<CRS>
+    Returns XML with namespaced elements describing upcoming train (and rail-
+    replacement bus) services, including scheduled/estimated times, operators,
+    origins, destinations and subsequent calling points.
+    """
+
+    NS = {
+        'lt':  'http://thalesgroup.com/RTTI/2012-01-13/ldb/types',
+        'lt4': 'http://thalesgroup.com/RTTI/2015-11-27/ldb/types',
+        'lt5': 'http://thalesgroup.com/RTTI/2016-02-16/ldb/types',
+        'lt8': 'http://thalesgroup.com/RTTI/2021-11-01/ldb/types',
+    }
+
+    def fetch_departures(self, crs_code):
+        """Fetch the departure board for *crs_code* and return structured data.
+
+        Returns dict::
+
+            {
+                "station": "Lancaster",
+                "crs": "LAN",
+                "services": [ … ]
+            }
+
+        Each service dict contains *std*, *etd*, *platform*, *operator*,
+        *operator_code*, *service_type*, *service_id*, *origin*, *destination*,
+        and *calling_points* (list of dicts with *name*, *crs*, *scheduled*,
+        *estimated*).
         """
-        Fetch routes from the transport API.
-        Args:
-            from_name: Origin stop name
-            to_name: Destination stop name
-            date: Optional date in YYYY-MM-DD format
-            time: Optional time in HH:MM format
-        Returns:
-            Dictionary with routes array and metadata
-        """
-        url = f"{BASE_URL}/journey/plan"
-        params = {
-            "from": from_name,
-            "to": to_name,
-        }
-        if date:
-            params["date"] = date
-        if time:
-            params["time"] = time
-        
+        url = f"{BASE_URL}/rail/departures/{crs_code}"
         try:
-            response = requests.get(url, params=params, timeout=15, allow_redirects=True)
+            response = requests.get(url, timeout=15)
             response.raise_for_status()
-            return response.json()
+            return self._parse(response.content, crs_code)
         except Exception as e:
-            print(f"Error fetching routes from journey planner: {e}")
-            return {"error": str(e), "routes": []}
+            print(f"Error fetching rail departures for {crs_code}: {e}")
+            return {"station": crs_code, "crs": crs_code, "services": [], "error": str(e)}
 
-# For live feeds (STOMP/AMQP), placeholder for future implementation
-class LiveFeedAdapter:
-    def subscribe_train_mvt(self):
-        # Placeholder: Would use STOMP/AMQP client to subscribe to /topic/TRAIN_MVT_ALL_TOC
-        pass
+    # ------------------------------------------------------------------
+    # Internal XML parsing
+    # ------------------------------------------------------------------
+    def _parse(self, xml_data, crs_code):
+        root = ET.fromstring(xml_data)
+        ns = self.NS
 
-    def subscribe_td(self):
-        # Placeholder: Would use STOMP/AMQP client to subscribe to /topic/TD_ALL_SIG_AREA
-        pass
+        result = {
+            "station": root.findtext('lt4:locationName', namespaces=ns) or crs_code,
+            "crs": root.findtext('lt4:crs', namespaces=ns) or crs_code,
+            "services": [],
+        }
 
-    def subscribe_vstp(self):
-        # Placeholder: Would use STOMP/AMQP client to subscribe to /topic/VSTP_ALL
-        pass
+        # Train services
+        for svc in root.findall('.//lt8:trainServices/lt8:service', ns):
+            parsed = self._parse_service(svc, ns, 'train')
+            if parsed:
+                result["services"].append(parsed)
+
+        # Rail-replacement bus services
+        for svc in root.findall('.//lt8:busServices/lt8:service', ns):
+            parsed = self._parse_service(svc, ns, 'bus')
+            if parsed:
+                result["services"].append(parsed)
+
+        return result
+
+    def _parse_service(self, elem, ns, default_type):
+        # Skip cancelled services
+        if (elem.findtext('lt4:isCancelled', namespaces=ns) or '').lower() == 'true':
+            return None
+
+        std = elem.findtext('lt4:std', namespaces=ns) or ''
+        etd = elem.findtext('lt4:etd', namespaces=ns) or ''
+
+        # Origin
+        origin_loc = elem.find('.//lt5:origin/lt4:location', ns)
+        origin = {
+            'name': (origin_loc.findtext('lt4:locationName', namespaces=ns) or '') if origin_loc is not None else '',
+            'crs':  (origin_loc.findtext('lt4:crs', namespaces=ns) or '') if origin_loc is not None else '',
+        }
+
+        # Destination
+        dest_loc = elem.find('.//lt5:destination/lt4:location', ns)
+        destination = {
+            'name': (dest_loc.findtext('lt4:locationName', namespaces=ns) or '') if dest_loc is not None else '',
+            'crs':  (dest_loc.findtext('lt4:crs', namespaces=ns) or '') if dest_loc is not None else '',
+        }
+
+        # Calling points (skip individually cancelled stops)
+        calling_points = []
+        for cp in elem.findall('.//lt8:callingPoint', ns):
+            if (cp.findtext('lt8:isCancelled', namespaces=ns) or '').lower() == 'true':
+                continue
+            calling_points.append({
+                'name':      cp.findtext('lt8:locationName', namespaces=ns) or '',
+                'crs':       cp.findtext('lt8:crs', namespaces=ns) or '',
+                'scheduled': cp.findtext('lt8:st', namespaces=ns) or '',
+                'estimated': cp.findtext('lt8:et', namespaces=ns) or '',
+            })
+
+        return {
+            'std':           std,
+            'etd':           etd,
+            'platform':      elem.findtext('lt4:platform', namespaces=ns) or '',
+            'operator':      elem.findtext('lt4:operator', namespaces=ns) or '',
+            'operator_code': elem.findtext('lt4:operatorCode', namespaces=ns) or '',
+            'service_type':  elem.findtext('lt4:serviceType', namespaces=ns) or default_type,
+            'service_id':    elem.findtext('lt4:serviceID', namespaces=ns) or '',
+            'origin':        origin,
+            'destination':   destination,
+            'calling_points': calling_points,
+        }
+
+
+# ======================================================================
+# Route Planner – builds multi-modal routes from real data
+# ======================================================================
+import math
+from datetime import datetime as _dt, timedelta as _td
+
+
+class RoutePlannerAdapter:
+    """Plans multi-modal routes using **real** rail departure data from the
+    SCC transport API combined with a curated knowledge-base of bus
+    services in the Lancashire / Cumbria region.
+
+    Rail legs use live departure-board data (times, operators, calling
+    points).  Bus legs use real route numbers and stop sequences with
+    frequency-based departure estimation.
+    """
+
+    # Walking speed in metres per minute (~4.8 km/h)
+    WALK_SPEED = 80
+    # Factor to convert straight-line distance to walking distance
+    WALK_FACTOR = 1.35
+
+    # ------------------------------------------------------------------
+    # Railway station database  (CRS → name, lat, lon)
+    # ------------------------------------------------------------------
+    STATIONS = {
+        'LAN': {'name': 'Lancaster',                  'lat': 54.0488, 'lon': -2.8013},
+        'PRE': {'name': 'Preston',                    'lat': 53.7578, 'lon': -2.7081},
+        'BPN': {'name': 'Blackpool North',            'lat': 53.8212, 'lon': -3.0507},
+        'BPS': {'name': 'Blackpool South',            'lat': 53.8044, 'lon': -3.0480},
+        'BBN': {'name': 'Blackburn',                  'lat': 53.7467, 'lon': -2.4806},
+        'MCM': {'name': 'Morecambe',                  'lat': 54.0716, 'lon': -2.8632},
+        'CNF': {'name': 'Carnforth',                  'lat': 54.1285, 'lon': -2.7700},
+        'WDM': {'name': 'Windermere',                 'lat': 54.3798, 'lon': -2.9038},
+        'BIF': {'name': 'Barrow-in-Furness',          'lat': 54.1120, 'lon': -3.2261},
+        'MAN': {'name': 'Manchester Piccadilly',      'lat': 53.4774, 'lon': -2.2309},
+        'MCV': {'name': 'Manchester Victoria',        'lat': 53.4879, 'lon': -2.2436},
+        'LIV': {'name': 'Liverpool Lime Street',      'lat': 53.4074, 'lon': -2.9778},
+        'KKM': {'name': 'Kirkham & Wesham',           'lat': 53.7830, 'lon': -2.8810},
+        'PFY': {'name': 'Poulton-le-Fylde',           'lat': 53.8474, 'lon': -2.9927},
+        'OXN': {'name': 'Oxenholme Lake District',    'lat': 54.3060, 'lon': -2.7217},
+        'GOS': {'name': 'Grange-over-Sands',          'lat': 54.1935, 'lon': -2.9102},
+        'CAK': {'name': 'Cark',                       'lat': 54.1842, 'lon': -2.9702},
+        'LTM': {'name': 'Lytham',                     'lat': 53.7392, 'lon': -2.9614},
+        'SAN': {'name': "St Annes-on-the-Sea",        'lat': 53.7528, 'lon': -3.0253},
+        'HYM': {'name': 'Heysham Port',               'lat': 54.0323, 'lon': -2.9158},
+        'ULV': {'name': 'Ulverston',                  'lat': 54.1940, 'lon': -3.0900},
+        'SVR': {'name': 'Silverdale',                 'lat': 54.1670, 'lon': -2.8060},
+        'ARN': {'name': 'Arnside',                    'lat': 54.2040, 'lon': -2.8330},
+        'BAR': {'name': 'Bare Lane',                  'lat': 54.0610, 'lon': -2.8430},
+        'CRL': {'name': 'Chorley',                    'lat': 53.6510, 'lon': -2.6320},
+        'BON': {'name': 'Bolton',                     'lat': 53.5830, 'lon': -2.4330},
+        'WGN': {'name': 'Wigan North Western',        'lat': 53.5440, 'lon': -2.6330},
+        'DGT': {'name': 'Deansgate',                  'lat': 53.4746, 'lon': -2.2504},
+        'MCO': {'name': 'Manchester Oxford Road',     'lat': 53.4738, 'lon': -2.2421},
+    }
+
+    # Reverse lookup: CRS codes by approximate locality name (lowercase)
+    _LOCALITY_CRS = {
+        'lancaster':           ['LAN'],
+        'preston':             ['PRE'],
+        'blackpool':           ['BPN', 'BPS'],
+        'blackburn':           ['BBN'],
+        'morecambe':           ['MCM'],
+        'carnforth':           ['CNF'],
+        'windermere':          ['WDM'],
+        'barrow-in-furness':   ['BIF'],
+        'barrow':              ['BIF'],
+        'manchester':          ['MAN', 'MCV'],
+        'liverpool':           ['LIV'],
+        'kirkham':             ['KKM'],
+        'poulton-le-fylde':    ['PFY'],
+        'poulton':             ['PFY'],
+        'kendal':              ['OXN'],
+        'oxenholme':           ['OXN'],
+        'grange-over-sands':   ['GOS'],
+        'grange':              ['GOS'],
+        'cartmel':             ['CAK'],
+        'cark':                ['CAK'],
+        'lytham':              ['LTM'],
+        'lytham st annes':     ['LTM', 'SAN'],
+        'st annes':            ['SAN'],
+        'heysham':             ['HYM'],
+        'ulverston':           ['ULV'],
+        'silverdale':          ['SVR'],
+        'arnside':             ['ARN'],
+        'bolton':              ['BON'],
+        'wigan':               ['WGN'],
+        'chorley':             ['CRL'],
+    }
+
+    # ------------------------------------------------------------------
+    # Known bus services  (real route numbers, stops, frequencies)
+    # ------------------------------------------------------------------
+    BUS_SERVICES = [
+        {
+            'service': 'Stagecoach 1',
+            'operator': 'Stagecoach',
+            'frequency_mins': 10,
+            'segment_mins': [2, 10, 8, 3],
+            'stops': [
+                {'name': 'Lancaster Bus Station',     'lat': 54.0488, 'lon': -2.8013},
+                {'name': 'Common Garden Street',      'lat': 54.0480, 'lon': -2.7995},
+                {'name': 'Hala',                      'lat': 54.0370, 'lon': -2.7930},
+                {'name': 'Underpass',                 'lat': 54.010236, 'lon': -2.785501},
+                {'name': 'Lancaster University',      'lat': 54.0104, 'lon': -2.7856},
+            ],
+        },
+        {
+            'service': 'Stagecoach 1A',
+            'operator': 'Stagecoach',
+            'frequency_mins': 10,
+            'segment_mins': [6, 12, 3],
+            'stops': [
+                {'name': 'Lancaster Bus Station',     'lat': 54.0488, 'lon': -2.8013},
+                {'name': 'Hala',                      'lat': 54.0370, 'lon': -2.7930},
+                {'name': 'Underpass',                 'lat': 54.010236, 'lon': -2.785501},
+                {'name': 'Lancaster University',      'lat': 54.0104, 'lon': -2.7856},
+            ],
+        },
+        {
+            'service': 'Stagecoach 3',
+            'operator': 'Stagecoach',
+            'frequency_mins': 12,
+            'stops': [
+                {'name': 'Lancaster Bus Station',     'lat': 54.0488, 'lon': -2.8013},
+                {'name': 'Skerton',                   'lat': 54.0560, 'lon': -2.8050},
+                {'name': 'Morecambe Bus Station',     'lat': 54.0721, 'lon': -2.8651},
+            ],
+        },
+        {
+            'service': 'Stagecoach 4',
+            'operator': 'Stagecoach',
+            'frequency_mins': 30,
+            'stops': [
+                {'name': 'Lancaster Bus Station',     'lat': 54.0488, 'lon': -2.8013},
+                {'name': 'Scale Hall',                'lat': 54.0530, 'lon': -2.8250},
+                {'name': 'Heysham Bus Stop',          'lat': 54.0495, 'lon': -2.8903},
+            ],
+        },
+        {
+            'service': 'Stagecoach 40',
+            'operator': 'Stagecoach',
+            'frequency_mins': 30,
+            'stops': [
+                {'name': 'Lancaster Bus Station',     'lat': 54.0488, 'lon': -2.8013},
+                {'name': 'Garstang Cross',            'lat': 53.9020, 'lon': -2.7742},
+                {'name': 'Preston Bus Station',       'lat': 53.7593, 'lon': -2.6993},
+            ],
+        },
+        {
+            'service': 'Stagecoach 41',
+            'operator': 'Stagecoach',
+            'frequency_mins': 30,
+            'stops': [
+                {'name': 'Lancaster Bus Station',     'lat': 54.0488, 'lon': -2.8013},
+                {'name': 'Galgate',                   'lat': 53.9920, 'lon': -2.7850},
+                {'name': 'Garstang Cross',            'lat': 53.9020, 'lon': -2.7742},
+                {'name': 'Preston Bus Station',       'lat': 53.7593, 'lon': -2.6993},
+            ],
+        },
+        {
+            'service': 'Stagecoach 42',
+            'operator': 'Stagecoach',
+            'frequency_mins': 60,
+            'stops': [
+                {'name': 'Lancaster Bus Station',     'lat': 54.0488, 'lon': -2.8013},
+                {'name': 'Galgate',                   'lat': 53.9920, 'lon': -2.7850},
+                {'name': 'Garstang Cross',            'lat': 53.9020, 'lon': -2.7742},
+                {'name': 'Broughton',                 'lat': 53.8150, 'lon': -2.7250},
+                {'name': 'Preston Bus Station',       'lat': 53.7593, 'lon': -2.6993},
+            ],
+        },
+        {
+            'service': 'Stagecoach 100',
+            'operator': 'Stagecoach',
+            'frequency_mins': 20,
+            'stops': [
+                {'name': 'Lancaster Bus Station',     'lat': 54.0488, 'lon': -2.8013},
+                {'name': 'Lancaster University',      'lat': 54.0104, 'lon': -2.7856},
+                {'name': 'Carnforth Bus Stop',        'lat': 54.1282, 'lon': -2.7701},
+                {'name': 'Morecambe Bus Station',     'lat': 54.0721, 'lon': -2.8651},
+            ],
+        },
+        {
+            'service': 'Stagecoach 555',
+            'operator': 'Stagecoach',
+            'frequency_mins': 60,
+            'stops': [
+                {'name': 'Lancaster Bus Station',     'lat': 54.0488, 'lon': -2.8013},
+                {'name': 'Carnforth Bus Stop',        'lat': 54.1282, 'lon': -2.7701},
+                {'name': 'Kendal Bus Station',        'lat': 54.3290, 'lon': -2.7472},
+                {'name': 'Windermere Bus Stop',       'lat': 54.3792, 'lon': -2.9063},
+                {'name': 'Ambleside Bus Stop',        'lat': 54.4316, 'lon': -2.9622},
+                {'name': 'Keswick Bus Station',       'lat': 54.6010, 'lon': -3.1376},
+            ],
+        },
+        {
+            'service': 'Stagecoach 6',
+            'operator': 'Stagecoach',
+            'frequency_mins': 20,
+            'stops': [
+                {'name': 'Preston Bus Station',       'lat': 53.7593, 'lon': -2.6993},
+                {'name': 'Kirkham Market Square',     'lat': 53.7827, 'lon': -2.8715},
+                {'name': 'Blackpool North Bus Station', 'lat': 53.8212, 'lon': -3.0507},
+            ],
+        },
+        {
+            'service': 'Arriva 59',
+            'operator': 'Arriva',
+            'frequency_mins': 30,
+            'stops': [
+                {'name': 'Preston Bus Station',       'lat': 53.7593, 'lon': -2.6993},
+                {'name': 'Blackburn Bus Station',     'lat': 53.7474, 'lon': -2.4840},
+            ],
+        },
+        {
+            'service': 'Stagecoach 599',
+            'operator': 'Stagecoach',
+            'frequency_mins': 20,
+            'stops': [
+                {'name': 'Kendal Bus Station',        'lat': 54.3290, 'lon': -2.7472},
+                {'name': 'Windermere Bus Stop',       'lat': 54.3792, 'lon': -2.9063},
+                {'name': 'Bowness-on-Windermere',     'lat': 54.3620, 'lon': -2.9223},
+                {'name': 'Ambleside Bus Stop',        'lat': 54.4316, 'lon': -2.9622},
+            ],
+        },
+        {
+            'service': 'Blackpool Tramway',
+            'operator': 'Blackpool Transport',
+            'frequency_mins': 10,
+            'stops': [
+                {'name': 'Fleetwood Bus Station',     'lat': 53.9220, 'lon': -3.0327},
+                {'name': 'Poulton-le-Fylde Bus Stop', 'lat': 53.8461, 'lon': -2.9905},
+                {'name': 'Blackpool North Bus Station','lat': 53.8212, 'lon': -3.0507},
+                {'name': 'Blackpool Tower',           'lat': 53.8159, 'lon': -3.0553},
+                {'name': 'Blackpool Pleasure Beach',  'lat': 53.7891, 'lon': -3.0563},
+            ],
+        },
+        {
+            'service': 'Stagecoach X1',
+            'operator': 'Stagecoach',
+            'frequency_mins': 30,
+            'stops': [
+                {'name': 'Lancaster Bus Station',     'lat': 54.0488, 'lon': -2.8013},
+                {'name': 'Morecambe Bus Station',     'lat': 54.0721, 'lon': -2.8651},
+            ],
+        },
+        {
+            'service': 'Kirkby Lonsdale Coaches 567',
+            'operator': 'Kirkby Lonsdale Coaches',
+            'frequency_mins': 120,
+            'stops': [
+                {'name': 'Lancaster Bus Station',     'lat': 54.0488, 'lon': -2.8013},
+                {'name': 'Carnforth Bus Stop',        'lat': 54.1282, 'lon': -2.7701},
+                {'name': 'Kirkby Lonsdale Market Square', 'lat': 54.2018, 'lon': -2.5967},
+            ],
+        },
+    ]
+
+    def __init__(self):
+        self.rail = RailDeparturesAdapter()
+        self._live_bus_cache = None
+        self._live_bus_cache_ts = None
+
+    # ------------------------------------------------------------------
+    # Geometry helpers
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _haversine(lat1, lon1, lat2, lon2):
+        """Haversine distance in kilometres."""
+        R = 6371.0
+        la1, lo1, la2, lo2 = map(math.radians, [lat1, lon1, lat2, lon2])
+        dlat = la2 - la1
+        dlon = lo2 - lo1
+        a = math.sin(dlat / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin(dlon / 2) ** 2
+        return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+    # ------------------------------------------------------------------
+    # Time helpers
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _hhmm_to_mins(hhmm):
+        """'HH:MM' → minutes since midnight."""
+        parts = hhmm.split(':')
+        return int(parts[0]) * 60 + int(parts[1])
+
+    @staticmethod
+    def _fmt(total_mins):
+        """Minutes since midnight → 'HH:MM'."""
+        h = (total_mins // 60) % 24
+        m = total_mins % 60
+        return f"{h:02d}:{m:02d}"
+
+    @staticmethod
+    def _iso_to_mins(iso_text):
+        """ISO datetime string → minutes since midnight (local date)."""
+        if not iso_text:
+            return None
+        try:
+            dt = _dt.fromisoformat(iso_text.replace('Z', '+00:00'))
+            return dt.hour * 60 + dt.minute
+        except Exception:
+            return None
+
+    @staticmethod
+    def _line_code(service_name):
+        """Extract public line code from a service label.
+
+        Example: 'Stagecoach 1A' -> '1A'
+        """
+        if not service_name:
+            return ''
+        return service_name.split()[-1].upper()
+
+    def _fetch_live_bus_activity(self):
+        """Fetch and parse SCC SIRI live bus feed.
+
+        Returns list of dicts with keys: line, origin_dep, dest_arr.
+        Caches results for 60 seconds to avoid repeated API calls.
+        """
+        now = _dt.utcnow()
+        if self._live_bus_cache is not None and self._live_bus_cache_ts is not None:
+            age = (now - self._live_bus_cache_ts).total_seconds()
+            if age < 60:
+                return self._live_bus_cache
+
+        url = f"{BASE_URL}/bus/live"
+        try:
+            response = requests.get(url, timeout=12)
+            response.raise_for_status()
+            root = ET.fromstring(response.content)
+            ns = {'s': 'http://www.siri.org.uk/siri'}
+
+            activities = []
+            for j in root.findall('.//s:VehicleActivity/s:MonitoredVehicleJourney', ns):
+                line = (j.findtext('s:PublishedLineName', namespaces=ns) or
+                        j.findtext('s:LineRef', namespaces=ns) or '').strip().upper()
+                if not line:
+                    continue
+
+                origin_dep = self._iso_to_mins(
+                    j.findtext('s:OriginAimedDepartureTime', namespaces=ns) or ''
+                )
+                dest_arr = self._iso_to_mins(
+                    j.findtext('s:DestinationAimedArrivalTime', namespaces=ns) or ''
+                )
+                if origin_dep is None or dest_arr is None:
+                    continue
+
+                dur = dest_arr - origin_dep
+                if dur < 0:
+                    dur += 24 * 60
+                if dur <= 0 or dur > 300:
+                    continue
+
+                activities.append({
+                    'line': line,
+                    'origin_dep': origin_dep,
+                    'dest_arr': dest_arr,
+                    'duration': dur,
+                })
+
+            self._live_bus_cache = activities
+            self._live_bus_cache_ts = now
+            return activities
+        except Exception:
+            self._live_bus_cache = []
+            self._live_bus_cache_ts = now
+            return []
+
+    def _live_departures_for_service(self, service_name, now_mins):
+        """Return upcoming live departures (origin-time) and median duration.
+
+        If no matching live journeys are available, returns ([], None).
+        """
+        line = self._line_code(service_name)
+        if not line:
+            return [], None
+
+        acts = self._fetch_live_bus_activity()
+        matching = [a for a in acts if a['line'] == line]
+        if not matching:
+            return [], None
+
+        departures = []
+        durations = []
+        for a in matching:
+            dep = a['origin_dep']
+            while dep < now_mins - 5:
+                dep += 24 * 60
+            if dep <= now_mins + 180:
+                departures.append(dep)
+                durations.append(a['duration'])
+
+        departures.sort()
+        if departures:
+            # De-duplicate close duplicates from repeated feed entries.
+            deduped = []
+            for d in departures:
+                if not deduped or abs(d - deduped[-1]) >= 2:
+                    deduped.append(d)
+            departures = deduped
+
+        median_duration = None
+        if durations:
+            durations.sort()
+            median_duration = durations[len(durations) // 2]
+        return departures, median_duration
+
+    def _estimate_segment_mins(self, svc):
+        """Estimate per-segment minutes for a service.
+
+        Uses explicit segment_mins if provided, otherwise computes a realistic
+        estimate from distance with route-shape inflation and dwell times.
+        """
+        stops = svc['stops']
+        explicit = svc.get('segment_mins')
+        if explicit and len(explicit) == max(0, len(stops) - 1):
+            return explicit[:]
+
+        segment_mins = []
+        for i in range(len(stops) - 1):
+            d_km = self._haversine(
+                stops[i]['lat'], stops[i]['lon'],
+                stops[i + 1]['lat'], stops[i + 1]['lon'],
+            )
+            # Inflate straight-line distance to approximate roads.
+            # Use stronger inflation on short urban hops and milder inflation
+            # on long inter-urban legs.
+            if d_km < 3:
+                road_factor = 1.60
+                speed = 20
+            elif d_km < 10:
+                road_factor = 1.35
+                speed = 28
+            else:
+                road_factor = 1.15
+                speed = 45
+
+            road_km = d_km * road_factor
+            seg = max(2, int(round((road_km / speed) * 60)))
+            # Add stop dwell/traffic slack.
+            seg += 1
+            segment_mins.append(seg)
+        return segment_mins
+
+    # ------------------------------------------------------------------
+    # Station / bus-stop lookup
+    # ------------------------------------------------------------------
+    def _find_nearest_stations(self, lat, lon, max_km=8.0, max_results=3):
+        """Return list of (crs, info_dict, distance_km) sorted by distance."""
+        hits = []
+        for crs, info in self.STATIONS.items():
+            d = self._haversine(lat, lon, info['lat'], info['lon'])
+            if d <= max_km:
+                hits.append((crs, info, d))
+        hits.sort(key=lambda x: x[2])
+        return hits[:max_results]
+
+    def _crs_for_locality(self, stop_name):
+        """Try to extract a CRS code from a stop's display name / locality."""
+        lower = stop_name.lower()
+        for locality, codes in self._LOCALITY_CRS.items():
+            if locality in lower:
+                return codes
+        return []
+
+    def _find_bus_routes(self, from_lat, from_lon, to_lat, to_lon,
+                         max_walk_km=1.5):
+        """Return bus services where at least one stop is near the origin and
+        a *later* stop is near the destination.
+
+        Returns list of dicts::
+
+            {
+                'service': <BUS_SERVICE dict>,
+                'board_idx': int,   # index of boarding stop
+                'alight_idx': int,  # index of alighting stop
+                'walk_to_km': float,
+                'walk_from_km': float,
+            }
+        """
+        results = []
+        for svc in self.BUS_SERVICES:
+            stops = svc['stops']
+            best_board = None
+            best_alight = None
+            for i, s in enumerate(stops):
+                d = self._haversine(from_lat, from_lon, s['lat'], s['lon'])
+                if d <= max_walk_km:
+                    if best_board is None or d < best_board[1]:
+                        best_board = (i, d)
+            if best_board is None:
+                continue
+            for j in range(best_board[0] + 1, len(stops)):
+                d = self._haversine(to_lat, to_lon, stops[j]['lat'], stops[j]['lon'])
+                if d <= max_walk_km:
+                    if best_alight is None or d < best_alight[1]:
+                        best_alight = (j, d)
+            # Also check reverse direction
+            best_board_rev = None
+            best_alight_rev = None
+            for i, s in enumerate(stops):
+                d = self._haversine(to_lat, to_lon, s['lat'], s['lon'])
+                if d <= max_walk_km:
+                    if best_board_rev is None or d < best_board_rev[1]:
+                        best_board_rev = (i, d)
+            if best_board_rev is not None:
+                for j in range(best_board_rev[0] + 1, len(stops)):
+                    d = self._haversine(from_lat, from_lon, stops[j]['lat'], stops[j]['lon'])
+                    if d <= max_walk_km:
+                        if best_alight_rev is None or d < best_alight_rev[1]:
+                            best_alight_rev = (j, d)
+                # Reverse means: origin walks to a later stop, destination walks to earlier
+                # Actually for reverse we need to reverse the stop order
+            # Reverse direction (bus going the other way)
+            if best_alight_rev is not None and best_board_rev is not None:
+                rev_stops = list(reversed(stops))
+                rev_board_idx = len(stops) - 1 - best_board_rev[0]
+                rev_alight_idx = len(stops) - 1 - best_alight_rev[0]
+                if rev_board_idx < rev_alight_idx:
+                    # Build reversed stop list match
+                    from_walk = self._haversine(from_lat, from_lon,
+                                                rev_stops[rev_board_idx]['lat'],
+                                                rev_stops[rev_board_idx]['lon'])
+                    to_walk = self._haversine(to_lat, to_lon,
+                                              rev_stops[rev_alight_idx]['lat'],
+                                              rev_stops[rev_alight_idx]['lon'])
+                    results.append({
+                        'service': {**svc, 'stops': rev_stops},
+                        'board_idx': rev_board_idx,
+                        'alight_idx': rev_alight_idx,
+                        'walk_to_km': from_walk,
+                        'walk_from_km': to_walk,
+                    })
+
+            if best_alight is not None:
+                results.append({
+                    'service': svc,
+                    'board_idx': best_board[0],
+                    'alight_idx': best_alight[0],
+                    'walk_to_km': best_board[1],
+                    'walk_from_km': best_alight[1],
+                })
+        return results
+
+    # ------------------------------------------------------------------
+    # Leg / route builders
+    # ------------------------------------------------------------------
+    def _walk_leg(self, frm, to, depart_mins, dist_km):
+        walk_m = int(dist_km * 1000 * self.WALK_FACTOR)
+        walk_mins = max(1, int(walk_m / self.WALK_SPEED))
+        return {
+            'mode': 'walk',
+            'from_stop': frm,
+            'to_stop': to,
+            'depart': self._fmt(depart_mins),
+            'arrive': self._fmt(depart_mins + walk_mins),
+            'duration_mins': walk_mins,
+            'distance_m': walk_m,
+        }
+
+    @staticmethod
+    def _summarise(legs):
+        transport_modes = []
+        changes = 0
+        prev_ride = False
+        for leg in legs:
+            if leg['mode'] in ('bus', 'train'):
+                if leg['mode'] not in transport_modes:
+                    transport_modes.append(leg['mode'])
+                if prev_ride:
+                    changes += 1
+                prev_ride = True
+            elif leg['mode'] == 'wait':
+                # Transfer wait at a hub – don't reset prev_ride so the
+                # next ride counts as a change.
+                pass
+            else:
+                # A real walk leg resets prev_ride
+                if leg.get('distance_m', 0) > 0:
+                    prev_ride = False
+        sh, sm = map(int, legs[0]['depart'].split(':'))
+        eh, em = map(int, legs[-1]['arrive'].split(':'))
+        duration = (eh * 60 + em) - (sh * 60 + sm)
+        if duration < 0:
+            duration += 24 * 60  # crosses midnight
+        return {
+            'start_time': legs[0]['depart'],
+            'end_time': legs[-1]['arrive'],
+            'duration_mins': duration,
+            'transport': transport_modes,
+            'changes': changes,
+            'legs': legs,
+        }
+
+    # ------------------------------------------------------------------
+    # Main entry point
+    # ------------------------------------------------------------------
+    def plan_routes(self, from_name, to_name,
+                    from_lat=None, from_lon=None,
+                    to_lat=None, to_lon=None):
+        """Plan routes between two locations.
+
+        Returns a list of route dicts compatible with the frontend display,
+        each containing *start_time*, *end_time*, *duration_mins*,
+        *transport*, *changes*, and *legs*.
+        """
+        if from_lat is None or to_lat is None:
+            return []
+
+        dist_km = self._haversine(from_lat, from_lon, to_lat, to_lon)
+        now = _dt.now()
+        now_mins = now.hour * 60 + now.minute
+        routes = []
+
+        # ---- 1. Walk-only (< 2 km) ----
+        if dist_km < 2.0:
+            walk = self._walk_leg(from_name, to_name, now_mins + 2, dist_km)
+            routes.append(self._summarise([walk]))
+
+        # ---- 2. Rail routes (real-time departure data) ----
+        origin_stations = self._find_nearest_stations(from_lat, from_lon,
+                                                       max_km=8.0, max_results=2)
+        dest_stations = self._find_nearest_stations(to_lat, to_lon,
+                                                     max_km=8.0, max_results=3)
+
+        if origin_stations and dest_stations:
+            dest_crs_set = {crs for crs, _, _ in dest_stations}
+            dest_lookup = {crs: (info, d) for crs, info, d in dest_stations}
+
+            for orig_crs, orig_info, orig_walk_km in origin_stations:
+                # Skip origin stations that are too far to walk to
+                if orig_walk_km > 3.0:
+                    continue
+                try:
+                    departures = self.rail.fetch_departures(orig_crs)
+                except Exception:
+                    continue
+
+                for svc in departures.get('services', []):
+                    # Find the BEST matching calling point: prefer the
+                    # destination station with the shortest walk distance.
+                    best_cp_idx = None
+                    best_dest_walk = float('inf')
+                    best_dest_crs = None
+                    for cp_idx, cp in enumerate(svc['calling_points']):
+                        if cp['crs'] in dest_crs_set:
+                            _, dw = dest_lookup[cp['crs']]
+                            if dw < best_dest_walk:
+                                best_dest_walk = dw
+                                best_cp_idx = cp_idx
+                                best_dest_crs = cp['crs']
+
+                    if best_cp_idx is not None and best_dest_walk <= 3.0:
+                        dest_info, dest_walk_km = dest_lookup[best_dest_crs]
+                        route = self._build_rail_route(
+                            from_name, to_name,
+                            orig_crs, orig_info, orig_walk_km,
+                            best_dest_crs, dest_info, dest_walk_km,
+                            svc, best_cp_idx, now_mins,
+                        )
+                        if route:
+                            routes.append(route)
+
+        # ---- 3. Connecting rail routes (change at a hub) ----
+        #
+        # Only attempt connecting routes when no direct route was found OR
+        # for destinations that are reachable through obvious hubs.
+        # Skip hubs that are FURTHER from the destination than the origin
+        # (i.e., going in the wrong direction).  Limit to at most 5
+        # connecting routes.
+        best_direct_dur = min(
+            (r['duration_mins'] for r in routes if r.get('changes', 0) == 0),
+            default=None,
+        )
+        HUB_CRS = {'PRE', 'LAN', 'MAN', 'OXN', 'WGN'}
+        connecting_routes = []
+        MAX_CONNECTING = 5
+        if origin_stations and dest_stations:
+            origin_to_dest_km = self._haversine(from_lat, from_lon,
+                                                 to_lat, to_lon)
+            hub_departures_cache = {}
+            for orig_crs, orig_info, orig_walk_km in origin_stations:
+                if orig_walk_km > 3.0:
+                    continue
+                try:
+                    departures = self.rail.fetch_departures(orig_crs)
+                except Exception:
+                    continue
+
+                for svc in departures.get('services', []):
+                    if len(connecting_routes) >= MAX_CONNECTING:
+                        break
+                    # Find calling points that are hub stations
+                    for cp_idx, cp in enumerate(svc['calling_points']):
+                        hub_crs = cp.get('crs', '')
+                        if hub_crs not in HUB_CRS or hub_crs == orig_crs:
+                            continue
+
+                        # Geographic sanity: skip hubs further from dest
+                        # than the origin is (going wrong direction)
+                        hub_info_tmp = self.STATIONS.get(hub_crs)
+                        if hub_info_tmp:
+                            hub_to_dest = self._haversine(
+                                hub_info_tmp['lat'], hub_info_tmp['lon'],
+                                to_lat, to_lon)
+                            if hub_to_dest > origin_to_dest_km * 1.3:
+                                continue  # hub is farther away → skip
+
+                        if hub_crs in hub_departures_cache:
+                            hub_deps = hub_departures_cache[hub_crs]
+                        else:
+                            try:
+                                hub_deps = self.rail.fetch_departures(hub_crs)
+                                hub_departures_cache[hub_crs] = hub_deps
+                            except Exception:
+                                continue
+
+                        try:
+                            hub_arrive = self._hhmm_to_mins(cp['scheduled'])
+                        except (ValueError, IndexError):
+                            continue
+                        min_connection = 3  # minutes to change platform
+
+                        # Try live connections first
+                        found_live = False
+                        for hub_svc in hub_deps.get('services', []):
+                            try:
+                                hub_depart = self._hhmm_to_mins(hub_svc['std'])
+                            except (ValueError, IndexError):
+                                continue
+                            if hub_depart < hub_arrive + min_connection:
+                                continue
+                            if hub_depart > hub_arrive + 90:
+                                continue
+
+                            best2_idx = None
+                            best2_walk = float('inf')
+                            best2_crs = None
+                            for cp2_idx, cp2 in enumerate(hub_svc['calling_points']):
+                                if cp2['crs'] in dest_crs_set:
+                                    _, dw = dest_lookup[cp2['crs']]
+                                    if dw < best2_walk:
+                                        best2_walk = dw
+                                        best2_idx = cp2_idx
+                                        best2_crs = cp2['crs']
+
+                            if best2_idx is not None and best2_walk <= 3.0:
+                                route = self._build_connecting_rail_route(
+                                    from_name, to_name,
+                                    orig_crs, orig_info, orig_walk_km,
+                                    hub_crs, self.STATIONS.get(hub_crs, {'name': hub_crs}),
+                                    svc, cp_idx,
+                                    best2_crs, dest_lookup[best2_crs][0],
+                                    dest_lookup[best2_crs][1],
+                                    hub_svc, best2_idx,
+                                )
+                                if route:
+                                    connecting_routes.append(route)
+                                    found_live = True
+
+                        # If no live connection, estimate based on the latest
+                        # service to the destination from this hub (+ typical
+                        # 30-min headway for regional services).
+                        if not found_live:
+                            latest_dest_svc = None
+                            latest_dest_idx = None
+                            latest_dest_crs = None
+                            for hub_svc in hub_deps.get('services', []):
+                                for cp2_idx, cp2 in enumerate(hub_svc['calling_points']):
+                                    if cp2['crs'] in dest_crs_set:
+                                        _, dw = dest_lookup[cp2['crs']]
+                                        if dw <= 3.0:
+                                            latest_dest_svc = hub_svc
+                                            latest_dest_idx = cp2_idx
+                                            latest_dest_crs = cp2['crs']
+
+                            if latest_dest_svc is not None:
+                                # Estimate next departure: last shown + 30 min
+                                try:
+                                    last_dep = self._hhmm_to_mins(latest_dest_svc['std'])
+                                except (ValueError, IndexError):
+                                    continue
+                                est_dep = last_dep + 30
+                                while est_dep < hub_arrive + min_connection:
+                                    est_dep += 30
+
+                                # Build an estimated connecting service
+                                orig_cp = latest_dest_svc['calling_points'][latest_dest_idx]
+                                try:
+                                    orig_arr = self._hhmm_to_mins(orig_cp['scheduled'])
+                                except (ValueError, IndexError):
+                                    continue
+                                est_arr = est_dep + (orig_arr - last_dep)
+
+                                est_svc = {
+                                    'std': self._fmt(est_dep),
+                                    'operator': latest_dest_svc.get('operator', 'Train'),
+                                    'service_type': latest_dest_svc.get('service_type', 'train'),
+                                    'calling_points': [],
+                                }
+                                # Build estimated calling points with shifted times
+                                for cp_orig in latest_dest_svc['calling_points'][:latest_dest_idx + 1]:
+                                    try:
+                                        cp_time = self._hhmm_to_mins(cp_orig['scheduled'])
+                                    except (ValueError, IndexError):
+                                        continue
+                                    shift = est_dep - last_dep
+                                    est_svc['calling_points'].append({
+                                        'name': cp_orig['name'],
+                                        'crs': cp_orig['crs'],
+                                        'scheduled': self._fmt(cp_time + shift),
+                                        'estimated': 'Estimated',
+                                    })
+
+                                est_dest_idx = len(est_svc['calling_points']) - 1
+                                if est_dest_idx >= 0:
+                                    dest_info2, dest_walk2 = dest_lookup[latest_dest_crs]
+                                    route = self._build_connecting_rail_route(
+                                        from_name, to_name,
+                                        orig_crs, orig_info, orig_walk_km,
+                                        hub_crs, self.STATIONS.get(hub_crs, {'name': hub_crs}),
+                                        svc, cp_idx,
+                                        latest_dest_crs, dest_info2, dest_walk2,
+                                        est_svc, est_dest_idx,
+                                    )
+                                    if route:
+                                        connecting_routes.append(route)
+
+                        break  # only check first hub per origin service
+
+            # Filter connecting routes: skip any that are more than 2x the
+            # best direct route duration (if direct routes exist).
+            if best_direct_dur is not None:
+                max_dur = int(best_direct_dur * 2.5)
+                connecting_routes = [
+                    r for r in connecting_routes
+                    if r['duration_mins'] <= max_dur
+                ]
+
+            # Keep at most MAX_CONNECTING connecting routes, sorted by
+            # departure time.
+            connecting_routes.sort(key=lambda r: (
+                int(r['start_time'].split(':')[0]),
+                int(r['start_time'].split(':')[1]),
+            ))
+            routes.extend(connecting_routes[:MAX_CONNECTING])
+
+        # ---- 4. Bus routes (knowledge-base + frequency estimation) ----
+        bus_matches = self._find_bus_routes(from_lat, from_lon, to_lat, to_lon)
+        for match in bus_matches:
+            bus_routes = self._build_bus_routes(
+                from_name, to_name, match, now_mins,
+            )
+            routes.extend(bus_routes)
+
+        # ---- 5. Deduplicate and sort by departure time ----
+        seen = set()
+        unique = []
+        for r in routes:
+            key = (r['start_time'], r['end_time'],
+                   tuple(r['transport']), r.get('changes', 0))
+            if key not in seen:
+                seen.add(key)
+                unique.append(r)
+
+        unique.sort(key=lambda r: (
+            int(r['start_time'].split(':')[0]),
+            int(r['start_time'].split(':')[1]),
+        ))
+        return unique
+
+    # ------------------------------------------------------------------
+    # Rail route builder
+    # ------------------------------------------------------------------
+    def _build_rail_route(self, from_name, to_name,
+                          orig_crs, orig_info, orig_walk_km,
+                          dest_crs, dest_info, dest_walk_km,
+                          service, dest_cp_idx, now_mins):
+        """Build a route from a real rail service that calls at the
+        destination.  Skips trivial walk legs (< 50 m)."""
+        try:
+            depart_mins = self._hhmm_to_mins(service['std'])
+        except (ValueError, IndexError):
+            return None
+
+        dest_cp = service['calling_points'][dest_cp_idx]
+        try:
+            arrive_mins = self._hhmm_to_mins(dest_cp['scheduled'])
+        except (ValueError, IndexError):
+            return None
+
+        legs = []
+
+        # Walk to origin station (skip if < 50 m)
+        if orig_walk_km >= 0.05:
+            walk_mins = max(1, int(orig_walk_km * 1000 * self.WALK_FACTOR / self.WALK_SPEED))
+            legs.append(self._walk_leg(
+                from_name,
+                f"{orig_info['name']} Railway Station",
+                depart_mins - walk_mins,
+                orig_walk_km,
+            ))
+
+        # Train leg with real intermediate stops
+        intermediates = []
+        for cp in service['calling_points'][:dest_cp_idx]:
+            intermediates.append({
+                'name': cp['name'],
+                'time': cp['scheduled'],
+            })
+
+        ride_mins = arrive_mins - depart_mins
+        if ride_mins < 0:
+            ride_mins += 24 * 60
+
+        operator = service.get('operator', 'Train')
+        svc_type = service.get('service_type', 'train')
+        mode = 'train' if svc_type == 'train' else 'bus'
+
+        # Use the actual stop names if origin/dest are very close
+        orig_stop_name = (from_name if orig_walk_km < 0.05
+                          else f"{orig_info['name']} Railway Station")
+        dest_stop_name = (to_name if dest_walk_km < 0.05
+                          else f"{dest_info['name']} Railway Station")
+
+        train_leg = {
+            'mode': mode,
+            'service': operator,
+            'from_stop': orig_stop_name,
+            'to_stop': dest_stop_name,
+            'depart': service['std'],
+            'arrive': dest_cp['scheduled'],
+            'duration_mins': ride_mins,
+            'intermediate_stops': intermediates,
+        }
+        legs.append(train_leg)
+
+        # Walk from destination station (skip if < 50 m)
+        if dest_walk_km >= 0.05:
+            legs.append(self._walk_leg(
+                f"{dest_info['name']} Railway Station",
+                to_name,
+                arrive_mins,
+                dest_walk_km,
+            ))
+
+        return self._summarise(legs)
+
+    # ------------------------------------------------------------------
+    # Connecting rail route builder (one change at a hub)
+    # ------------------------------------------------------------------
+    def _build_connecting_rail_route(
+        self, from_name, to_name,
+        orig_crs, orig_info, orig_walk_km,
+        hub_crs, hub_info,
+        svc1, hub_cp_idx,
+        dest_crs, dest_info, dest_walk_km,
+        svc2, dest_cp_idx,
+    ):
+        """Build a two-train route with a change at a hub station."""
+        try:
+            depart1 = self._hhmm_to_mins(svc1['std'])
+            hub_arrive = self._hhmm_to_mins(svc1['calling_points'][hub_cp_idx]['scheduled'])
+            depart2 = self._hhmm_to_mins(svc2['std'])
+            dest_arrive = self._hhmm_to_mins(svc2['calling_points'][dest_cp_idx]['scheduled'])
+        except (ValueError, IndexError, KeyError):
+            return None
+
+        legs = []
+
+        # Walk to origin station
+        if orig_walk_km >= 0.05:
+            walk_mins = max(1, int(orig_walk_km * 1000 * self.WALK_FACTOR / self.WALK_SPEED))
+            legs.append(self._walk_leg(
+                from_name,
+                f"{orig_info['name']} Railway Station",
+                depart1 - walk_mins,
+                orig_walk_km,
+            ))
+
+        # First train leg (origin → hub)
+        intermediates1 = []
+        for cp in svc1['calling_points'][:hub_cp_idx]:
+            intermediates1.append({'name': cp['name'], 'time': cp['scheduled']})
+
+        ride1 = hub_arrive - depart1
+        if ride1 < 0:
+            ride1 += 24 * 60
+        op1 = svc1.get('operator', 'Train')
+        type1 = 'train' if svc1.get('service_type', 'train') == 'train' else 'bus'
+
+        orig_stop = (from_name if orig_walk_km < 0.05
+                     else f"{orig_info['name']} Railway Station")
+        hub_name = hub_info.get('name', hub_crs)
+
+        legs.append({
+            'mode': type1,
+            'service': op1,
+            'from_stop': orig_stop,
+            'to_stop': f"{hub_name} Railway Station",
+            'depart': svc1['std'],
+            'arrive': svc1['calling_points'][hub_cp_idx]['scheduled'],
+            'duration_mins': ride1,
+            'intermediate_stops': intermediates1,
+        })
+
+        # Waiting time at hub (shown as a transfer / wait)
+        wait_mins = depart2 - hub_arrive
+        if wait_mins > 0:
+            legs.append({
+                'mode': 'wait',
+                'from_stop': f"{hub_name} Railway Station",
+                'to_stop': f"{hub_name} Railway Station",
+                'depart': self._fmt(hub_arrive),
+                'arrive': self._fmt(depart2),
+                'duration_mins': wait_mins,
+                'distance_m': 0,
+            })
+
+        # Second train leg (hub → destination)
+        intermediates2 = []
+        for cp in svc2['calling_points'][:dest_cp_idx]:
+            intermediates2.append({'name': cp['name'], 'time': cp['scheduled']})
+
+        ride2 = dest_arrive - depart2
+        if ride2 < 0:
+            ride2 += 24 * 60
+        op2 = svc2.get('operator', 'Train')
+        type2 = 'train' if svc2.get('service_type', 'train') == 'train' else 'bus'
+
+        dest_stop = (to_name if dest_walk_km < 0.05
+                     else f"{dest_info['name']} Railway Station")
+
+        legs.append({
+            'mode': type2,
+            'service': op2,
+            'from_stop': f"{hub_name} Railway Station",
+            'to_stop': dest_stop,
+            'depart': svc2['std'],
+            'arrive': svc2['calling_points'][dest_cp_idx]['scheduled'],
+            'duration_mins': ride2,
+            'intermediate_stops': intermediates2,
+        })
+
+        # Walk from destination station
+        if dest_walk_km >= 0.05:
+            legs.append(self._walk_leg(
+                f"{dest_info['name']} Railway Station",
+                to_name,
+                dest_arrive,
+                dest_walk_km,
+            ))
+
+        return self._summarise(legs)
+
+    # ------------------------------------------------------------------
+    # Bus route builder
+    # ------------------------------------------------------------------
+    def _build_bus_routes(self, from_name, to_name, match, now_mins):
+        """Build 2-3 bus route options from a bus-route match, using
+        frequency-based departure estimation."""
+        svc = match['service']
+        stops = svc['stops']
+        board_idx = match['board_idx']
+        alight_idx = match['alight_idx']
+        walk_to_km = match['walk_to_km']
+        walk_from_km = match['walk_from_km']
+        freq = svc.get('frequency_mins', 30)
+
+        # Per-segment timing profile for this route.
+        seg_mins = self._estimate_segment_mins(svc)
+        board_offset = sum(seg_mins[:board_idx])
+        alight_offset = sum(seg_mins[:alight_idx])
+        ride_mins = max(3, alight_offset - board_offset)
+
+        # Try live departures first (from /bus/live). Feed gives origin aimed
+        # departure, so shift by board_offset for boarding stop time.
+        live_origin_deps, live_total_duration = self._live_departures_for_service(
+            svc['service'], now_mins
+        )
+
+        # If we have a live total duration for the line, scale segment times
+        # so travel time proportions remain sensible but absolute times align
+        # with live operational data.
+        if live_total_duration is not None and alight_offset > 0:
+            scale = max(0.5, min(2.0, live_total_duration / max(1, sum(seg_mins))))
+            board_offset = int(round(board_offset * scale))
+            alight_offset = int(round(alight_offset * scale))
+            ride_mins = max(3, alight_offset - board_offset)
+
+        departure_candidates = []
+        for od in live_origin_deps:
+            dep_at_board = od + board_offset
+            if dep_at_board >= now_mins and dep_at_board <= now_mins + 180:
+                departure_candidates.append(dep_at_board)
+        departure_candidates = departure_candidates[:3]
+
+        # Fallback to headway-based departures if live feed has no usable data.
+        if not departure_candidates:
+            base_offset = (now_mins % freq)
+            first_dep = now_mins - base_offset + freq  # next departure after now
+            if first_dep <= now_mins:
+                first_dep += freq
+            departure_candidates = [first_dep + i * freq for i in range(3)]
+
+        # Generate 2-3 departures
+        results = []
+        for dep_mins in departure_candidates:
+            if dep_mins > now_mins + 180:
+                break  # only show next 3 hours
+
+            legs = []
+
+            # Walk to bus stop (skip if very close)
+            if walk_to_km >= 0.05:
+                walk_mins = max(1, int(walk_to_km * 1000 * self.WALK_FACTOR / self.WALK_SPEED))
+                legs.append(self._walk_leg(from_name, stops[board_idx]['name'],
+                                           dep_mins - walk_mins, walk_to_km))
+
+            # Build intermediate stops with estimated times
+            intermediates = []
+            for k in range(board_idx + 1, alight_idx):
+                denom = max(1, alight_idx - board_idx)
+                frac = (k - board_idx) / denom
+                intermediates.append({
+                    'name': stops[k]['name'],
+                    'time': self._fmt(dep_mins + int(ride_mins * frac)),
+                })
+
+            # Use the actual stop names when origin/dest are very close
+            bus_from = from_name if walk_to_km < 0.05 else stops[board_idx]['name']
+            bus_to = to_name if walk_from_km < 0.05 else stops[alight_idx]['name']
+
+            bus_leg = {
+                'mode': 'bus',
+                'service': svc['service'],
+                'from_stop': bus_from,
+                'to_stop': bus_to,
+                'depart': self._fmt(dep_mins),
+                'arrive': self._fmt(dep_mins + ride_mins),
+                'duration_mins': ride_mins,
+                'intermediate_stops': intermediates,
+            }
+            legs.append(bus_leg)
+
+            # Walk from bus stop (skip if very close)
+            if walk_from_km >= 0.05:
+                legs.append(self._walk_leg(stops[alight_idx]['name'], to_name,
+                                           dep_mins + ride_mins, walk_from_km))
+
+            results.append(self._summarise(legs))
+
+        return results
