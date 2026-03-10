@@ -9,24 +9,33 @@ app.use(express.static(path.join(__dirname, 'src')));
 app.use('/api', async (req, res) => {
   try {
     const targetPath = req.originalUrl;
+    const requestHeaders = {};
+    if (req.headers.authorization) {
+      requestHeaders.Authorization = req.headers.authorization;
+    }
+    if (req.headers['content-type']) {
+      requestHeaders['Content-Type'] = req.headers['content-type'];
+    }
+
     const backendResponse = await fetch(`http://backend:5000${targetPath}`, {
       method: req.method,
-      headers: {
-        'Content-Type': req.headers['content-type'] || 'application/json',
-        Authorization: req.headers.authorization || '',
-      },
+      headers: requestHeaders,
       body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body || {}),
     });
-
-    const responseText = await backendResponse.text();
     res.status(backendResponse.status);
 
     const contentType = backendResponse.headers.get('content-type') || '';
+    if (contentType) {
+      res.set('Content-Type', contentType);
+    }
+
     if (contentType.includes('application/json')) {
+      const responseText = await backendResponse.text();
       return res.json(responseText ? JSON.parse(responseText) : {});
     }
 
-    return res.send(responseText);
+    const responseBuffer = Buffer.from(await backendResponse.arrayBuffer());
+    return res.send(responseBuffer);
   } catch (e) {
     res.status(502).json({ error: 'backend unreachable', detail: e.message });
   }

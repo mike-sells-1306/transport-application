@@ -36,15 +36,22 @@ python app.py
 ### Podman (containerised)
 
 ```bash
-# Install podman-compose once (if not already present)
+# Preferred: built-in compose in Podman v4+
+podman compose version
+
+# Optional fallback (if your Podman install has no compose subcommand)
 pip install --user podman-compose
-# or: sudo dnf install podman-compose   (Fedora/RHEL)
-# or: sudo apt install podman-compose   (Debian/Ubuntu)
 
 # Build and start all services
-make up
+make up-build
 # or directly:
-podman-compose up --build
+podman compose up -d --build
+
+# Start existing containers (daily usage)
+make up
+
+# Follow logs (optional)
+make logs
 
 # Frontend: http://localhost:3000
 # Backend:  http://localhost:5000
