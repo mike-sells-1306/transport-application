@@ -16,10 +16,11 @@
 </head>
 <body>
   <!-- Sidebar Navigation -->
-  <aside class="sidebar">
+  <aside id="sidebar" class="sidebar">
     <div class="sidebar-header">
       <h1>Transport for North West</h1>
     </div>
+    <!-- Sidebar content continues... -->
     <div class="sidebar-search">
       <label for="from-input">Where would you like to travel today?</label>
       <div class="journey-search-group">
@@ -52,6 +53,16 @@
       <a href="#accessibility" id="colorblind-toggle-link" role="button" aria-pressed="false">Accessibility</a>
     </nav>
   </aside>
+
+  <!-- --------------------------------------------- -->
+  <!-- Sidebar toggle button (fixed so always visible) -->
+  <!-- --------------------------------------------- -->
+  <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle sidebar" aria-expanded="true" aria-controls="sidebar">
+    <span class="sidebar-toggle-icon">‹</span>
+  </button>
+
+  <!-- Dark overlay behind sidebar on narrow screens -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
   <!-- Main Map Area -->
   <main class="map-area">

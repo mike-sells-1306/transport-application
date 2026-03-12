@@ -2176,8 +2176,8 @@ function renderRoutesTable(routes) {
 
 // Initialize application when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize the interactive map
-  initializeMap();
+  // Initialize the interactive map (store globally for later invalidation)
+  window.appMap = initializeMap();
   
   // Initialize autocomplete for search inputs
   initializeAutocomplete();
@@ -2239,6 +2239,7 @@ document.addEventListener('DOMContentLoaded', function() {
   attachSupportEventHandlers();
   attachAccountEventHandlers();
   initWeatherSearch();
+  setupSidebarToggle();
 
   // Restore colourblind mode from localStorage (before account fetch may override)
   const savedColorblindMode = JSON.parse(localStorage.getItem('colorblindMode') || 'false');
@@ -2251,6 +2252,109 @@ document.addEventListener('DOMContentLoaded', function() {
   // Health check for backend (if available)
   checkHealth();
 });
+
+// ---------------------------------------------------------------------------
+// Sidebar overlay helper (shows/hides backdrop on narrow viewports)
+// ---------------------------------------------------------------------------
+function updateSidebarOverlay(sidebarOpen) {
+  const overlay = document.getElementById('sidebar-overlay');
+  if (!overlay) return;
+  if (window.innerWidth <= 768 && sidebarOpen) {
+    overlay.classList.add('active');
+  } else {
+    overlay.classList.remove('active');
+  }
+}
+
+// Keep overlay in sync when the window is resized across the breakpoint
+window.addEventListener('resize', () => {
+  const sidebar = document.querySelector('.sidebar');
+  if (!sidebar) return;
+  const isOpen = !sidebar.classList.contains('minimized');
+  updateSidebarOverlay(isOpen);
+
+  // Invalidate map size after resize so tiles redraw correctly
+  if (window.appMap && typeof window.appMap.invalidateSize === 'function') {
+    window.appMap.invalidateSize();
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Sidebar toggle: minimise / extend
+// ---------------------------------------------------------------------------
+function setupSidebarToggle() {
+  const btn = document.getElementById('sidebar-toggle');
+  const sidebar = document.querySelector('.sidebar');
+  const mapArea = document.querySelector('.map-area');
+  if (!btn || !sidebar || !mapArea) return;
+
+  // Restore saved state
+  const saved = JSON.parse(localStorage.getItem('sidebarMinimized') || 'false');
+  if (saved) {
+    sidebar.classList.add('minimized');
+    mapArea.classList.add('minimized');
+    document.body.classList.add('sidebar-minimized');
+    btn.setAttribute('aria-expanded', 'false');
+    const icon = btn.querySelector('.sidebar-toggle-icon');
+    if (icon) icon.textContent = '›';
+  } else {
+    btn.setAttribute('aria-expanded', 'true');
+    document.body.classList.remove('sidebar-minimized');
+    const icon = btn.querySelector('.sidebar-toggle-icon');
+    if (icon) icon.textContent = '‹';
+  }
+
+  // Ensure button has an accessible pressed state and title
+  btn.setAttribute('role', 'button');
+  btn.setAttribute('aria-pressed', String(!saved));
+  btn.title = saved ? 'Expand sidebar' : 'Collapse sidebar';
+
+  btn.addEventListener('click', () => {
+    const isNowMin = sidebar.classList.toggle('minimized');
+    mapArea.classList.toggle('minimized', isNowMin);
+    document.body.classList.toggle('sidebar-minimized', isNowMin);
+    btn.setAttribute('aria-expanded', String(!isNowMin));
+    btn.setAttribute('aria-pressed', String(!isNowMin));
+    btn.title = isNowMin ? 'Expand sidebar' : 'Collapse sidebar';
+    const icon = btn.querySelector('.sidebar-toggle-icon');
+    if (icon) icon.textContent = isNowMin ? '›' : '‹';
+    localStorage.setItem('sidebarMinimized', JSON.stringify(isNowMin));
+
+    // Toggle mobile overlay backdrop
+    updateSidebarOverlay(!isNowMin);
+
+    // If map exists, invalidate size so Leaflet redraws correctly
+    if (window.appMap && typeof window.appMap.invalidateSize === 'function') {
+      // allow CSS transition to complete
+      setTimeout(() => window.appMap.invalidateSize(), 250);
+    }
+  });
+
+  // Overlay click closes sidebar on mobile
+  const overlay = document.getElementById('sidebar-overlay');
+  if (overlay) {
+    overlay.addEventListener('click', () => {
+      if (!sidebar.classList.contains('minimized')) {
+        btn.click();
+      }
+    });
+  }
+
+  // On narrow viewports auto-close sidebar when a nav link is clicked
+  const sidebarLinks = document.querySelectorAll('.sidebar-links a');
+  sidebarLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 768 && !sidebar.classList.contains('minimized')) {
+        btn.click();
+      }
+    });
+  });
+
+  // Auto-minimise sidebar on narrow screens at initial load
+  if (window.innerWidth <= 768 && !saved) {
+    btn.click();
+  }
+}
 
 // Check backend health status
 async function checkHealth() {

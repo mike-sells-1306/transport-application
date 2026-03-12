@@ -33,12 +33,27 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["AUTH_TOKEN_MAX_AGE_SECONDS"] = int(os.getenv("AUTH_TOKEN_MAX_AGE_SECONDS", "86400"))
-# Increase SQLite timeout for network drive compatibility
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "connect_args": {"timeout": 30},
-    "pool_pre_ping": True,
-    "pool_recycle": 3600,
-}
+
+# Configure SQLAlchemy engine options depending on the database backend.
+# SQLite accepts a 'timeout' connect arg; MySQL (pymysql) uses 'connect_timeout'.
+db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "") or ""
+if db_uri.startswith("sqlite"):
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "connect_args": {"timeout": 30},
+        "pool_pre_ping": True,
+        "pool_recycle": 3600,
+    }
+elif db_uri.startswith("mysql") or "pymysql" in db_uri:
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "connect_args": {"connect_timeout": 30},
+        "pool_pre_ping": True,
+        "pool_recycle": 3600,
+    }
+else:
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_pre_ping": True,
+        "pool_recycle": 3600,
+    }
 
 transport_service = TransportService()
 data_translator = DataTranslator()
@@ -1250,7 +1265,15 @@ def serve_static(path):
 # Database tables – created on first run.
 # Using /tmp for SQLite to avoid network-drive locking issues.
 with app.app_context():
-    db.create_all()
+    db_uri_for_startup = app.config.get("SQLALCHEMY_DATABASE_URI", "") or ""
+    if db_uri_for_startup.startswith("sqlite"):
+        try:
+            app.logger.info("Creating database tables (sqlite)")
+            db.create_all()
+        except Exception as e:
+            app.logger.exception(f"db.create_all (sqlite) failed: {e}")
+    else:
+        app.logger.info("Skipping automatic db.create_all for non-sqlite database at startup")
 
 
 # ---------------------------------------------------------------------------

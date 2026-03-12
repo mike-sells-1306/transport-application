@@ -2,7 +2,7 @@
 
 # Podman / container commands
 # Uses `podman-compose` when available, falls back to `podman compose`.
-COMPOSE := $(shell if command -v podman-compose >/dev/null 2>&1; then echo "podman-compose"; elif command -v podman >/dev/null 2>&1 && podman compose version >/dev/null 2>&1; then echo "podman compose"; fi)
+COMPOSE := $(shell if command -v podman-compose >/dev/null 2>&1; then echo "podman-compose"; elif command -v podman >/dev/null 2>&1 && podman compose version >/dev/null 2>&1; then echo "podman compose"; elif command -v docker-compose >/dev/null 2>&1; then echo "docker-compose"; elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then echo "docker compose"; fi)
 PROJECT_NAME := $(shell basename "$(CURDIR)")
 CONTAINERS := $(PROJECT_NAME)_mysql_1 $(PROJECT_NAME)_backend_1 $(PROJECT_NAME)_frontend_1
 
