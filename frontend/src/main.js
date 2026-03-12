@@ -704,6 +704,7 @@ function toggleWeatherPanel() {
   const weatherPanel = document.querySelector('.weather-panel');
   const notifPanel = document.querySelector('.notif-panel');
   const faqPanel = document.getElementById('faq-panel');
+  const supportPanel = document.getElementById('support-panel');
   const authModal = document.getElementById('auth-modal');
   const accountModal = document.getElementById('account-modal');
   
@@ -719,6 +720,7 @@ function toggleWeatherPanel() {
   // Close other panels when weather is opened
   if (!weatherPanel.classList.contains('hidden')) {
     faqPanel?.classList.add('hidden');
+    supportPanel?.classList.add('hidden');
     authModal?.classList.add('hidden');
     accountModal?.classList.add('hidden');
     // Clear search input when opening the panel
@@ -750,6 +752,7 @@ function toggleNotificationsPanel() {
   const weatherPanel = document.querySelector('.weather-panel');
   const notifPanel = document.querySelector('.notif-panel');
   const faqPanel = document.getElementById('faq-panel');
+  const supportPanel = document.getElementById('support-panel');
   const authModal = document.getElementById('auth-modal');
   const accountModal = document.getElementById('account-modal');
   
@@ -765,6 +768,7 @@ function toggleNotificationsPanel() {
   // Close other panels when notifications is opened
   if (!notifPanel.classList.contains('hidden')) {
     faqPanel?.classList.add('hidden');
+    supportPanel?.classList.add('hidden');
     authModal?.classList.add('hidden');
     accountModal?.classList.add('hidden');
   }
@@ -772,6 +776,7 @@ function toggleNotificationsPanel() {
 
 function openFaqPanel() {
   const faqPanel = document.getElementById('faq-panel');
+  const supportPanel = document.getElementById('support-panel');
   const weatherPanel = document.querySelector('.weather-panel');
   const notifPanel = document.querySelector('.notif-panel');
   const authModal = document.getElementById('auth-modal');
@@ -782,6 +787,8 @@ function openFaqPanel() {
     faqPanel.setAttribute('aria-hidden', 'false');
     
     // Close other panels when FAQ is opened
+    supportPanel?.classList.add('hidden');
+    supportPanel?.setAttribute('aria-hidden', 'true');
     weatherPanel?.classList.add('hidden');
     notifPanel?.classList.add('hidden');
     authModal?.classList.add('hidden');
@@ -843,6 +850,46 @@ function attachFaqEventHandlers() {
   });
 }
 
+function openSupportPanel() {
+  const supportPanel = document.getElementById('support-panel');
+  const faqPanel = document.getElementById('faq-panel');
+  const weatherPanel = document.querySelector('.weather-panel');
+  const notifPanel = document.querySelector('.notif-panel');
+  const authModal = document.getElementById('auth-modal');
+  const accountModal = document.getElementById('account-modal');
+
+  if (supportPanel) {
+    supportPanel.classList.remove('hidden');
+    supportPanel.setAttribute('aria-hidden', 'false');
+
+    // Close other panels when support is opened
+    faqPanel?.classList.add('hidden');
+    faqPanel?.setAttribute('aria-hidden', 'true');
+    weatherPanel?.classList.add('hidden');
+    notifPanel?.classList.add('hidden');
+    authModal?.classList.add('hidden');
+    accountModal?.classList.add('hidden');
+  }
+}
+
+function closeSupportPanel() {
+  const supportPanel = document.getElementById('support-panel');
+  if (supportPanel) {
+    supportPanel.classList.add('hidden');
+    supportPanel.setAttribute('aria-hidden', 'true');
+  }
+}
+
+function attachSupportEventHandlers() {
+  const supportLink = document.querySelector('.sidebar-links a[href="#support"]');
+  supportLink?.addEventListener('click', event => {
+    event.preventDefault();
+    openSupportPanel();
+  });
+
+  document.getElementById('support-close')?.addEventListener('click', closeSupportPanel);
+}
+
 function setAuthToken(token) {
   authState.token = token;
   if (token) {
@@ -882,6 +929,7 @@ function openAuthModal() {
   const weatherPanel = document.querySelector('.weather-panel');
   const notifPanel = document.querySelector('.notif-panel');
   const faqPanel = document.getElementById('faq-panel');
+  const supportPanel = document.getElementById('support-panel');
   
   document.getElementById('auth-modal')?.classList.remove('hidden');
   document.getElementById('account-modal')?.classList.add('hidden');
@@ -890,6 +938,7 @@ function openAuthModal() {
   weatherPanel?.classList.add('hidden');
   notifPanel?.classList.add('hidden');
   faqPanel?.classList.add('hidden');
+  supportPanel?.classList.add('hidden');
 }
 
 function closeAuthModal() {
@@ -900,6 +949,7 @@ function openAccountModal() {
   const weatherPanel = document.querySelector('.weather-panel');
   const notifPanel = document.querySelector('.notif-panel');
   const faqPanel = document.getElementById('faq-panel');
+  const supportPanel = document.getElementById('support-panel');
   
   document.getElementById('account-modal')?.classList.remove('hidden');
   document.getElementById('auth-modal')?.classList.add('hidden');
@@ -908,6 +958,7 @@ function openAccountModal() {
   weatherPanel?.classList.add('hidden');
   notifPanel?.classList.add('hidden');
   faqPanel?.classList.add('hidden');
+  supportPanel?.classList.add('hidden');
 }
 
 function closeAccountModal() {
@@ -953,16 +1004,60 @@ function renderSavedRoutes(savedRoutes) {
   list.innerHTML = '';
   if (!savedRoutes.length) {
     const emptyItem = document.createElement('li');
+    emptyItem.className = 'saved-route-item empty';
     emptyItem.textContent = 'No saved routes yet.';
     list.appendChild(emptyItem);
+    updateSavedRoutesScrollButton();
     return;
   }
 
-  savedRoutes.forEach(route => {
+  savedRoutes.forEach((route, index) => {
     const item = document.createElement('li');
-    item.textContent = `${route.routeStart} → ${route.routeEnd}`;
+    item.className = 'saved-route-item';
+
+    const icon = document.createElement('span');
+    icon.className = 'saved-route-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = index % 2 === 0 ? '🚆' : '🚌';
+
+    const label = document.createElement('span');
+    label.className = 'saved-route-label';
+    label.textContent = `${route.routeStart} to ${route.routeEnd}`;
+
+    item.appendChild(icon);
+    item.appendChild(label);
     list.appendChild(item);
   });
+
+  updateSavedRoutesScrollButton();
+}
+
+function updateSavedRoutesScrollButton() {
+  const list = document.getElementById('saved-routes-list');
+  const scrollBtn = document.querySelector('.saved-routes-more');
+  if (!list || !scrollBtn) {
+    return;
+  }
+
+  const needsScroll = list.scrollHeight > list.clientHeight + 2;
+  scrollBtn.classList.toggle('hidden', !needsScroll);
+}
+
+function scrollSavedRoutes() {
+  const list = document.getElementById('saved-routes-list');
+  if (!list) {
+    return;
+  }
+
+  const scrollStep = Math.max(80, Math.floor(list.clientHeight * 0.72));
+  const nearBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 4;
+
+  if (nearBottom) {
+    list.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+
+  list.scrollBy({ top: scrollStep, behavior: 'smooth' });
 }
 
 function renderNotifications(notifications) {
@@ -1120,6 +1215,7 @@ function attachAccountEventHandlers() {
   document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
   document.getElementById('update-password-btn')?.addEventListener('click', handleUpdatePassword);
   document.getElementById('delete-account-btn')?.addEventListener('click', handleDeleteAccount);
+  document.querySelector('.saved-routes-more')?.addEventListener('click', scrollSavedRoutes);
 
   // Colourblind mode toggle in account settings
   document.getElementById('colorblind-checkbox')?.addEventListener('change', async (e) => {
@@ -1149,6 +1245,8 @@ function attachAccountEventHandlers() {
       }).catch(err => console.warn('Failed to save colourblind preference:', err.message));
     }
   });
+
+  window.addEventListener('resize', updateSavedRoutesScrollButton);
 }
 
 // ============================================================================
@@ -1497,6 +1595,44 @@ function formatDuration(mins) {
   return remainder > 0 ? `${hours}h ${remainder} min` : `${hours}h`;
 }
 
+function buildRouteSavePayload(route) {
+  const fromName = (currentRoutesData && currentRoutesData.from) || selectedStops.from?.name || '';
+  const toName = (currentRoutesData && currentRoutesData.to) || selectedStops.to?.name || '';
+  const transportLabel = (route.transport || [])
+    .map(mode => mode.charAt(0).toUpperCase() + mode.slice(1))
+    .join(' + ') || 'Route';
+
+  return {
+    routeName: `${transportLabel} (${route.start_time}–${route.end_time})`,
+    routeStart: fromName,
+    routeEnd: toName,
+  };
+}
+
+async function handleSaveSearchedRoute(route, saveButton) {
+  if (!authState.token) {
+    alert('Please log in to save routes.');
+    openAuthModal();
+    return;
+  }
+
+  try {
+    const payload = buildRouteSavePayload(route);
+    await apiRequest('/api/account/saved-routes', {
+      method: 'POST',
+      body: payload,
+    });
+
+    saveButton.textContent = 'Saved';
+    saveButton.classList.add('saved');
+    saveButton.disabled = true;
+
+    await refreshAccountView();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
 /**
  * Build a walking-leg element for the detail panel
  */
@@ -1661,6 +1797,16 @@ function renderRoutesTable(routes) {
     durationSpan.className = 'route-duration';
     durationSpan.textContent = formatDuration(route.duration_mins);
 
+    // Save route button
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'route-save-btn';
+    saveBtn.type = 'button';
+    saveBtn.textContent = 'Save Route';
+    saveBtn.addEventListener('click', event => {
+      event.stopPropagation();
+      handleSaveSearchedRoute(route, saveBtn);
+    });
+
     // Expand indicator
     const expandIcon = document.createElement('span');
     expandIcon.className = 'route-expand-icon';
@@ -1670,6 +1816,7 @@ function renderRoutesTable(routes) {
     routeRow.appendChild(iconsContainer);
     routeRow.appendChild(timesSpan);
     routeRow.appendChild(durationSpan);
+    routeRow.appendChild(saveBtn);
     routeRow.appendChild(expandIcon);
 
     // Click handler to toggle detail panel
@@ -1738,6 +1885,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   attachFaqEventHandlers();
+  attachSupportEventHandlers();
   attachAccountEventHandlers();
   initWeatherSearch();
 

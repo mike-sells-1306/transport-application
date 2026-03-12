@@ -555,6 +555,31 @@ body {
   margin-left: auto;
 }
 
+.route-save-btn {
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--white);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-left: 10px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.route-save-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+.route-save-btn.saved,
+.route-save-btn:disabled {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.75);
+  cursor: default;
+}
+
 /* Transport icons container (shows bus → train chain) */
 .route-transport-icons {
   display: flex;
@@ -1042,87 +1067,229 @@ body {
   display: block;
 }
 
+/* Customer Support panel */
+.support-panel {
+  width: 720px;
+}
+
+.support-header h2 {
+  font-size: 1.4rem;
+}
+
+.support-content {
+  gap: 14px;
+}
+
+.support-item h3 {
+  margin: 0 0 8px;
+  font-size: 1.06rem;
+  color: var(--red-main);
+}
+
+.support-item p {
+  margin: 0;
+  color: #4d4d4d;
+  line-height: 1.45;
+}
+
+.support-list {
+  margin: 0;
+  padding-left: 20px;
+  color: #4d4d4d;
+}
+
+.support-list li + li {
+  margin-top: 6px;
+}
+
 /* Account Modal */
 .account-modal {
   position: absolute;
   left: 50%;
   top: 50%;
-  transform: translate(-50%,-50%);
+  transform: translate(-50%, -50%);
   z-index: 60;
-  width: 600px;
-  background: var(--grey-light);
+  width: min(820px, 90vw);
+  background: var(--red-light);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
 }
+
 .account-modal-header {
   background: var(--red-main);
   color: var(--white);
   border-radius: var(--radius) var(--radius) 0 0;
-  font-size: 1.35rem;
-  font-weight: 700;
-  padding: 28px 36px 18px 36px;
+  font-size: clamp(1.5rem, 2vw, 2rem);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  padding: 24px 32px 18px;
 }
+
 .account-modal-body {
   display: flex;
   flex-direction: column;
-  padding: 28px 36px 32px 36px;
-  gap: 18px;
+  gap: 14px;
+  padding: 16px 18px 20px;
 }
+
+.account-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--grey-light);
+  border: 1.5px solid #c8c8c8;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+
 .account-avatar {
-  width: 64px; height: 64px;
+  width: 82px;
+  height: 82px;
   border-radius: 50%;
-  background: #ccc;
-  margin-bottom: 8px;
-  background-image: url('data:image/svg+xml;utf8,<svg fill="%23777" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M12 14c-4.418 0-8 1.79-8 4v2h16v-2c0-2.21-3.582-4-8-4z"/></svg>');
-  background-size: 60%;
+  flex-shrink: 0;
+  background: #000;
+  background-image: url('data:image/svg+xml;utf8,<svg fill="white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M12 14c-4.418 0-8 1.79-8 4v2h16v-2c0-2.21-3.582-4-8-4z"/></svg>');
+  background-size: 76%;
   background-repeat: no-repeat;
   background-position: center;
 }
+
 .account-info {
-  margin-bottom: 18px;
+  min-width: 0;
 }
+
 .account-username {
-  font-size: 1.12rem;
-  color: #333;
-  font-weight: 500;
+  font-size: clamp(1.25rem, 1.7vw, 1.6rem);
+  color: #222;
+  font-weight: 600;
+  font-style: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.account-content {
+
+.account-content-grid {
   display: flex;
-  gap: 32px;
+  gap: 14px;
 }
-.saved-routes {
+
+.saved-routes-panel {
   flex: 1;
-  background: #f7f7f7;
+  background: var(--grey-light);
+  border: 1.5px solid #c8c8c8;
   border-radius: var(--radius-sm);
-  padding: 18px 16px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-}
-.saved-routes h3 {
-  margin: 0 0 10px 0;
-  font-size: 1.08rem;
-  color: var(--red-main);
-}
-.saved-routes ul {
-  list-style: none;
-  margin: 0; padding: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
-.saved-routes li {
+
+.saved-routes-panel h3 {
+  margin: 0;
+  padding: 12px 16px;
+  text-align: center;
+  font-size: 1.55rem;
+  font-weight: 600;
+  color: var(--red-main);
+  background: #dddddd;
+  border-bottom: 1.5px solid #c8c8c8;
+}
+
+.saved-routes-panel ul {
+  list-style: none;
+  margin: 0;
+  padding: 12px 14px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 150px;
+  max-height: 232px;
+  overflow-y: auto;
+}
+
+.saved-route-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 1.05rem;
+  gap: 10px;
+  font-size: 1.08rem;
+  color: #222;
 }
-.account-actions {
+
+.saved-route-item.empty {
+  font-size: 1.15rem;
+  font-style: italic;
+  color: #444;
+}
+
+.saved-route-icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 24px;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.saved-route-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.saved-routes-more {
+  align-self: center;
+  margin: 8px 14px 12px;
+  width: 56%;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid #b5b5b5;
+  background: #d7d7d7;
+  color: #333;
+  font-size: 1.35rem;
+  cursor: pointer;
+}
+
+.account-actions-panel {
+  width: min(38%, 300px);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   justify-content: flex-start;
 }
+
+.account-action-btn,
+.account-close-btn {
+  background: #f7f7f7;
+  color: #222;
+  border: 1.5px solid #bfbfbf;
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 1.22rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.account-action-btn:hover,
+.account-close-btn:hover {
+  transform: translateY(-1px);
+  background: #ffffff;
+  border-color: #a8a8a8;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
+.account-action-btn.danger {
+  background: #fff5f5;
+  color: #8b1111;
+  border-color: #d6aaaa;
+}
+
+.account-close-btn {
+  margin-top: auto;
+  background: #ececec;
+}
+
 .action-btn {
   background: var(--red-main);
   color: var(--white);
@@ -1139,6 +1306,35 @@ body {
 }
 .action-btn.danger {
   background: #a31515;
+}
+
+@media (max-width: 900px) {
+  .account-modal-header {
+    padding: 18px 20px 14px;
+  }
+
+  .account-avatar {
+    width: 64px;
+    height: 64px;
+  }
+
+  .account-content-grid {
+    flex-direction: column;
+  }
+
+  .account-actions-panel {
+    width: 100%;
+  }
+
+  .saved-routes-panel h3,
+  .account-action-btn,
+  .account-close-btn {
+    font-size: 1.1rem;
+  }
+
+  .saved-route-item {
+    font-size: 1rem;
+  }
 }
 
 .secondary-btn {
@@ -1307,6 +1503,62 @@ body.colorblind-mode .popup-description {
   color: #222;
 }
 
+/* Redesigned account modal in colourblind mode */
+body.colorblind-mode .account-modal {
+  background: #E3F2FD;
+}
+
+body.colorblind-mode .account-modal-header {
+  background: #0057B7;
+  color: #fff;
+}
+
+body.colorblind-mode .account-profile-card,
+body.colorblind-mode .saved-routes-panel,
+body.colorblind-mode .saved-routes-panel h3,
+body.colorblind-mode .saved-routes-more,
+body.colorblind-mode .account-action-btn,
+body.colorblind-mode .account-close-btn {
+  border-color: #003D80;
+}
+
+body.colorblind-mode .account-profile-card,
+body.colorblind-mode .saved-routes-panel {
+  background: #F4F9FF;
+}
+
+body.colorblind-mode .saved-routes-panel h3 {
+  background: #D7E9FF;
+  color: #0A2A4A;
+}
+
+body.colorblind-mode .saved-route-icon {
+  color: #0057B7;
+}
+
+body.colorblind-mode .account-username,
+body.colorblind-mode .saved-route-item,
+body.colorblind-mode .saved-route-label {
+  color: #0A2A4A;
+}
+
+body.colorblind-mode .account-action-btn,
+body.colorblind-mode .account-close-btn,
+body.colorblind-mode .saved-routes-more {
+  background: #FFFFFF;
+  color: #0A2A4A;
+}
+
+body.colorblind-mode .account-action-btn:hover,
+body.colorblind-mode .account-close-btn:hover {
+  background: #EAF3FF;
+}
+
+body.colorblind-mode .account-action-btn.danger {
+  background: #FFFFFF;
+  color: #0A2A4A;
+}
+
 /* Journey dots — colour override for CB mode (WCAG 1.4.1) */
 body.colorblind-mode .journey-dot-empty {
   border-color: #0057B7;
@@ -1363,8 +1615,12 @@ body.colorblind-mode .route-row.alt {
   .map-area {
     margin-left: 220px;
   }
-  .info-card, .route-modal, .account-modal {
+  .info-card, .route-modal {
     width: 95vw;
     left: 52%;
+  }
+  .account-modal {
+    width: 95vw;
+    left: 50%;
   }
 }

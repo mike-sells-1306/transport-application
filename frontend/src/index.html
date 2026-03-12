@@ -48,7 +48,7 @@
     <nav class="sidebar-links" aria-label="Main navigation">
       <a href="#account" id="account-link">Account</a>
       <a href="#faq">FAQ</a>
-      <a href="#support">Customer Support</a>
+      <a href="#support" id="support-link">Customer Support</a>
       <a href="#accessibility" id="colorblind-toggle-link" role="button" aria-pressed="false">Accessibility</a>
     </nav>
   </aside>
@@ -163,6 +163,47 @@
       </div>
     </section>
 
+    <!-- Customer Support Panel (hidden by default) -->
+    <section class="faq-panel support-panel hidden" id="support-panel" aria-hidden="true">
+      <div class="faq-header support-header">
+        <h2>Customer Support</h2>
+        <button class="faq-close" id="support-close" type="button" aria-label="Close Customer Support">×</button>
+      </div>
+      <div class="faq-content support-content">
+        <article class="faq-item support-item">
+          <h3>Need help planning a journey?</h3>
+          <p>
+            If route results look incorrect or incomplete, try updating your from/to stops and running the search again.
+            If the issue continues, contact us with your route details and time of search.
+          </p>
+        </article>
+
+        <article class="faq-item support-item">
+          <h3>Contact channels</h3>
+          <ul class="support-list">
+            <li><strong>Email:</strong> support@transportnorthwest.example</li>
+            <li><strong>Phone:</strong> 0800 123 4567</li>
+            <li><strong>Live chat:</strong> Weekdays 08:00–18:00</li>
+          </ul>
+        </article>
+
+        <article class="faq-item support-item">
+          <h3>Report a disruption or data issue</h3>
+          <p>
+            Include service type (bus/train), route start and end, expected departure time, and a screenshot if possible.
+            This helps us investigate and resolve issues faster.
+          </p>
+        </article>
+
+        <article class="faq-item support-item">
+          <h3>Account help</h3>
+          <p>
+            For login, password, or saved route issues, open the Account tab first, then contact support if the problem persists.
+          </p>
+        </article>
+      </div>
+    </section>
+
     <!-- Authentication Modal (hidden by default) -->
     <section class="auth-modal hidden" id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
       <div class="auth-modal-header" id="auth-modal-title">Account Login</div>
@@ -189,28 +230,27 @@
     <section class="account-modal hidden" id="account-modal" role="dialog" aria-modal="true" aria-labelledby="account-modal-title">
       <div class="account-modal-header" id="account-modal-title">Account Settings</div>
       <div class="account-modal-body">
-        <div class="account-avatar"></div>
-        <div class="account-info">
-          <div class="account-username">Username: <span id="account-username-value">-</span></div>
-        </div>
-        <div class="account-content">
-          <div class="saved-routes">
-            <h3>Saved Routes</h3>
-            <ul id="saved-routes-list">
-              <li>No saved routes yet.</li>
-            </ul>
+        <div class="account-profile-card">
+          <div class="account-avatar" aria-hidden="true"></div>
+          <div class="account-info">
+            <div class="account-username">Username: <span id="account-username-value">-</span></div>
           </div>
-          <div class="account-actions">
-            <div class="colorblind-toggle">
-              <label for="colorblind-checkbox">
-                <input type="checkbox" id="colorblind-checkbox" role="switch" aria-checked="false" aria-label="Enable colourblind mode" />
-                Colourblind Mode
-              </label>
-            </div>
-            <button class="action-btn" id="update-password-btn" type="button">Update Password</button>
-            <button class="action-btn" id="logout-btn" type="button">Log Out</button>
-            <button class="action-btn danger" id="delete-account-btn" type="button">Delete Account</button>
-            <button class="secondary-btn" id="close-account-modal" type="button">Close</button>
+        </div>
+
+        <div class="account-content-grid">
+          <section class="saved-routes-panel" aria-labelledby="saved-routes-title">
+            <h3 id="saved-routes-title">Saved Routes</h3>
+            <ul id="saved-routes-list">
+              <li class="saved-route-item empty">No saved routes yet.</li>
+            </ul>
+            <button class="saved-routes-more hidden" type="button" aria-label="More saved routes">...</button>
+          </section>
+
+          <div class="account-actions-panel">
+            <button class="account-action-btn" id="update-password-btn" type="button">Update Password</button>
+            <button class="account-action-btn" id="logout-btn" type="button">Log Out</button>
+            <button class="account-action-btn danger" id="delete-account-btn" type="button">Delete Account</button>
+            <button class="account-close-btn" id="close-account-modal" type="button">Close</button>
           </div>
         </div>
       </div>
