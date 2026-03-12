@@ -1235,12 +1235,26 @@ body {
   gap: 10px;
   font-size: 1.08rem;
   color: #222;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm, 10px);
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.saved-route-item.clickable {
+  cursor: pointer;
+}
+
+.saved-route-item.clickable:hover,
+.saved-route-item.clickable:focus-visible {
+  background: rgba(0, 0, 0, 0.07);
+  outline: none;
 }
 
 .saved-route-item.empty {
   font-size: 1.15rem;
   font-style: italic;
   color: #444;
+  cursor: default;
 }
 
 .saved-route-icon {
@@ -1250,12 +1264,27 @@ body {
   width: 24px;
   font-size: 1.2rem;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .saved-route-label {
+  flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.saved-route-chevron {
+  font-size: 1.2rem;
+  color: #999;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.saved-route-item.clickable:hover .saved-route-chevron,
+.saved-route-item.clickable:focus-visible .saved-route-chevron {
+  color: var(--red-main, #b71c1c);
 }
 
 .saved-routes-more {
@@ -1307,7 +1336,7 @@ body {
 }
 
 .account-close-btn {
-  margin-top: auto;
+  margin-top: 0;
   background: #ececec;
 }
 
@@ -1561,6 +1590,16 @@ body.colorblind-mode .account-username,
 body.colorblind-mode .saved-route-item,
 body.colorblind-mode .saved-route-label {
   color: #0A2A4A;
+}
+
+body.colorblind-mode .saved-route-item.clickable:hover,
+body.colorblind-mode .saved-route-item.clickable:focus-visible {
+  background: rgba(0, 87, 183, 0.08);
+}
+
+body.colorblind-mode .saved-route-item.clickable:hover .saved-route-chevron,
+body.colorblind-mode .saved-route-item.clickable:focus-visible .saved-route-chevron {
+  color: #0057B7;
 }
 
 body.colorblind-mode .account-action-btn,

@@ -1013,23 +1013,79 @@ function renderSavedRoutes(savedRoutes) {
 
   savedRoutes.forEach((route, index) => {
     const item = document.createElement('li');
-    item.className = 'saved-route-item';
+    item.className = 'saved-route-item clickable';
+    item.setAttribute('role', 'button');
+    item.setAttribute('tabindex', '0');
+    item.title = `Search routes: ${route.routeStart} to ${route.routeEnd}`;
 
     const icon = document.createElement('span');
     icon.className = 'saved-route-icon';
     icon.setAttribute('aria-hidden', 'true');
-    icon.textContent = index % 2 === 0 ? '🚆' : '🚌';
+    const name = (route.routeName || '').toLowerCase();
+    const hasTrain = name.includes('train') || name.includes('rail');
+    const hasBus   = name.includes('bus');
+    // Mixed (bus + train) → train takes precedence; unknown → train as default
+    icon.textContent = (hasBus && !hasTrain) ? '🚌' : '🚆';
 
     const label = document.createElement('span');
     label.className = 'saved-route-label';
     label.textContent = `${route.routeStart} to ${route.routeEnd}`;
 
+    const chevron = document.createElement('span');
+    chevron.className = 'saved-route-chevron';
+    chevron.setAttribute('aria-hidden', 'true');
+    chevron.textContent = '›';
+
     item.appendChild(icon);
     item.appendChild(label);
+    item.appendChild(chevron);
+
+    const activate = () => viewSavedRoute(route);
+    item.addEventListener('click', activate);
+    item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
+
     list.appendChild(item);
   });
 
   updateSavedRoutesScrollButton();
+}
+
+async function viewSavedRoute(savedRoute) {
+  // Close account modal first
+  closeAccountModal();
+
+  // Fill the search inputs with the saved route names
+  const fromInput = document.getElementById('from-input');
+  const toInput = document.getElementById('to-input');
+  if (fromInput) fromInput.value = savedRoute.routeStart;
+  if (toInput) toInput.value = savedRoute.routeEnd;
+
+  // Build minimal stop objects from the names (no coordinates available from saved data)
+  selectedStops.from = { name: savedRoute.routeStart };
+  selectedStops.to = { name: savedRoute.routeEnd };
+
+  try {
+    const response = await fetch('/api/routes/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: selectedStops.from,
+        to: selectedStops.to,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      alert(err.error || 'Could not load routes for this saved journey.');
+      return;
+    }
+
+    const data = await response.json();
+    displayRoutesModal(data);
+  } catch (error) {
+    console.error('Error loading saved route:', error);
+    alert('Could not load routes. Please check your connection and try again.');
+  }
 }
 
 function updateSavedRoutesScrollButton() {
