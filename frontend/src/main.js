@@ -1548,6 +1548,7 @@ function displayRoutesModal(data) {
   // Render the routes with default (fastest) sorting applied
   const sorted = sortRoutes('Fastest', data.routes);
   renderRoutesTable(sorted);
+  updateRouteDownloadButtonState();
 
   // Show the modal by removing the hidden class
   modal.classList.remove('hidden');
@@ -1593,6 +1594,293 @@ function formatDuration(mins) {
   const hours = Math.floor(mins / 60);
   const remainder = mins % 60;
   return remainder > 0 ? `${hours}h ${remainder} min` : `${hours}h`;
+}
+
+function getCurrentSortedRoutes() {
+  if (!currentRoutesData || !Array.isArray(currentRoutesData.routes)) {
+    return [];
+  }
+
+  const sortMethod = document.getElementById('sort')?.value || 'Fastest';
+  return sortRoutes(sortMethod, currentRoutesData.routes);
+}
+
+function updateRouteDownloadButtonState() {
+  const downloadBtn = document.getElementById('download-routes-pdf');
+  if (!downloadBtn) {
+    return;
+  }
+
+  const hasRoutes = getCurrentSortedRoutes().length > 0;
+  downloadBtn.disabled = !hasRoutes;
+  downloadBtn.title = hasRoutes
+    ? 'Download all displayed route options'
+    : 'Search for routes to enable route download';
+}
+
+function formatRouteTransportSummary(route) {
+  if (!route || !Array.isArray(route.transport) || route.transport.length === 0) {
+    return 'Walking route';
+  }
+
+  return route.transport
+    .map(mode => mode.charAt(0).toUpperCase() + mode.slice(1))
+    .join(' → ');
+}
+
+function formatPdfLegDescription(leg) {
+  if (leg.mode === 'walk') {
+    return `Walk from ${leg.from_stop} to ${leg.to_stop} (${leg.distance_m}m, ${leg.duration_mins} min) • ${leg.depart}–${leg.arrive}`;
+  }
+
+  if (leg.mode === 'wait') {
+    return `Change at ${leg.from_stop} (${leg.duration_mins} min wait) • ${leg.depart}–${leg.arrive}`;
+  }
+
+  const service = leg.service || leg.mode;
+  return `${service} from ${leg.from_stop} to ${leg.to_stop} (${leg.duration_mins} min) • ${leg.depart}–${leg.arrive}`;
+}
+
+function sanitizePdfFileNamePart(value) {
+  return String(value || 'route-plan')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40) || 'route-plan';
+}
+
+function addWrappedPdfText(doc, text, x, y, options = {}) {
+  const {
+    maxWidth,
+    lineHeight = 14,
+    topMargin = 48,
+    bottomMargin = 48,
+    fontSize = 11,
+    fontStyle = 'normal',
+  } = options;
+
+  const pageHeight = doc.internal.pageSize.getHeight();
+  doc.setFont('helvetica', fontStyle);
+  doc.setFontSize(fontSize);
+
+  const lines = doc.splitTextToSize(String(text || ''), maxWidth);
+  lines.forEach(line => {
+    if (y > pageHeight - bottomMargin) {
+      doc.addPage();
+      y = topMargin;
+      doc.setFont('helvetica', fontStyle);
+      doc.setFontSize(fontSize);
+    }
+
+    doc.text(line, x, y);
+    y += lineHeight;
+  });
+
+  return y;
+}
+
+function getWrappedPdfLineCount(doc, text, maxWidth) {
+  return doc.splitTextToSize(String(text || ''), maxWidth).length;
+}
+
+function exportRoutesToPdf() {
+  const routes = getCurrentSortedRoutes();
+  if (!currentRoutesData || routes.length === 0) {
+    alert('Search for a route first to download a PDF.');
+    return;
+  }
+
+  const JsPdf = window.jspdf?.jsPDF;
+  if (!JsPdf) {
+    alert('PDF export is unavailable right now. Please try again in a moment.');
+    return;
+  }
+
+  const doc = new JsPdf({ unit: 'pt', format: 'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginX = 48;
+  const topMargin = 48;
+  const bottomMargin = 48;
+  const contentWidth = pageWidth - (marginX * 2);
+  const sortLabel = document.getElementById('sort')?.value || 'Fastest';
+  const exportedAt = new Date();
+  const colors = {
+    maroon: [139, 17, 17],
+    redMain: [183, 28, 28],
+    redLight: [198, 40, 40],
+    blush: [247, 236, 236],
+    soft: [252, 247, 247],
+    border: [226, 204, 204],
+    text: [68, 68, 68],
+    muted: [110, 110, 110],
+    white: [255, 255, 255],
+  };
+
+  let currentPage = 1;
+  const startStyledPage = (pageNumber) => {
+    doc.setFillColor(...colors.soft);
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+    doc.setFillColor(...colors.maroon);
+    doc.rect(0, 0, pageWidth, 82, 'F');
+
+    doc.setFillColor(...colors.redLight);
+    doc.rect(0, 82, pageWidth, 10, 'F');
+
+    doc.setTextColor(...colors.white);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.text('Transport for North West', marginX, 38);
+    doc.setFontSize(13);
+    doc.text(pageNumber === 1 ? 'Complete Route Plan' : 'Route Plan Continued', marginX, 60);
+
+    return 126;
+  };
+
+  let y = startStyledPage(currentPage);
+
+  const summaryTitle = `${currentRoutesData.from} to ${currentRoutesData.to}`;
+  const summaryMeta = `Exported ${exportedAt.toLocaleString()} • ${routes.length} route option${routes.length === 1 ? '' : 's'} • Sorted by ${sortLabel}`;
+  const summaryTitleHeight = getWrappedPdfLineCount(doc, summaryTitle, contentWidth - 48) * 18;
+  const summaryMetaHeight = getWrappedPdfLineCount(doc, summaryMeta, contentWidth - 40) * 14;
+  const summaryBoxHeight = Math.max(86, 26 + summaryTitleHeight + summaryMetaHeight + 26);
+  const summaryStartY = y;
+
+  doc.setFillColor(...colors.blush);
+  doc.setDrawColor(...colors.border);
+  doc.roundedRect(marginX, summaryStartY, contentWidth, summaryBoxHeight, 14, 14, 'FD');
+  doc.setFillColor(...colors.redMain);
+  doc.roundedRect(marginX, summaryStartY, 12, summaryBoxHeight, 14, 14, 'F');
+
+  doc.setTextColor(...colors.redMain);
+  y = addWrappedPdfText(doc, summaryTitle, marginX + 24, summaryStartY + 28, {
+    maxWidth: contentWidth - 48,
+    lineHeight: 18,
+    topMargin: 126,
+    bottomMargin,
+    fontSize: 15,
+    fontStyle: 'bold',
+  });
+
+  doc.setTextColor(...colors.text);
+  y = addWrappedPdfText(
+    doc,
+    summaryMeta,
+    marginX + 24,
+    y + 6,
+    {
+      maxWidth: contentWidth - 40,
+      lineHeight: 14,
+      topMargin: 126,
+      bottomMargin,
+      fontSize: 10,
+    }
+  );
+
+  y = summaryStartY + summaryBoxHeight + 18;
+
+  routes.forEach((route, routeIndex) => {
+    const routeTitle = `Route ${routeIndex + 1}: ${formatRouteTransportSummary(route)}`;
+    const routeMeta = `Times: ${route.start_time} to ${route.end_time} • Duration: ${formatDuration(route.duration_mins)} • Changes: ${route.changes}`;
+    const routeTitleHeight = getWrappedPdfLineCount(doc, routeTitle, contentWidth - 48) * 16;
+    const routeMetaHeight = getWrappedPdfLineCount(doc, routeMeta, contentWidth - 48) * 13;
+
+    let legHeight = 0;
+    (route.legs || []).forEach((leg, legIndex) => {
+      legHeight += getWrappedPdfLineCount(doc, `${legIndex + 1}. ${formatPdfLegDescription(leg)}`, contentWidth - 78) * 13 + 14;
+      if (Array.isArray(leg.intermediate_stops) && leg.intermediate_stops.length > 0) {
+        leg.intermediate_stops.forEach(stop => {
+          const stopLabel = stop.time ? `${stop.time} ${stop.name}` : stop.name;
+          legHeight += getWrappedPdfLineCount(doc, `Intermediate stop: ${stopLabel}`, contentWidth - 108) * 11 + 6;
+        });
+      }
+    });
+
+    const routeBlockHeight = Math.max(118, 34 + routeTitleHeight + routeMetaHeight + legHeight + 28);
+
+    if (y + routeBlockHeight > pageHeight - bottomMargin - 18) {
+      doc.addPage();
+      currentPage += 1;
+      y = startStyledPage(currentPage);
+    }
+
+    doc.setFillColor(...colors.white);
+    doc.setDrawColor(...colors.border);
+    doc.roundedRect(marginX, y, contentWidth, routeBlockHeight, 14, 14, 'FD');
+    doc.setFillColor(...colors.redMain);
+    doc.roundedRect(marginX, y, 10, routeBlockHeight, 14, 14, 'F');
+
+    doc.setTextColor(...colors.redMain);
+    y = addWrappedPdfText(doc, routeTitle, marginX + 24, y + 26, {
+      maxWidth: contentWidth - 48,
+      lineHeight: 16,
+      topMargin: 126,
+      bottomMargin,
+      fontSize: 13,
+      fontStyle: 'bold',
+    });
+
+    doc.setTextColor(...colors.text);
+    y = addWrappedPdfText(doc, routeMeta, marginX + 24, y + 2, {
+      maxWidth: contentWidth - 48,
+      lineHeight: 13,
+      topMargin: 126,
+      bottomMargin,
+      fontSize: 10,
+    });
+
+    (route.legs || []).forEach((leg, legIndex) => {
+      const accent = leg.mode === 'walk'
+        ? [160, 160, 160]
+        : leg.mode === 'train'
+          ? colors.maroon
+          : colors.redLight;
+
+      doc.setFillColor(...accent);
+      doc.circle(marginX + 28, y + 12, 4, 'F');
+      doc.setTextColor(...colors.text);
+      y = addWrappedPdfText(doc, `${legIndex + 1}. ${formatPdfLegDescription(leg)}`, marginX + 40, y + 16, {
+        maxWidth: contentWidth - 78,
+        lineHeight: 13,
+        topMargin: 126,
+        bottomMargin,
+        fontSize: 10,
+      });
+
+      if (Array.isArray(leg.intermediate_stops) && leg.intermediate_stops.length > 0) {
+        doc.setTextColor(...colors.muted);
+        leg.intermediate_stops.forEach(stop => {
+          const stopLabel = stop.time ? `${stop.time} ${stop.name}` : stop.name;
+          y = addWrappedPdfText(doc, `Intermediate stop: ${stopLabel}`, marginX + 56, y + 2, {
+            maxWidth: contentWidth - 108,
+            lineHeight: 11,
+            topMargin: 126,
+            bottomMargin,
+            fontSize: 9,
+          });
+        });
+      }
+
+      y += 4;
+    });
+
+    y += 18;
+  });
+
+  const totalPages = doc.getNumberOfPages();
+  for (let pageIndex = 1; pageIndex <= totalPages; pageIndex += 1) {
+    doc.setPage(pageIndex);
+    doc.setDrawColor(...colors.border);
+    doc.line(marginX, pageHeight - 28, pageWidth - marginX, pageHeight - 28);
+    doc.setTextColor(...colors.muted);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(`Page ${pageIndex} of ${totalPages}`, pageWidth - marginX - 56, pageHeight - 14);
+  }
+
+  const fileName = `${sanitizePdfFileNamePart(currentRoutesData.from)}-to-${sanitizePdfFileNamePart(currentRoutesData.to)}-routes.pdf`;
+  doc.save(fileName);
 }
 
 function buildRouteSavePayload(route) {
@@ -1857,6 +2145,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const closeRouteModalBtn = document.getElementById('close-route-modal');
   const routeModal = document.getElementById('route-modal');
   const sortSelect = document.getElementById('sort');
+  const downloadRoutesPdfBtn = document.getElementById('download-routes-pdf');
   
   if (closeRouteModalBtn && routeModal) {
     closeRouteModalBtn.addEventListener('click', () => {
@@ -1871,8 +2160,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const sortMethod = e.target.value;
         const sortedRoutes = sortRoutes(sortMethod, currentRoutesData.routes);
         renderRoutesTable(sortedRoutes);
+        updateRouteDownloadButtonState();
       }
     });
+  }
+
+  if (downloadRoutesPdfBtn) {
+    downloadRoutesPdfBtn.addEventListener('click', exportRoutesToPdf);
+    updateRouteDownloadButtonState();
   }
 
   // Close modal when clicking outside of it

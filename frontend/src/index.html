@@ -82,6 +82,9 @@
           <option>Fastest</option>
           <option>Fewest Changes</option>
         </select>
+        <button id="download-routes-pdf" class="route-download-btn" type="button" disabled>
+          Download Routes
+        </button>
       </div>
       <div class="route-list">
         <!-- Route rows are populated dynamically by main.js -->
@@ -259,6 +262,7 @@
 
   <!-- Leaflet JS library for interactive mapping -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <!-- Main application script -->
   <script src="main.js"></script>
 </body>

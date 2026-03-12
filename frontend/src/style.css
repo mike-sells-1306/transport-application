@@ -474,7 +474,28 @@ body {
   padding: 16px 32px 12px 32px;
   font-size: 1rem;
   gap: 8px;
+  flex-wrap: wrap;
   flex-shrink: 0;
+}
+.route-download-btn {
+  margin-left: auto;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--white);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+.route-download-btn:hover {
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.85);
+}
+.route-download-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 .route-modal-close {
   border: none;
