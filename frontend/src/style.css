@@ -1207,6 +1207,101 @@ body.sidebar-minimized {
   margin-top: 6px;
 }
 
+/* Accessibility panel */
+.accessibility-panel {
+  width: min(640px, 92vw);
+  z-index: 58;
+}
+
+.accessibility-content {
+  gap: 14px;
+}
+
+.accessibility-item h3 {
+  margin: 0 0 6px;
+  font-size: 1.08rem;
+  color: var(--red-main);
+}
+
+.accessibility-item p {
+  margin: 0 0 10px;
+  color: #4d4d4d;
+}
+
+.accessibility-zoom-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+}
+
+#accessibility-zoom {
+  width: 100%;
+}
+
+.accessibility-value {
+  font-weight: 600;
+  min-width: 52px;
+  text-align: right;
+}
+
+.accessibility-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+/* Accessibility radio groups */
+.accessibility-fieldset {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  border: none;
+  padding: 0;
+  margin: 8px 0 0 0;
+}
+.accessibility-fieldset label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(0,0,0,0.04);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.accessibility-fieldset input[type="radio"] {
+  accent-color: var(--red-main);
+}
+
+/* Helper classes applied via JS when font presets are active */
+.accessibility-font-small {
+  /* slightly smaller text across the app if needed */
+}
+.accessibility-font-large {
+  /* slightly larger text across the app if needed */
+}
+
+.accessibility-select {
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 0.96rem;
+  background: #fff;
+}
+
+.accessibility-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.accessibility-actions .auth-help {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+}
+
 /* Account Modal */
 .account-modal {
   position: absolute;
@@ -1503,6 +1598,16 @@ body.sidebar-minimized {
   font-size: 1.25rem;
   font-weight: 700;
   padding: 24px 28px 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.auth-modal-header h2 {
+  margin: 0;
+  color: var(--white);
+  font-size: inherit;
+  font-weight: inherit;
 }
 
 .auth-modal-body {
@@ -1515,6 +1620,12 @@ body.sidebar-minimized {
 .auth-help {
   margin: 0;
   color: #555;
+}
+
+.auth-view {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .auth-form {
@@ -1622,9 +1733,52 @@ body.colorblind-mode {
   --sidebar-border: rgba(255,255,255,0.18);
 }
 
+/* Per-mode palette overrides so each accessibility mode also rethemes sidebar */
+body.accessibility-mode-deuteranopia {
+  --red-main: #0057B7;
+  --red-light: #1976D2;
+  --red-panel: #004A99;
+  --sidebar-border: rgba(255,255,255,0.18);
+}
+
+body.accessibility-mode-protanopia {
+  --red-main: #0E5A8A;
+  --red-light: #2A78B0;
+  --red-panel: #0A466C;
+  --sidebar-border: rgba(255,255,255,0.2);
+}
+
+body.accessibility-mode-tritanopia {
+  --red-main: #5E2A84;
+  --red-light: #7B44A6;
+  --red-panel: #4A1F67;
+  --sidebar-border: rgba(255,255,255,0.2);
+}
+
+body.accessibility-mode-achromatopsia {
+  --red-main: #2D2D2D;
+  --red-light: #3D3D3D;
+  --red-panel: #1F1F1F;
+  --grey-dark: #222;
+  --blue-map: #ECECEC;
+  --sidebar-border: rgba(255,255,255,0.24);
+}
+
 /* Override hardcoded colours that don't use CSS variables */
 body.colorblind-mode .sidebar-links {
   background: #003D80;
+}
+
+body.accessibility-mode-protanopia .sidebar-links {
+  background: #08375A;
+}
+
+body.accessibility-mode-tritanopia .sidebar-links {
+  background: #3B1953;
+}
+
+body.accessibility-mode-achromatopsia .sidebar-links {
+  background: #141414;
 }
 
 body.colorblind-mode .action-btn.danger {
@@ -1749,6 +1903,35 @@ body.colorblind-mode .route-row.alt {
   border-left: 3px solid rgba(255, 255, 255, 0.5);
 }
 
+/* Colour profile simulation filters (scoped to map and cards to avoid blurring text globally) */
+body.accessibility-mode-protanopia .leaflet-map,
+body.accessibility-mode-protanopia .route-modal,
+body.accessibility-mode-protanopia .weather-panel,
+body.accessibility-mode-protanopia .notif-panel {
+  filter: saturate(0.85) hue-rotate(-8deg);
+}
+
+body.accessibility-mode-deuteranopia .leaflet-map,
+body.accessibility-mode-deuteranopia .route-modal,
+body.accessibility-mode-deuteranopia .weather-panel,
+body.accessibility-mode-deuteranopia .notif-panel {
+  filter: saturate(0.8) hue-rotate(10deg);
+}
+
+body.accessibility-mode-tritanopia .leaflet-map,
+body.accessibility-mode-tritanopia .route-modal,
+body.accessibility-mode-tritanopia .weather-panel,
+body.accessibility-mode-tritanopia .notif-panel {
+  filter: saturate(0.8) hue-rotate(28deg);
+}
+
+body.accessibility-mode-achromatopsia .leaflet-map,
+body.accessibility-mode-achromatopsia .route-modal,
+body.accessibility-mode-achromatopsia .weather-panel,
+body.accessibility-mode-achromatopsia .notif-panel {
+  filter: grayscale(1) contrast(1.25);
+}
+
 /* Utility */
 .hidden {
   display: none !important;
@@ -1768,11 +1951,6 @@ body.colorblind-mode .route-row.alt {
   .route-modal {
     width: min(620px, 90vw);
   }
-<<<<<<< Updated upstream
-  .info-card, .route-modal {
-    width: 95vw;
-    left: 52%;
-=======
 
   .faq-panel {
     width: min(700px, 90vw);
@@ -2343,10 +2521,9 @@ body.colorblind-mode .route-row.alt {
 
   .info-card {
     width: 420px;
->>>>>>> Stashed changes
   }
+
   .account-modal {
-    width: 95vw;
-    left: 50%;
+    width: min(980px, 92vw);
   }
 }

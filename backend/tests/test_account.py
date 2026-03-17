@@ -309,6 +309,20 @@ class TestProfile:
         data = json.loads(resp.data)
         assert data["user"]["colorblindmode"] is True
 
+    def test_update_profile_accessibility_preferences(self, client, registered_user):
+        """PATCH /api/account/profile updates accessibility mode and zoom."""
+        resp = client.patch(
+            "/api/account/profile",
+            headers=_auth_header(registered_user["token"]),
+            data=json.dumps({"accessibilitymode": "tritanopia", "accessibilityzoom": 1.15}),
+            content_type="application/json",
+        )
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data["user"]["accessibilitymode"] == "tritanopia"
+        assert data["user"]["accessibilityzoom"] == 1.15
+        assert data["user"]["colorblindmode"] is True
+
     def test_update_profile_short_username(self, client, registered_user):
         """PATCH /api/account/profile rejects short username."""
         resp = client.patch(

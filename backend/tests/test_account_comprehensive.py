@@ -449,6 +449,40 @@ class TestUpdateProfile:
         assert data["user"]["userName"] == "MultiUpdate"
         assert data["user"]["colorblindmode"] is True
 
+    def test_update_accessibility_mode_and_zoom(self, client, auth_user):
+        """User can set explicit accessibility mode and zoom."""
+        resp = _patch_json(
+            client,
+            "/api/account/profile",
+            {"accessibilitymode": "tritanopia", "accessibilityzoom": 1.2},
+            token=auth_user["token"],
+        )
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data["user"]["accessibilitymode"] == "tritanopia"
+        assert data["user"]["accessibilityzoom"] == 1.2
+        assert data["user"]["colorblindmode"] is True
+
+    def test_update_accessibility_mode_invalid(self, client, auth_user):
+        """Unsupported accessibility mode is rejected."""
+        resp = _patch_json(
+            client,
+            "/api/account/profile",
+            {"accessibilitymode": "invalid-mode"},
+            token=auth_user["token"],
+        )
+        assert resp.status_code == 400
+
+    def test_update_accessibility_zoom_out_of_range(self, client, auth_user):
+        """Out-of-range accessibility zoom is rejected."""
+        resp = _patch_json(
+            client,
+            "/api/account/profile",
+            {"accessibilityzoom": 2.0},
+            token=auth_user["token"],
+        )
+        assert resp.status_code == 400
+
     def test_update_username_too_short(self, client, auth_user):
         """Update fails if username is too short."""
         resp = _patch_json(client, "/api/account/profile", 

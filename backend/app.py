@@ -9,7 +9,7 @@ from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from services.data_translator import DataTranslator
 from services.transport_service import TransportService
-from sqlalchemy import UniqueConstraint, event
+from sqlalchemy import UniqueConstraint, event, text
 from sqlalchemy.engine import Engine
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -70,6 +70,9 @@ class User(db.Model):
     username = db.Column("userName", db.String(100), nullable=False)
     password_hash = db.Column("password", db.String(255), nullable=False)
     colorblind_mode = db.Column("colorblindmode", db.Boolean, default=False, nullable=False)
+    accessibility_mode = db.Column("accessibilitymode", db.String(40), default="none", nullable=False)
+    accessibility_zoom = db.Column("accessibilityzoom", db.Float, default=1.0, nullable=False)
+    accessibility_font_size = db.Column("accessibilityfontsize", db.String(20), default="normal", nullable=False)
 
 
 class Route(db.Model):
@@ -148,6 +151,9 @@ def _serialize_user(user: User):
         "email": user.email,
         "userName": user.username,
         "colorblindmode": user.colorblind_mode,
+        "accessibilitymode": user.accessibility_mode or "none",
+        "accessibilityzoom": float(user.accessibility_zoom or 1.0),
+        "accessibilityfontsize": (user.accessibility_font_size or "normal"),
     }
 
 
@@ -606,6 +612,35 @@ def update_profile():
 
     if "colorblindmode" in data:
         user.colorblind_mode = bool(data.get("colorblindmode"))
+        if not user.colorblind_mode:
+            user.accessibility_mode = "none"
+        elif (user.accessibility_mode or "none") == "none":
+            user.accessibility_mode = "deuteranopia"
+
+    if "accessibilitymode" in data:
+        allowed_modes = {"none", "deuteranopia", "protanopia", "tritanopia", "achromatopsia"}
+        mode = str(data.get("accessibilitymode") or "none").strip().lower()
+        if mode not in allowed_modes:
+            return _json_error("Unsupported accessibility mode")
+        user.accessibility_mode = mode
+        user.colorblind_mode = mode != "none"
+
+    if "accessibilityfontsize" in data:
+        allowed_sizes = {"small", "normal", "large"}
+        size = str(data.get("accessibilityfontsize") or "normal").strip().lower()
+        if size not in allowed_sizes:
+            return _json_error("Unsupported accessibility font size")
+        user.accessibility_font_size = size
+
+    if "accessibilityzoom" in data:
+        try:
+            zoom = float(data.get("accessibilityzoom"))
+        except (TypeError, ValueError):
+            return _json_error("Accessibility zoom must be a number")
+
+        if zoom < 0.85 or zoom > 1.4:
+            return _json_error("Accessibility zoom must be between 0.85 and 1.4")
+        user.accessibility_zoom = round(zoom, 2)
 
     db.session.commit()
     return jsonify({"user": _serialize_user(user)})
@@ -1262,6 +1297,36 @@ def serve_static(path):
     return send_from_directory(app.static_folder, "index.html")
 
 
+def _ensure_sqlite_user_accessibility_columns():
+    """Add new user profile columns for existing SQLite databases.
+    db.create_all() does not alter existing tables, so we perform a lightweight
+    schema check and issue ALTER TABLE for any missing columns."""
+    db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "") or ""
+    if not db_uri.startswith("sqlite"):
+        return
+
+    with db.engine.begin() as connection:
+        rows = connection.execute(text('PRAGMA table_info("User")')).fetchall()
+        existing = {row[1] for row in rows}
+
+        if "accessibilitymode" not in existing:
+            connection.execute(
+                text('ALTER TABLE "User" ADD COLUMN accessibilitymode VARCHAR(40) NOT NULL DEFAULT "none"')
+            )
+            app.logger.info("Added User.accessibilitymode column")
+
+        if "accessibilityzoom" not in existing:
+            connection.execute(
+                text('ALTER TABLE "User" ADD COLUMN accessibilityzoom FLOAT NOT NULL DEFAULT 1.0')
+            )
+            app.logger.info("Added User.accessibilityzoom column")
+        if "accessibilityfontsize" not in existing:
+            connection.execute(
+                text('ALTER TABLE "User" ADD COLUMN accessibilityfontsize VARCHAR(20) NOT NULL DEFAULT "normal"')
+            )
+            app.logger.info("Added User.accessibilityfontsize column")
+
+
 # Database tables – created on first run.
 # Using /tmp for SQLite to avoid network-drive locking issues.
 with app.app_context():
@@ -1270,6 +1335,7 @@ with app.app_context():
         try:
             app.logger.info("Creating database tables (sqlite)")
             db.create_all()
+            _ensure_sqlite_user_accessibility_columns()
         except Exception as e:
             app.logger.exception(f"db.create_all (sqlite) failed: {e}")
     else:

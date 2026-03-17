@@ -8,6 +8,20 @@ const authState = {
   user: null,
 };
 
+const ACCESSIBILITY_DEFAULTS = {
+  zoomLevel: 1,
+  colorMode: 'none',
+  fontSize: 'normal',
+};
+
+const ACCESSIBILITY_MODES = new Set(['none', 'deuteranopia', 'protanopia', 'tritanopia', 'achromatopsia']);
+
+const ACCESSIBILITY_FONT_SIZES = new Set(['small', 'normal', 'large']);
+
+const accessibilityState = {
+  ...ACCESSIBILITY_DEFAULTS,
+};
+
 // Track which marker has an open popup
 let currentOpenPopup = null;
 
@@ -307,17 +321,130 @@ function initializeMap() {
 // COLOURBLIND MODE / ACCESSIBILITY FUNCTIONS
 // ============================================================================
 
+function clampZoom(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return ACCESSIBILITY_DEFAULTS.zoomLevel;
+  }
+  return Math.min(1.4, Math.max(0.85, Math.round(numeric * 100) / 100));
+}
+
+function normalizeAccessibilitySettings(rawSettings = {}) {
+  const zoomLevel = clampZoom(rawSettings.zoomLevel ?? rawSettings.accessibilityzoom ?? ACCESSIBILITY_DEFAULTS.zoomLevel);
+  const modeCandidate = String(rawSettings.colorMode ?? rawSettings.accessibilitymode ?? 'none').toLowerCase();
+  const colorMode = ACCESSIBILITY_MODES.has(modeCandidate)
+    ? modeCandidate
+    : ((rawSettings.colorblindmode || rawSettings.colorblindMode) ? 'deuteranopia' : 'none');
+
+  const fontCandidate = String(rawSettings.fontSize ?? rawSettings.accessibilityfontsize ?? ACCESSIBILITY_DEFAULTS.fontSize).toLowerCase();
+  const fontSize = ACCESSIBILITY_FONT_SIZES.has(fontCandidate) ? fontCandidate : ACCESSIBILITY_DEFAULTS.fontSize;
+
+  return { zoomLevel, colorMode, fontSize };
+}
+
+function getCurrentAccessibilitySettings() {
+  return {
+    zoomLevel: accessibilityState.zoomLevel,
+    colorMode: accessibilityState.colorMode,
+    fontSize: accessibilityState.fontSize || ACCESSIBILITY_DEFAULTS.fontSize,
+  };
+}
+
+function updateAccessibilityLinkState(isOpen = false) {
+  const sidebarLink = document.getElementById('accessibility-link');
+  if (!sidebarLink) {
+    return;
+  }
+
+  const hasCustomPreference = accessibilityState.colorMode !== 'none' || Math.abs(accessibilityState.zoomLevel - 1) > 0.001;
+  sidebarLink.textContent = hasCustomPreference ? 'Accessibility ✓' : 'Accessibility';
+  sidebarLink.setAttribute('aria-expanded', String(isOpen));
+}
+
+function syncAccessibilityControls() {
+  const zoomSlider = document.getElementById('accessibility-zoom');
+  const zoomValue = document.getElementById('accessibility-zoom-value');
+  const modeRadios = document.querySelectorAll('input[name="accessibility-colour"]');
+  const fontRadios = document.querySelectorAll('input[name="accessibility-font-size"]');
+
+  if (zoomSlider) {
+    zoomSlider.value = String(accessibilityState.zoomLevel);
+  }
+
+  if (zoomValue) {
+    zoomValue.textContent = `${Math.round(accessibilityState.zoomLevel * 100)}%`;
+  }
+
+  if (modeRadios && modeRadios.length) {
+    modeRadios.forEach(r => r.checked = (r.value === accessibilityState.colorMode));
+  }
+
+  if (fontRadios && fontRadios.length) {
+    fontRadios.forEach(r => r.checked = (r.value === (accessibilityState.fontSize || ACCESSIBILITY_DEFAULTS.fontSize)));
+  }
+}
+
+function applyAccessibilitySettings(settings, options = {}) {
+  const { persistLocal = true, syncControls = true } = options;
+  const normalized = normalizeAccessibilitySettings(settings);
+
+  accessibilityState.zoomLevel = normalized.zoomLevel;
+  accessibilityState.colorMode = normalized.colorMode;
+  accessibilityState.fontSize = normalized.fontSize;
+
+  // Keep existing colourblind theme class for backwards-compatible styling.
+  document.body.classList.toggle('colorblind-mode', normalized.colorMode !== 'none');
+
+  // Swap per-mode helper classes for filter variants.
+  document.body.classList.remove(
+    'accessibility-mode-none',
+    'accessibility-mode-deuteranopia',
+    'accessibility-mode-protanopia',
+    'accessibility-mode-tritanopia',
+    'accessibility-mode-achromatopsia'
+  );
+  document.body.classList.add(`accessibility-mode-${normalized.colorMode}`);
+
+  // Scale UI text and components that use rem units and apply font-size presets.
+  const fontMultipliers = { small: 0.9, normal: 1.0, large: 1.15 };
+  const multiplier = fontMultipliers[normalized.fontSize] || 1.0;
+  document.documentElement.style.fontSize = `${Math.round(normalized.zoomLevel * multiplier * 100)}%`;
+
+  // Apply a helper class for font size so CSS can target components if needed.
+  document.body.classList.remove('accessibility-font-small', 'accessibility-font-normal', 'accessibility-font-large');
+  document.body.classList.add(`accessibility-font-${normalized.fontSize}`);
+
+  if (persistLocal) {
+    localStorage.setItem('accessibilitySettings', JSON.stringify(normalized));
+    // Keep old key in sync for compatibility with older flows.
+    localStorage.setItem('colorblindMode', JSON.stringify(normalized.colorMode !== 'none'));
+  }
+
+  if (syncControls) {
+    syncAccessibilityControls();
+  }
+
+  updateAccessibilityLinkState(!document.getElementById('accessibility-panel')?.classList.contains('hidden'));
+  updateMapMarkerColors();
+}
+
 /**
  * Get marker colours based on current theme.
- * Returns blue palette in colourblind mode, red in normal mode.
+ * Returns a per-mode palette with a safe fallback.
  */
 function getMarkerColors() {
-  const isCB = document.body.classList.contains('colorblind-mode');
-  return {
-    fillColor: isCB ? '#1976D2' : '#d32f2f',
-    color: isCB ? '#0057B7' : '#b71c1c',
-    fillOpacity: isCB ? 0.6 : 0.35,
-  };
+  switch (accessibilityState.colorMode) {
+    case 'protanopia':
+      return { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.62 };
+    case 'tritanopia':
+      return { fillColor: '#7B1FA2', color: '#4A148C', fillOpacity: 0.62 };
+    case 'achromatopsia':
+      return { fillColor: '#616161', color: '#212121', fillOpacity: 0.66 };
+    case 'deuteranopia':
+      return { fillColor: '#1976D2', color: '#0057B7', fillOpacity: 0.6 };
+    default:
+      return { fillColor: '#d32f2f', color: '#b71c1c', fillOpacity: 0.35 };
+  }
 }
 
 /**
@@ -335,33 +462,15 @@ function updateMapMarkerColors() {
 }
 
 /**
- * Apply or remove colourblind mode across the application.
- * Toggles the CSS class, updates map markers, syncs UI controls,
- * and persists the preference to localStorage.
+ * Backwards-compatible wrapper used by older flows.
  * @param {boolean} enabled - Whether colourblind mode should be active
  */
 function applyColorblindMode(enabled) {
-  document.body.classList.toggle('colorblind-mode', enabled);
-
-  // Sync the account settings checkbox
-  const checkbox = document.getElementById('colorblind-checkbox');
-  if (checkbox) {
-    checkbox.checked = enabled;
-    checkbox.setAttribute('aria-checked', String(enabled));
-  }
-
-  // Sync the sidebar accessibility link
-  const sidebarLink = document.getElementById('colorblind-toggle-link');
-  if (sidebarLink) {
-    sidebarLink.setAttribute('aria-pressed', String(enabled));
-    sidebarLink.textContent = enabled ? 'Accessibility \u2713' : 'Accessibility';
-  }
-
-  // Persist preference for non-logged-in users
-  localStorage.setItem('colorblindMode', JSON.stringify(enabled));
-
-  // Update map markers to match the new theme
-  updateMapMarkerColors();
+  const settings = getCurrentAccessibilitySettings();
+  applyAccessibilitySettings({
+    ...settings,
+    colorMode: enabled ? (settings.colorMode === 'none' ? 'deuteranopia' : settings.colorMode) : 'none',
+  });
 }
 
 // ============================================================================
@@ -703,6 +812,7 @@ function initWeatherSearch() {
 function toggleWeatherPanel() {
   const weatherPanel = document.querySelector('.weather-panel');
   const notifPanel = document.querySelector('.notif-panel');
+  const accessibilityPanel = document.getElementById('accessibility-panel');
   const faqPanel = document.getElementById('faq-panel');
   const supportPanel = document.getElementById('support-panel');
   const authModal = document.getElementById('auth-modal');
@@ -721,8 +831,11 @@ function toggleWeatherPanel() {
   if (!weatherPanel.classList.contains('hidden')) {
     faqPanel?.classList.add('hidden');
     supportPanel?.classList.add('hidden');
+    accessibilityPanel?.classList.add('hidden');
+    accessibilityPanel?.setAttribute('aria-hidden', 'true');
     authModal?.classList.add('hidden');
     accountModal?.classList.add('hidden');
+    updateAccessibilityLinkState(false);
     // Clear search input when opening the panel
     const searchInput = document.getElementById('weather-search-input');
     if (searchInput) searchInput.value = '';
@@ -751,6 +864,7 @@ function toggleWeatherPanel() {
 function toggleNotificationsPanel() {
   const weatherPanel = document.querySelector('.weather-panel');
   const notifPanel = document.querySelector('.notif-panel');
+  const accessibilityPanel = document.getElementById('accessibility-panel');
   const faqPanel = document.getElementById('faq-panel');
   const supportPanel = document.getElementById('support-panel');
   const authModal = document.getElementById('auth-modal');
@@ -769,14 +883,18 @@ function toggleNotificationsPanel() {
   if (!notifPanel.classList.contains('hidden')) {
     faqPanel?.classList.add('hidden');
     supportPanel?.classList.add('hidden');
+    accessibilityPanel?.classList.add('hidden');
+    accessibilityPanel?.setAttribute('aria-hidden', 'true');
     authModal?.classList.add('hidden');
     accountModal?.classList.add('hidden');
+    updateAccessibilityLinkState(false);
   }
 }
 
 function openFaqPanel() {
   const faqPanel = document.getElementById('faq-panel');
   const supportPanel = document.getElementById('support-panel');
+  const accessibilityPanel = document.getElementById('accessibility-panel');
   const weatherPanel = document.querySelector('.weather-panel');
   const notifPanel = document.querySelector('.notif-panel');
   const authModal = document.getElementById('auth-modal');
@@ -789,10 +907,13 @@ function openFaqPanel() {
     // Close other panels when FAQ is opened
     supportPanel?.classList.add('hidden');
     supportPanel?.setAttribute('aria-hidden', 'true');
+    accessibilityPanel?.classList.add('hidden');
+    accessibilityPanel?.setAttribute('aria-hidden', 'true');
     weatherPanel?.classList.add('hidden');
     notifPanel?.classList.add('hidden');
     authModal?.classList.add('hidden');
     accountModal?.classList.add('hidden');
+    updateAccessibilityLinkState(false);
   }
 }
 
@@ -853,6 +974,7 @@ function attachFaqEventHandlers() {
 function openSupportPanel() {
   const supportPanel = document.getElementById('support-panel');
   const faqPanel = document.getElementById('faq-panel');
+  const accessibilityPanel = document.getElementById('accessibility-panel');
   const weatherPanel = document.querySelector('.weather-panel');
   const notifPanel = document.querySelector('.notif-panel');
   const authModal = document.getElementById('auth-modal');
@@ -865,10 +987,13 @@ function openSupportPanel() {
     // Close other panels when support is opened
     faqPanel?.classList.add('hidden');
     faqPanel?.setAttribute('aria-hidden', 'true');
+    accessibilityPanel?.classList.add('hidden');
+    accessibilityPanel?.setAttribute('aria-hidden', 'true');
     weatherPanel?.classList.add('hidden');
     notifPanel?.classList.add('hidden');
     authModal?.classList.add('hidden');
     accountModal?.classList.add('hidden');
+    updateAccessibilityLinkState(false);
   }
 }
 
@@ -888,6 +1013,85 @@ function attachSupportEventHandlers() {
   });
 
   document.getElementById('support-close')?.addEventListener('click', closeSupportPanel);
+}
+
+function openAccessibilityPanel() {
+  const panel = document.getElementById('accessibility-panel');
+  const faqPanel = document.getElementById('faq-panel');
+  const supportPanel = document.getElementById('support-panel');
+  const weatherPanel = document.querySelector('.weather-panel');
+  const notifPanel = document.querySelector('.notif-panel');
+  const authModal = document.getElementById('auth-modal');
+  const accountModal = document.getElementById('account-modal');
+
+  if (!panel) {
+    return;
+  }
+
+  panel.classList.remove('hidden');
+  panel.setAttribute('aria-hidden', 'false');
+  faqPanel?.classList.add('hidden');
+  supportPanel?.classList.add('hidden');
+  weatherPanel?.classList.add('hidden');
+  notifPanel?.classList.add('hidden');
+  authModal?.classList.add('hidden');
+  accountModal?.classList.add('hidden');
+
+  syncAccessibilityControls();
+  updateAccessibilityLinkState(true);
+}
+
+function closeAccessibilityPanel() {
+  const panel = document.getElementById('accessibility-panel');
+  if (!panel) {
+    return;
+  }
+
+  panel.classList.add('hidden');
+  panel.setAttribute('aria-hidden', 'true');
+  updateAccessibilityLinkState(false);
+}
+
+function toggleAccessibilityPanel() {
+  const panel = document.getElementById('accessibility-panel');
+  if (!panel) {
+    return;
+  }
+
+  if (panel.classList.contains('hidden')) {
+    openAccessibilityPanel();
+    return;
+  }
+
+  closeAccessibilityPanel();
+}
+
+async function saveAccessibilityToAccount() {
+  if (!authState.token) {
+    alert('Please log in to save accessibility preferences to your account.');
+    openAuthModal();
+    return;
+  }
+
+  try {
+    const payload = {
+      colorblindmode: accessibilityState.colorMode !== 'none',
+      accessibilitymode: accessibilityState.colorMode,
+      accessibilityzoom: accessibilityState.zoomLevel,
+      accessibilityfontsize: accessibilityState.fontSize || ACCESSIBILITY_DEFAULTS.fontSize,
+    };
+
+    const response = await apiRequest('/api/account/profile', {
+      method: 'PATCH',
+      body: payload,
+    });
+
+    authState.user = response.user;
+    alert('Accessibility preferences saved to your account.');
+  } catch (err) {
+    console.warn('Failed to save accessibility preferences:', err.message);
+    alert('Could not save preferences right now.');
+  }
 }
 
 function setAuthToken(token) {
@@ -928,26 +1132,51 @@ async function apiRequest(path, options = {}) {
 function openAuthModal() {
   const weatherPanel = document.querySelector('.weather-panel');
   const notifPanel = document.querySelector('.notif-panel');
+  const accessibilityPanel = document.getElementById('accessibility-panel');
   const faqPanel = document.getElementById('faq-panel');
   const supportPanel = document.getElementById('support-panel');
   
   document.getElementById('auth-modal')?.classList.remove('hidden');
   document.getElementById('account-modal')?.classList.add('hidden');
+  showLoginAuthView();
   
   // Close other panels when auth modal is opened
   weatherPanel?.classList.add('hidden');
   notifPanel?.classList.add('hidden');
+  accessibilityPanel?.classList.add('hidden');
+  accessibilityPanel?.setAttribute('aria-hidden', 'true');
   faqPanel?.classList.add('hidden');
   supportPanel?.classList.add('hidden');
+  updateAccessibilityLinkState(false);
 }
 
 function closeAuthModal() {
   document.getElementById('auth-modal')?.classList.add('hidden');
+  showLoginAuthView();
+}
+
+function showLoginAuthView() {
+  const authTitle = document.getElementById('auth-modal-title');
+  if (authTitle) {
+    authTitle.textContent = 'Account Login';
+  }
+  document.getElementById('auth-login-view')?.classList.remove('hidden');
+  document.getElementById('auth-register-view')?.classList.add('hidden');
+}
+
+function showRegisterAuthView() {
+  const authTitle = document.getElementById('auth-modal-title');
+  if (authTitle) {
+    authTitle.textContent = 'Create Account';
+  }
+  document.getElementById('auth-login-view')?.classList.add('hidden');
+  document.getElementById('auth-register-view')?.classList.remove('hidden');
 }
 
 function openAccountModal() {
   const weatherPanel = document.querySelector('.weather-panel');
   const notifPanel = document.querySelector('.notif-panel');
+  const accessibilityPanel = document.getElementById('accessibility-panel');
   const faqPanel = document.getElementById('faq-panel');
   const supportPanel = document.getElementById('support-panel');
   
@@ -957,8 +1186,11 @@ function openAccountModal() {
   // Close other panels when account modal is opened
   weatherPanel?.classList.add('hidden');
   notifPanel?.classList.add('hidden');
+  accessibilityPanel?.classList.add('hidden');
+  accessibilityPanel?.setAttribute('aria-hidden', 'true');
   faqPanel?.classList.add('hidden');
   supportPanel?.classList.add('hidden');
+  updateAccessibilityLinkState(false);
 }
 
 function closeAccountModal() {
@@ -975,8 +1207,12 @@ async function refreshAccountView() {
     const meResponse = await apiRequest('/api/account/me');
     authState.user = meResponse.user;
 
-    // Apply colourblind mode preference from server
-    applyColorblindMode(!!authState.user.colorblindmode);
+    applyAccessibilitySettings({
+      zoomLevel: authState.user.accessibilityzoom,
+      colorMode: authState.user.accessibilitymode,
+      accessibilityfontsize: authState.user.accessibilityfontsize,
+      colorblindmode: authState.user.colorblindmode,
+    });
 
     const usernameTarget = document.getElementById('account-username-value');
     if (usernameTarget) {
@@ -1268,39 +1504,64 @@ function attachAccountEventHandlers() {
   document.getElementById('close-account-modal')?.addEventListener('click', closeAccountModal);
   document.getElementById('login-form')?.addEventListener('submit', handleLoginSubmit);
   document.getElementById('register-form')?.addEventListener('submit', handleRegisterSubmit);
+  document.getElementById('show-register-view-btn')?.addEventListener('click', showRegisterAuthView);
+  document.getElementById('show-login-view-btn')?.addEventListener('click', showLoginAuthView);
   document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
   document.getElementById('update-password-btn')?.addEventListener('click', handleUpdatePassword);
   document.getElementById('delete-account-btn')?.addEventListener('click', handleDeleteAccount);
   document.querySelector('.saved-routes-more')?.addEventListener('click', scrollSavedRoutes);
 
-  // Colourblind mode toggle in account settings
-  document.getElementById('colorblind-checkbox')?.addEventListener('change', async (e) => {
-    const enabled = e.target.checked;
-    applyColorblindMode(enabled);
-    if (authState.token) {
-      try {
-        await apiRequest('/api/account/profile', {
-          method: 'PATCH',
-          body: { colorblindmode: enabled },
-        });
-      } catch (err) {
-        console.warn('Failed to save colourblind preference:', err.message);
-      }
-    }
+  document.getElementById('accessibility-link')?.addEventListener('click', e => {
+    e.preventDefault();
+    toggleAccessibilityPanel();
+  });
+  document.getElementById('accessibility-close')?.addEventListener('click', closeAccessibilityPanel);
+
+  document.getElementById('accessibility-zoom')?.addEventListener('input', e => {
+    const current = getCurrentAccessibilitySettings();
+    applyAccessibilitySettings({
+      ...current,
+      zoomLevel: e.target.value,
+    });
   });
 
-  // Sidebar accessibility link toggle (works without login)
-  document.getElementById('colorblind-toggle-link')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    const isCurrentlyEnabled = document.body.classList.contains('colorblind-mode');
-    applyColorblindMode(!isCurrentlyEnabled);
-    if (authState.token) {
-      apiRequest('/api/account/profile', {
-        method: 'PATCH',
-        body: { colorblindmode: !isCurrentlyEnabled },
-      }).catch(err => console.warn('Failed to save colourblind preference:', err.message));
-    }
+  document.getElementById('zoom-out-btn')?.addEventListener('click', () => {
+    const next = clampZoom(accessibilityState.zoomLevel - 0.05);
+    applyAccessibilitySettings({ ...getCurrentAccessibilitySettings(), zoomLevel: next });
   });
+
+  document.getElementById('zoom-in-btn')?.addEventListener('click', () => {
+    const next = clampZoom(accessibilityState.zoomLevel + 0.05);
+    applyAccessibilitySettings({ ...getCurrentAccessibilitySettings(), zoomLevel: next });
+  });
+
+  // Radio inputs for colour profiles
+  document.querySelectorAll('input[name="accessibility-colour"]').forEach(r => {
+    r.addEventListener('change', e => {
+      if (!e.target.checked) return;
+      applyAccessibilitySettings({
+        ...getCurrentAccessibilitySettings(),
+        colorMode: e.target.value,
+      });
+    });
+  });
+
+  // Radio inputs for font size
+  document.querySelectorAll('input[name="accessibility-font-size"]').forEach(r => {
+    r.addEventListener('change', e => {
+      if (!e.target.checked) return;
+      applyAccessibilitySettings({
+        ...getCurrentAccessibilitySettings(),
+        fontSize: e.target.value,
+      });
+    });
+  });
+
+  document.getElementById('accessibility-reset-btn')?.addEventListener('click', () => {
+    applyAccessibilitySettings(ACCESSIBILITY_DEFAULTS);
+  });
+
+  document.getElementById('accessibility-save-btn')?.addEventListener('click', saveAccessibilityToAccount);
 
   window.addEventListener('resize', updateSavedRoutesScrollButton);
 }
@@ -2241,10 +2502,18 @@ document.addEventListener('DOMContentLoaded', function() {
   initWeatherSearch();
   setupSidebarToggle();
 
-  // Restore colourblind mode from localStorage (before account fetch may override)
-  const savedColorblindMode = JSON.parse(localStorage.getItem('colorblindMode') || 'false');
-  if (savedColorblindMode) {
-    applyColorblindMode(true);
+  // Restore accessibility settings from localStorage (account fetch may override)
+  const savedAccessibility = JSON.parse(localStorage.getItem('accessibilitySettings') || 'null');
+  if (savedAccessibility) {
+    applyAccessibilitySettings(savedAccessibility);
+  } else {
+    // Backward compatibility with legacy colorblind setting
+    const savedColorblindMode = JSON.parse(localStorage.getItem('colorblindMode') || 'false');
+    if (savedColorblindMode) {
+      applyAccessibilitySettings({ colorMode: 'deuteranopia', zoomLevel: 1 });
+    } else {
+      applyAccessibilitySettings(ACCESSIBILITY_DEFAULTS, { persistLocal: false });
+    }
   }
 
   refreshAccountView();
