@@ -69,6 +69,32 @@ make test          # Linux/macOS
 make test-win      # Windows
 ```
 
+## Automated Accessibility Testing
+
+The frontend now includes Playwright + axe-core accessibility smoke tests.
+
+### Quick run (Linux/macOS)
+
+```bash
+make test-a11y
+```
+
+### Manual frontend run
+
+```bash
+cd frontend
+npm install
+npx playwright install chromium
+npm run test:a11y
+```
+
+### What is covered
+
+- axe automated scan for serious/critical issues
+- accessible names on key interactive controls
+- keyboard tab navigation smoke flow
+- live-region announcement check for notifications
+
 ## Account management integration
 
 The scaffold now includes a full account management API and UI hooks for:
