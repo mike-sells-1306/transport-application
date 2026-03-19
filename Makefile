@@ -1,4 +1,4 @@
-.PHONY: build up up-build down restart logs open run test install podman-install check-compose
+.PHONY: build up up-build down restart logs open run test test-a11y install podman-install check-compose
 
 # Podman / container commands
 # Uses `podman-compose` when available, falls back to `podman compose`.
@@ -60,6 +60,9 @@ run:
 
 test:
 	cd backend && . .venv/bin/activate && DATABASE_URL="sqlite://" python3 -m pytest tests/ -v
+
+test-a11y:
+	cd frontend && npm install && npx playwright install chromium && npm run test:a11y
 
 # Windows commands (use these in PowerShell)
 install-win:

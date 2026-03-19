@@ -15,38 +15,45 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div id="sr-live-region" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
+  <div id="sr-alert-region" class="visually-hidden" aria-live="assertive" aria-atomic="true"></div>
+
   <!-- Sidebar Navigation -->
-  <aside id="sidebar" class="sidebar">
+  <aside id="sidebar" class="sidebar" role="navigation" aria-label="Primary sidebar">
     <div class="sidebar-header">
-      <h1>Transport for North West</h1>
+      <h1 id="app-title">Transport for North West</h1>
     </div>
     <!-- Sidebar content continues... -->
     <div class="sidebar-search">
       <label for="from-input">Where would you like to travel today?</label>
       <div class="journey-search-group">
         <div class="journey-box">
-          <span class="journey-dot journey-dot-empty"></span>
+          <span class="journey-dot journey-dot-empty" aria-hidden="true"></span>
           <div class="autocomplete-wrapper">
-            <input id="from-input" type="text" placeholder="Search…" autocomplete="off" />
-            <div class="autocomplete-suggestions" id="from-suggestions"></div>
+            <label for="from-input" class="visually-hidden">Select departure station</label>
+            <input id="from-input" type="text" placeholder="Search…" autocomplete="off" aria-label="Select departure station" aria-required="true" aria-invalid="false" aria-describedby="from-input-error" />
+            <div class="autocomplete-suggestions" id="from-suggestions" role="listbox" aria-label="Departure station suggestions"></div>
+            <p id="from-input-error" class="field-error" aria-live="polite"></p>
           </div>
         </div>
         <div class="journey-line-container">
-          <span class="journey-line"></span>
+          <span class="journey-line" aria-hidden="true"></span>
         </div>
         <div class="journey-box">
-          <span class="journey-dot journey-dot-filled"></span>
+          <span class="journey-dot journey-dot-filled" aria-hidden="true"></span>
           <div class="autocomplete-wrapper">
-            <input id="to-input" type="text" placeholder="to" autocomplete="off" />
-            <div class="autocomplete-suggestions" id="to-suggestions"></div>
+            <label for="to-input" class="visually-hidden">Select arrival station</label>
+            <input id="to-input" type="text" placeholder="to" autocomplete="off" aria-label="Select arrival station" aria-required="true" aria-invalid="false" aria-describedby="to-input-error" />
+            <div class="autocomplete-suggestions" id="to-suggestions" role="listbox" aria-label="Arrival station suggestions"></div>
+            <p id="to-input-error" class="field-error" aria-live="polite"></p>
           </div>
         </div>
-        <button class="icon-btn journey-swap-btn" title="Swap or Submit">
-          <span class="icon-swap"></span>
+        <button class="icon-btn journey-swap-btn" type="button" title="Swap departure and arrival stations" aria-label="Swap departure and arrival stations">
+          <span class="icon-swap" aria-hidden="true"></span>
         </button>
       </div>
     </div>
-    <nav class="sidebar-links" aria-label="Main navigation">
+    <nav class="sidebar-links" role="navigation" aria-label="Main navigation">
       <a href="#account" id="account-link">Account</a>
       <a href="#faq">FAQ</a>
       <a href="#support" id="support-link">Customer Support</a>
@@ -62,10 +69,10 @@
   </button>
 
   <!-- Dark overlay behind sidebar on narrow screens -->
-  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
 
   <!-- Main Map Area -->
-  <main class="map-area">
+  <main class="map-area" role="main" aria-labelledby="app-title">
     <!-- Interactive OpenStreetMap container -->
     <div id="map" class="leaflet-map" role="application" aria-label="Interactive map of North West England">
       <!-- Map will be rendered here by Leaflet JS -->
@@ -73,11 +80,11 @@
 
     <!-- Top-right icon buttons -->
     <div class="top-right-icons">
-      <button class="icon-btn" id="weather-btn" title="Weather" aria-expanded="false" aria-controls="weather-panel">
-        <span class="icon-cloud"></span>
+      <button class="icon-btn" id="weather-btn" type="button" title="View weather updates" aria-label="View weather updates" aria-expanded="false" aria-controls="weather-panel">
+        <span class="icon-cloud" aria-hidden="true"></span>
       </button>
-      <button class="icon-btn" id="notif-btn" title="Notifications" aria-expanded="false" aria-controls="notif-panel">
-        <span class="icon-bell"></span>
+      <button class="icon-btn" id="notif-btn" type="button" title="View service notifications" aria-label="View service notifications" aria-expanded="false" aria-controls="notif-panel">
+        <span class="icon-bell" aria-hidden="true"></span>
       </button>
     </div>
 
@@ -94,20 +101,21 @@
           <option>Fastest</option>
           <option>Fewest Changes</option>
         </select>
-        <button id="download-routes-pdf" class="route-download-btn" type="button" disabled>
+        <button id="download-routes-pdf" class="route-download-btn" type="button" aria-label="Download displayed routes as PDF" disabled>
           Download Routes
         </button>
       </div>
-      <div class="route-list">
+      <div class="route-list" aria-live="polite" aria-relevant="additions text">
         <!-- Route rows are populated dynamically by main.js -->
       </div>
     </section>
 
     <!-- Weather Panel (hidden by default) - populated dynamically from API -->
-    <section class="weather-panel hidden" id="weather-panel" role="region" aria-label="Weather information">
-      <div class="panel-header">Weather</div>
+    <section class="weather-panel hidden" id="weather-panel" role="region" aria-labelledby="weather-panel-title">
+      <div class="panel-header" id="weather-panel-title">Weather</div>
       <div class="weather-search-wrapper">
-        <input type="text" id="weather-search-input" class="weather-search-input" placeholder="Search location…" autocomplete="off" />
+        <label for="weather-search-input" class="visually-hidden">Search weather by location</label>
+        <input type="text" id="weather-search-input" class="weather-search-input" placeholder="Search location…" autocomplete="off" aria-label="Search weather by location" />
       </div>
       <ul class="weather-list" id="weather-list" aria-live="polite">
         <li class="weather-loading">Loading weather data…</li>
@@ -115,9 +123,9 @@
     </section>
 
     <!-- Notifications Panel (hidden by default) -->
-    <section class="notif-panel hidden" id="notif-panel" role="region" aria-label="Notifications">
-      <div class="panel-header">Notifications</div>
-      <div class="notif-list" aria-live="polite">
+    <section class="notif-panel hidden" id="notif-panel" role="region" aria-labelledby="notif-panel-title">
+      <div class="panel-header" id="notif-panel-title">Notifications</div>
+      <div class="notif-list" role="log" aria-live="assertive" aria-relevant="additions text" aria-atomic="false">
         <div class="notif-item">
           <strong>ANNOUNCEMENT:</strong> Train to Blackpool delayed by 12 minutes. <span class="notif-time">12m ago</span>
         </div>
@@ -129,9 +137,9 @@
     </section>
 
     <!-- FAQ Panel (hidden by default) -->
-    <section class="faq-panel hidden" id="faq-panel" aria-hidden="true">
+    <section class="faq-panel hidden" id="faq-panel" role="region" aria-labelledby="faq-panel-title" aria-hidden="true">
       <div class="faq-header">
-        <h2>FAQ</h2>
+        <h2 id="faq-panel-title">FAQ</h2>
         <button class="faq-close" id="faq-close" type="button" aria-label="Close FAQ">×</button>
       </div>
       <div class="faq-content">
@@ -179,9 +187,9 @@
     </section>
 
     <!-- Customer Support Panel (hidden by default) -->
-    <section class="faq-panel support-panel hidden" id="support-panel" aria-hidden="true">
+    <section class="faq-panel support-panel hidden" id="support-panel" role="region" aria-labelledby="support-panel-title" aria-hidden="true">
       <div class="faq-header support-header">
-        <h2>Customer Support</h2>
+        <h2 id="support-panel-title">Customer Support</h2>
         <button class="faq-close" id="support-close" type="button" aria-label="Close Customer Support">×</button>
       </div>
       <div class="faq-content support-content">
@@ -220,9 +228,9 @@
     </section>
 
     <!-- Accessibility Panel (hidden by default) -->
-    <section class="faq-panel accessibility-panel hidden" id="accessibility-panel" aria-hidden="true">
+    <section class="faq-panel accessibility-panel hidden" id="accessibility-panel" role="region" aria-labelledby="accessibility-panel-title" aria-hidden="true">
       <div class="faq-header accessibility-header">
-        <h2>Accessibility</h2>
+        <h2 id="accessibility-panel-title">Accessibility</h2>
         <button class="faq-close" id="accessibility-close" type="button" aria-label="Close Accessibility">×</button>
       </div>
       <div class="faq-content accessibility-content">
@@ -231,7 +239,8 @@
           <p>Adjust interface text and control sizes.</p>
           <div class="accessibility-zoom-row">
             <button id="zoom-out-btn" class="account-action-btn" type="button" aria-label="Decrease zoom">A−</button>
-            <input id="accessibility-zoom" type="range" min="0.85" max="1.4" step="0.05" value="1" />
+            <label for="accessibility-zoom" class="visually-hidden">Adjust interface zoom level</label>
+            <input id="accessibility-zoom" type="range" min="0.85" max="1.4" step="0.05" value="1" aria-label="Adjust interface zoom level" />
             <button id="zoom-in-btn" class="account-action-btn" type="button" aria-label="Increase zoom">A+</button>
             <span id="accessibility-zoom-value" class="accessibility-value">100%</span>
           </div>
@@ -262,8 +271,8 @@
         </article>
 
         <article class="faq-item accessibility-item accessibility-actions">
-          <button id="accessibility-save-btn" class="action-btn" type="button">Save to account</button>
-          <button id="accessibility-reset-btn" class="secondary-btn" type="button">Reset defaults</button>
+          <button id="accessibility-save-btn" class="action-btn" type="button" aria-label="Save accessibility settings to account">Save to account</button>
+          <button id="accessibility-reset-btn" class="secondary-btn" type="button" aria-label="Reset accessibility settings to default">Reset defaults</button>
           <p class="auth-help">Settings apply instantly. Save to account to sync them after login.</p>
         </article>
       </div>
@@ -278,25 +287,37 @@
       <div class="auth-modal-body">
         <div id="auth-login-view" class="auth-view">
           <p class="auth-help">Sign in to your account to save routes and manage preferences.</p>
-          <form id="login-form" class="auth-form">
+          <form id="login-form" class="auth-form" novalidate>
             <h3>Login</h3>
-            <input id="login-email" type="email" placeholder="Email" required />
-            <input id="login-password" type="password" placeholder="Password" required />
-            <button type="submit" class="action-btn">Log In</button>
+            <label for="login-email">Email</label>
+            <input id="login-email" type="email" placeholder="Email" required aria-required="true" aria-invalid="false" aria-describedby="login-email-error" />
+            <p id="login-email-error" class="field-error" aria-live="polite"></p>
+            <label for="login-password">Password</label>
+            <input id="login-password" type="password" placeholder="Password" required aria-required="true" aria-invalid="false" aria-describedby="login-password-error" />
+            <p id="login-password-error" class="field-error" aria-live="polite"></p>
+            <p id="login-form-message" class="field-error" aria-live="polite"></p>
+            <button type="submit" class="action-btn" aria-label="Log in to account">Log In</button>
           </form>
-          <button id="show-register-view-btn" class="secondary-btn" type="button">Create Account</button>
+          <button id="show-register-view-btn" class="secondary-btn" type="button" aria-label="Open create account form">Create Account</button>
         </div>
 
         <div id="auth-register-view" class="auth-view hidden">
           <p class="auth-help">Create an account to save routes and manage preferences.</p>
-          <form id="register-form" class="auth-form">
+          <form id="register-form" class="auth-form" novalidate>
             <h3>Create Account</h3>
-            <input id="register-username" type="text" placeholder="Username" required />
-            <input id="register-email" type="email" placeholder="Email" required />
-            <input id="register-password" type="password" placeholder="Password (8+ chars)" required />
-            <button type="submit" class="action-btn">Register</button>
+            <label for="register-username">Username</label>
+            <input id="register-username" type="text" placeholder="Username" required aria-required="true" aria-invalid="false" aria-describedby="register-username-error" />
+            <p id="register-username-error" class="field-error" aria-live="polite"></p>
+            <label for="register-email">Email</label>
+            <input id="register-email" type="email" placeholder="Email" required aria-required="true" aria-invalid="false" aria-describedby="register-email-error" />
+            <p id="register-email-error" class="field-error" aria-live="polite"></p>
+            <label for="register-password">Password (8+ characters)</label>
+            <input id="register-password" type="password" placeholder="Password (8+ chars)" required aria-required="true" aria-invalid="false" aria-describedby="register-password-error" />
+            <p id="register-password-error" class="field-error" aria-live="polite"></p>
+            <p id="register-form-message" class="field-error" aria-live="polite"></p>
+            <button type="submit" class="action-btn" aria-label="Create a new account">Register</button>
           </form>
-          <button id="show-login-view-btn" class="secondary-btn" type="button">Back to Login</button>
+          <button id="show-login-view-btn" class="secondary-btn" type="button" aria-label="Return to login form">Back to Login</button>
         </div>
 
       </div>
@@ -323,10 +344,10 @@
           </section>
 
           <div class="account-actions-panel">
-            <button class="account-action-btn" id="update-password-btn" type="button">Update Password</button>
-            <button class="account-action-btn" id="logout-btn" type="button">Log Out</button>
-            <button class="account-action-btn danger" id="delete-account-btn" type="button">Delete Account</button>
-            <button class="account-close-btn" id="close-account-modal" type="button">Close</button>
+            <button class="account-action-btn" id="update-password-btn" type="button" aria-label="Update account password">Update Password</button>
+            <button class="account-action-btn" id="logout-btn" type="button" aria-label="Log out of account">Log Out</button>
+            <button class="account-action-btn danger" id="delete-account-btn" type="button" aria-label="Delete account permanently">Delete Account</button>
+            <button class="account-close-btn" id="close-account-modal" type="button" aria-label="Close account settings">Close</button>
           </div>
         </div>
       </div>
