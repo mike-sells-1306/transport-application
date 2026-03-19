@@ -1857,13 +1857,13 @@ function displayRoutesModal(data) {
     modalHeader.appendChild(closeBtn); // Re-add the close button at the end
   }
 
-  // Reset sort dropdown to "Fastest"
+  // Reset sort dropdown to default "Start Time"
   if (sortSelect) {
-    sortSelect.value = 'Fastest';
+    sortSelect.value = 'Start Time';
   }
 
-  // Render the routes with default (fastest) sorting applied
-  const sorted = sortRoutes('Fastest', data.routes);
+  // Render the routes with default (earliest start time) sorting applied
+  const sorted = sortRoutes('Start Time', data.routes);
   renderRoutesTable(sorted);
   updateRouteDownloadButtonState();
 
@@ -1876,16 +1876,34 @@ function displayRoutesModal(data) {
  */
 function sortRoutes(sortMethod, routes) {
   const routesCopy = [...routes];
+
+  const toSortableMinutes = (timeStr) => {
+    if (!timeStr || typeof timeStr !== 'string') return Number.MAX_SAFE_INTEGER;
+    const [hh, mm] = timeStr.split(':').map(Number);
+    if (!Number.isFinite(hh) || !Number.isFinite(mm)) return Number.MAX_SAFE_INTEGER;
+    return (hh * 60) + mm;
+  };
   
   switch (sortMethod) {
+    case 'Start Time':
+      // Sort by earliest departure, then by duration
+      return routesCopy.sort((a, b) => {
+        const aTime = toSortableMinutes(a.start_time);
+        const bTime = toSortableMinutes(b.start_time);
+        if (aTime !== bTime) {
+          return aTime - bTime;
+        }
+        return a.duration_mins - b.duration_mins;
+      });
+
     case 'Fastest':
       // Sort by duration (ascending), then by start time
       return routesCopy.sort((a, b) => {
         if (a.duration_mins !== b.duration_mins) {
           return a.duration_mins - b.duration_mins;
         }
-        const aTime = parseInt(a.start_time.replace(':', ''));
-        const bTime = parseInt(b.start_time.replace(':', ''));
+        const aTime = toSortableMinutes(a.start_time);
+        const bTime = toSortableMinutes(b.start_time);
         return aTime - bTime;
       });
     
@@ -1918,7 +1936,7 @@ function getCurrentSortedRoutes() {
     return [];
   }
 
-  const sortMethod = document.getElementById('sort')?.value || 'Fastest';
+  const sortMethod = document.getElementById('sort')?.value || 'Start Time';
   return sortRoutes(sortMethod, currentRoutesData.routes);
 }
 
@@ -2020,7 +2038,7 @@ function exportRoutesToPdf() {
   const topMargin = 48;
   const bottomMargin = 48;
   const contentWidth = pageWidth - (marginX * 2);
-  const sortLabel = document.getElementById('sort')?.value || 'Fastest';
+  const sortLabel = document.getElementById('sort')?.value || 'Start Time';
   const exportedAt = new Date();
   const colors = {
     maroon: [139, 17, 17],
