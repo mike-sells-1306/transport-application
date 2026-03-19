@@ -22,6 +22,38 @@ const accessibilityState = {
   ...ACCESSIBILITY_DEFAULTS,
 };
 
+function announceToScreenReader(message, priority = 'polite') {
+  if (!message) {
+    return;
+  }
+
+  const regionId = priority === 'assertive' ? 'sr-alert-region' : 'sr-live-region';
+  const region = document.getElementById(regionId);
+  if (!region) {
+    return;
+  }
+
+  region.textContent = '';
+  window.setTimeout(() => {
+    region.textContent = message;
+  }, 30);
+}
+
+function setFieldError(inputId, errorId, message = '') {
+  const input = document.getElementById(inputId);
+  const errorNode = document.getElementById(errorId);
+  if (input) {
+    input.setAttribute('aria-invalid', message ? 'true' : 'false');
+  }
+  if (errorNode) {
+    errorNode.textContent = message;
+  }
+}
+
+function validateEmailFormat(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+}
+
 // Track which marker has an open popup
 let currentOpenPopup = null;
 
@@ -56,6 +88,10 @@ function setupSwapButton() {
       fromSuggestions.classList.remove('visible');
       toSuggestions.innerHTML = '';
       toSuggestions.classList.remove('visible');
+
+      setFieldError('from-input', 'from-input-error', '');
+      setFieldError('to-input', 'to-input-error', '');
+      announceToScreenReader('Departure and arrival stations swapped.');
       
       // Search for routes if both stops are selected
       if (selectedStops.from && selectedStops.to) {
@@ -572,6 +608,7 @@ async function searchWeatherLocations(query) {
 function buildWeatherListItem(name, weather) {
   const li = document.createElement('li');
   li.className = 'weather-item';
+  const detailId = `weather-detail-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
   // --- Top row (always visible): name + icon + temp ---
   const row = document.createElement('div');
@@ -579,6 +616,7 @@ function buildWeatherListItem(name, weather) {
   row.setAttribute('role', 'button');
   row.setAttribute('tabindex', '0');
   row.setAttribute('aria-expanded', 'false');
+  row.setAttribute('aria-controls', detailId);
 
   const nameSpan = document.createElement('span');
   nameSpan.className = 'weather-location-name';
@@ -644,6 +682,7 @@ function buildWeatherListItem(name, weather) {
   // --- Detail section (hidden by default) ---
   const detail = document.createElement('div');
   detail.className = 'weather-detail';
+  detail.id = detailId;
 
   if (description) {
     // Capitalise first letter of description
@@ -665,6 +704,9 @@ function buildWeatherListItem(name, weather) {
 
   li.appendChild(row);
   li.appendChild(detail);
+
+  const weatherLabel = rightSide.querySelector('.weather-temp')?.textContent || 'temperature unavailable';
+  row.setAttribute('aria-label', `View weather details for ${name}, ${weatherLabel}`);
 
   // Toggle expand/collapse on click
   row.addEventListener('click', () => {
@@ -699,9 +741,11 @@ async function renderWeatherPanel() {
     weatherData.forEach(({ name, weather }) => {
       weatherList.appendChild(buildWeatherListItem(name, weather));
     });
+    announceToScreenReader(`Weather updated for ${weatherData.length} locations.`);
   } catch (err) {
     console.error('Failed to load weather data:', err);
     weatherList.innerHTML = '<li class="weather-loading">Unable to load weather data</li>';
+    announceToScreenReader('Unable to load weather data.', 'assertive');
   }
 }
 
@@ -716,11 +760,13 @@ function renderWeatherSearchResults(results) {
   weatherList.innerHTML = '';
   if (!results.length) {
     weatherList.innerHTML = '<li class="weather-loading">No locations found</li>';
+    announceToScreenReader('No weather locations found.');
     return;
   }
   results.forEach(({ name, weather }) => {
     weatherList.appendChild(buildWeatherListItem(name, weather));
   });
+  announceToScreenReader(`Showing weather results for ${results.length} locations.`);
 }
 
 /**
@@ -853,10 +899,12 @@ function toggleWeatherPanel() {
         renderWeatherPanel();
       }
     }, WEATHER_CACHE_DURATION_MS);
+    announceToScreenReader('Weather panel opened. Live weather updates are available.');
   } else {
     // Panel is closing — stop auto-refresh
     clearInterval(weatherRefreshInterval);
     weatherRefreshInterval = null;
+    announceToScreenReader('Weather panel closed.');
   }
 }
 
@@ -888,6 +936,9 @@ function toggleNotificationsPanel() {
     authModal?.classList.add('hidden');
     accountModal?.classList.add('hidden');
     updateAccessibilityLinkState(false);
+    announceToScreenReader('Notifications panel opened. Service announcements will be read automatically.', 'assertive');
+  } else {
+    announceToScreenReader('Notifications panel closed.');
   }
 }
 
@@ -914,6 +965,7 @@ function openFaqPanel() {
     authModal?.classList.add('hidden');
     accountModal?.classList.add('hidden');
     updateAccessibilityLinkState(false);
+    announceToScreenReader('FAQ panel opened.');
   }
 }
 
@@ -936,6 +988,7 @@ function closeFaqPanel() {
         answer.setAttribute('aria-hidden', 'true');
       }
     });
+    announceToScreenReader('FAQ panel closed.');
   }
 }
 
@@ -994,6 +1047,7 @@ function openSupportPanel() {
     authModal?.classList.add('hidden');
     accountModal?.classList.add('hidden');
     updateAccessibilityLinkState(false);
+    announceToScreenReader('Customer support panel opened.');
   }
 }
 
@@ -1002,6 +1056,7 @@ function closeSupportPanel() {
   if (supportPanel) {
     supportPanel.classList.add('hidden');
     supportPanel.setAttribute('aria-hidden', 'true');
+    announceToScreenReader('Customer support panel closed.');
   }
 }
 
@@ -1039,6 +1094,7 @@ function openAccessibilityPanel() {
 
   syncAccessibilityControls();
   updateAccessibilityLinkState(true);
+  announceToScreenReader('Accessibility settings panel opened.');
 }
 
 function closeAccessibilityPanel() {
@@ -1050,6 +1106,7 @@ function closeAccessibilityPanel() {
   panel.classList.add('hidden');
   panel.setAttribute('aria-hidden', 'true');
   updateAccessibilityLinkState(false);
+  announceToScreenReader('Accessibility settings panel closed.');
 }
 
 function toggleAccessibilityPanel() {
@@ -1148,11 +1205,13 @@ function openAuthModal() {
   faqPanel?.classList.add('hidden');
   supportPanel?.classList.add('hidden');
   updateAccessibilityLinkState(false);
+  announceToScreenReader('Account login dialog opened.');
 }
 
 function closeAuthModal() {
   document.getElementById('auth-modal')?.classList.add('hidden');
   showLoginAuthView();
+  announceToScreenReader('Account login dialog closed.');
 }
 
 function showLoginAuthView() {
@@ -1191,10 +1250,12 @@ function openAccountModal() {
   faqPanel?.classList.add('hidden');
   supportPanel?.classList.add('hidden');
   updateAccessibilityLinkState(false);
+  announceToScreenReader('Account settings dialog opened.');
 }
 
 function closeAccountModal() {
   document.getElementById('account-modal')?.classList.add('hidden');
+  announceToScreenReader('Account settings dialog closed.');
 }
 
 async function refreshAccountView() {
@@ -1253,6 +1314,7 @@ function renderSavedRoutes(savedRoutes) {
     item.setAttribute('role', 'button');
     item.setAttribute('tabindex', '0');
     item.title = `Search routes: ${route.routeStart} to ${route.routeEnd}`;
+    item.setAttribute('aria-label', `Search saved route from ${route.routeStart} to ${route.routeEnd}`);
 
     const icon = document.createElement('span');
     icon.className = 'saved-route-icon';
@@ -1364,6 +1426,7 @@ function renderNotifications(notifications) {
     emptyNode.className = 'notif-item';
     emptyNode.textContent = 'No notifications yet.';
     notifList.appendChild(emptyNode);
+    announceToScreenReader('There are no notifications.');
     return;
   }
 
@@ -1373,6 +1436,8 @@ function renderNotifications(notifications) {
     row.textContent = item.message;
     notifList.appendChild(row);
   });
+
+  announceToScreenReader(`${Math.min(notifications.length, 5)} notifications loaded.`, 'assertive');
 }
 
 async function handleLoginSubmit(event) {
@@ -1610,6 +1675,13 @@ function initializeAutocomplete() {
 function setupAutocomplete(input, suggestionsContainer, inputType) {
   let selectedIndex = -1;
 
+  input.setAttribute('role', 'combobox');
+  input.setAttribute('aria-autocomplete', 'list');
+  input.setAttribute('aria-expanded', 'false');
+  if (suggestionsContainer.id) {
+    input.setAttribute('aria-controls', suggestionsContainer.id);
+  }
+
   // Input event handler with debouncing
   input.addEventListener('input', function() {
     const query = this.value.trim();
@@ -1617,6 +1689,11 @@ function setupAutocomplete(input, suggestionsContainer, inputType) {
     
     // Clear selected stop when user modifies input
     selectedStops[inputType] = null;
+    setFieldError(
+      inputType === 'from' ? 'from-input' : 'to-input',
+      inputType === 'from' ? 'from-input-error' : 'to-input-error',
+      ''
+    );
 
     // Debounce the search
     clearTimeout(debounceTimer);
@@ -1640,11 +1717,11 @@ function setupAutocomplete(input, suggestionsContainer, inputType) {
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       selectedIndex = Math.min(selectedIndex + 1, suggestions.length - 1);
-      updateSelectedSuggestion(suggestions, selectedIndex);
+      updateSelectedSuggestion(suggestions, selectedIndex, input);
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
       selectedIndex = Math.max(selectedIndex - 1, 0);
-      updateSelectedSuggestion(suggestions, selectedIndex);
+      updateSelectedSuggestion(suggestions, selectedIndex, input);
     } else if (event.key === 'Enter') {
       event.preventDefault();
       if (selectedIndex >= 0 && suggestions[selectedIndex]) {
@@ -1692,7 +1769,10 @@ function displaySuggestions(stops, suggestionsContainer, input, inputType) {
   stops.forEach((stop, index) => {
     const item = document.createElement('div');
     item.className = 'autocomplete-suggestion-item';
+    item.id = `${inputType}-suggestion-${index}`;
     item.textContent = stop.name;
+    item.setAttribute('role', 'option');
+    item.setAttribute('aria-selected', 'false');
     item.dataset.atcoCode = stop.atcoCode;
     item.dataset.lat = stop.lat;
     item.dataset.lon = stop.lon;
@@ -1706,8 +1786,12 @@ function displaySuggestions(stops, suggestionsContainer, input, inputType) {
     // Hover effect
     item.addEventListener('mouseenter', function() {
       const allItems = suggestionsContainer.querySelectorAll('.autocomplete-suggestion-item');
-      allItems.forEach(i => i.classList.remove('selected'));
+      allItems.forEach(i => {
+        i.classList.remove('selected');
+        i.setAttribute('aria-selected', 'false');
+      });
       this.classList.add('selected');
+      this.setAttribute('aria-selected', 'true');
     });
 
     suggestionsContainer.appendChild(item);
@@ -1720,7 +1804,7 @@ function displaySuggestions(stops, suggestionsContainer, input, inputType) {
  * Display no results message
  */
 function displayNoResults(suggestionsContainer) {
-  suggestionsContainer.innerHTML = '<div class="autocomplete-no-results">No stops found within the region</div>';
+  suggestionsContainer.innerHTML = '<div class="autocomplete-no-results" role="status">No stops found within the region</div>';
   showSuggestions(suggestionsContainer);
 }
 
@@ -1728,7 +1812,8 @@ function displayNoResults(suggestionsContainer) {
  * Display error message
  */
 function displayError(suggestionsContainer) {
-  suggestionsContainer.innerHTML = '<div class="autocomplete-no-results">Error loading stops</div>';
+  suggestionsContainer.innerHTML = '<div class="autocomplete-no-results" role="status">Error loading stops</div>';
+  announceToScreenReader('Unable to load stop suggestions right now.', 'assertive');
   showSuggestions(suggestionsContainer);
 }
 
@@ -1739,6 +1824,12 @@ function selectStop(stop, input, suggestionsContainer, inputType) {
   input.value = stop.name;
   selectedStops[inputType] = stop;
   hideSuggestions(suggestionsContainer);
+  input.removeAttribute('aria-activedescendant');
+  setFieldError(
+    inputType === 'from' ? 'from-input' : 'to-input',
+    inputType === 'from' ? 'from-input-error' : 'to-input-error',
+    ''
+  );
   
   console.log(`Selected ${inputType} stop:`, stop);
   
@@ -1751,15 +1842,22 @@ function selectStop(stop, input, suggestionsContainer, inputType) {
 /**
  * Update which suggestion is highlighted
  */
-function updateSelectedSuggestion(suggestions, index) {
+function updateSelectedSuggestion(suggestions, index, input) {
   suggestions.forEach((item, i) => {
     if (i === index) {
       item.classList.add('selected');
+      item.setAttribute('aria-selected', 'true');
       item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     } else {
       item.classList.remove('selected');
+      item.setAttribute('aria-selected', 'false');
     }
   });
+
+  const active = suggestions[index];
+  if (input && active?.id) {
+    input.setAttribute('aria-activedescendant', active.id);
+  }
 }
 
 /**
@@ -1767,6 +1865,10 @@ function updateSelectedSuggestion(suggestions, index) {
  */
 function showSuggestions(suggestionsContainer) {
   suggestionsContainer.classList.add('visible');
+  const controlledInput = document.querySelector(`input[aria-controls="${suggestionsContainer.id}"]`);
+  if (controlledInput) {
+    controlledInput.setAttribute('aria-expanded', 'true');
+  }
 }
 
 /**
@@ -1774,6 +1876,11 @@ function showSuggestions(suggestionsContainer) {
  */
 function hideSuggestions(suggestionsContainer) {
   suggestionsContainer.classList.remove('visible');
+  const controlledInput = document.querySelector(`input[aria-controls="${suggestionsContainer.id}"]`);
+  if (controlledInput) {
+    controlledInput.setAttribute('aria-expanded', 'false');
+    controlledInput.removeAttribute('aria-activedescendant');
+  }
 }
 
 /**
@@ -1799,8 +1906,18 @@ async function searchRoutes() {
   // Only proceed if both stops are selected
   if (!selectedStops.from || !selectedStops.to) {
     console.warn('Both from and to stops must be selected');
+    if (!selectedStops.from) {
+      setFieldError('from-input', 'from-input-error', 'Please select a departure station from the suggestions list.');
+    }
+    if (!selectedStops.to) {
+      setFieldError('to-input', 'to-input-error', 'Please select an arrival station from the suggestions list.');
+    }
+    announceToScreenReader('Please select both departure and arrival stations before searching routes.', 'assertive');
     return;
   }
+
+  setFieldError('from-input', 'from-input-error', '');
+  setFieldError('to-input', 'to-input-error', '');
 
   try {
     const response = await fetch('/api/routes/search', {
@@ -1817,6 +1934,7 @@ async function searchRoutes() {
     if (!response.ok) {
       const errorData = await response.json();
       console.error('Error searching routes:', errorData.error);
+      announceToScreenReader(errorData.error || 'Unable to find routes for this journey.', 'assertive');
       return;
     }
 
@@ -1827,6 +1945,7 @@ async function searchRoutes() {
     displayRoutesModal(data);
   } catch (error) {
     console.error('Error fetching routes:', error);
+    announceToScreenReader('Error fetching routes. Please try again.', 'assertive');
   }
 }
 
@@ -1869,6 +1988,7 @@ function displayRoutesModal(data) {
 
   // Show the modal by removing the hidden class
   modal.classList.remove('hidden');
+  announceToScreenReader(`Showing ${Array.isArray(data.routes) ? data.routes.length : 0} route options from ${data.from} to ${data.to}.`);
 }
 
 /**
@@ -2231,6 +2351,8 @@ async function handleSaveSearchedRoute(route, saveButton) {
     saveButton.textContent = 'Saved';
     saveButton.classList.add('saved');
     saveButton.disabled = true;
+    saveButton.setAttribute('aria-label', 'Route saved to your account');
+    announceToScreenReader('Route saved to your account.');
 
     await refreshAccountView();
   } catch (error) {
@@ -2311,16 +2433,24 @@ function toggleRouteDetail(routeRow, route) {
   if (existingDetail && existingDetail.classList.contains('route-detail')) {
     existingDetail.remove();
     routeRow.classList.remove('expanded');
+    routeRow.setAttribute('aria-expanded', 'false');
+    routeRow.removeAttribute('aria-controls');
     return;
   }
 
   // Collapse any other open detail
   document.querySelectorAll('.route-detail').forEach(d => d.remove());
-  document.querySelectorAll('.route-row.expanded').forEach(r => r.classList.remove('expanded'));
+  document.querySelectorAll('.route-row.expanded').forEach(r => {
+    r.classList.remove('expanded');
+    r.setAttribute('aria-expanded', 'false');
+    r.removeAttribute('aria-controls');
+  });
 
   // Build the detail panel
   const detail = document.createElement('div');
   detail.className = 'route-detail';
+  const detailId = `route-detail-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  detail.id = detailId;
 
   if (route.legs && route.legs.length > 0) {
     route.legs.forEach(leg => {
@@ -2339,6 +2469,8 @@ function toggleRouteDetail(routeRow, route) {
   // Insert detail right after the clicked row
   routeRow.after(detail);
   routeRow.classList.add('expanded');
+  routeRow.setAttribute('aria-expanded', 'true');
+  routeRow.setAttribute('aria-controls', detailId);
 }
 
 /**
@@ -2358,6 +2490,7 @@ function renderRoutesTable(routes) {
 
   if (!routes || routes.length === 0) {
     routeList.innerHTML = '<div class="route-row">No routes found for this journey.</div>';
+    announceToScreenReader('No routes found for this journey.', 'assertive');
     return;
   }
 
@@ -2366,7 +2499,14 @@ function renderRoutesTable(routes) {
     const routeRow = document.createElement('div');
     routeRow.className = 'route-row' + (index % 2 === 1 ? ' alt' : '');
     routeRow.style.cursor = 'pointer';
-    routeRow.title = 'Click to view route details';
+    routeRow.title = 'View route details';
+    routeRow.setAttribute('role', 'button');
+    routeRow.setAttribute('tabindex', '0');
+    routeRow.setAttribute('aria-expanded', 'false');
+    routeRow.setAttribute(
+      'aria-label',
+      `View route ${index + 1}, ${route.start_time} to ${route.end_time}, duration ${formatDuration(route.duration_mins)}, ${route.changes} change${route.changes === 1 ? '' : 's'}.`
+    );
 
     // Build transport icons container (shows full chain, e.g. bus → train → bus)
     const iconsContainer = document.createElement('span');
@@ -2381,6 +2521,7 @@ function renderRoutesTable(routes) {
       }
       const icon = document.createElement('span');
       icon.className = mode === 'bus' ? 'icon-bus' : 'icon-train';
+      icon.setAttribute('aria-hidden', 'true');
       iconsContainer.appendChild(icon);
     });
 
@@ -2407,6 +2548,7 @@ function renderRoutesTable(routes) {
     saveBtn.className = 'route-save-btn';
     saveBtn.type = 'button';
     saveBtn.textContent = 'Save Route';
+    saveBtn.setAttribute('aria-label', `Save route ${index + 1} from ${route.start_time} to ${route.end_time}`);
     saveBtn.addEventListener('click', event => {
       event.stopPropagation();
       handleSaveSearchedRoute(route, saveBtn);
@@ -2416,6 +2558,7 @@ function renderRoutesTable(routes) {
     const expandIcon = document.createElement('span');
     expandIcon.className = 'route-expand-icon';
     expandIcon.textContent = '▼';
+    expandIcon.setAttribute('aria-hidden', 'true');
 
     // Assemble the row
     routeRow.appendChild(iconsContainer);
@@ -2426,9 +2569,17 @@ function renderRoutesTable(routes) {
 
     // Click handler to toggle detail panel
     routeRow.addEventListener('click', () => toggleRouteDetail(routeRow, route));
+    routeRow.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        toggleRouteDetail(routeRow, route);
+      }
+    });
 
     routeList.appendChild(routeRow);
   });
+
+  announceToScreenReader(`${routes.length} routes available. Use Enter or Space on a route to view details.`);
 }
 
 // ============================================================================
@@ -2467,6 +2618,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (closeRouteModalBtn && routeModal) {
     closeRouteModalBtn.addEventListener('click', () => {
       routeModal.classList.add('hidden');
+      announceToScreenReader('Routes modal closed.');
     });
   }
 
@@ -2492,6 +2644,7 @@ document.addEventListener('DOMContentLoaded', function() {
     routeModal.addEventListener('click', (event) => {
       if (event.target === routeModal) {
         routeModal.classList.add('hidden');
+        announceToScreenReader('Routes modal closed.');
       }
     });
   }
@@ -2577,6 +2730,7 @@ function setupSidebarToggle() {
   btn.setAttribute('role', 'button');
   btn.setAttribute('aria-pressed', String(!saved));
   btn.title = saved ? 'Expand sidebar' : 'Collapse sidebar';
+  btn.setAttribute('aria-label', saved ? 'Expand sidebar navigation menu' : 'Collapse sidebar navigation menu');
 
   btn.addEventListener('click', () => {
     const isNowMin = sidebar.classList.toggle('minimized');
@@ -2585,9 +2739,11 @@ function setupSidebarToggle() {
     btn.setAttribute('aria-expanded', String(!isNowMin));
     btn.setAttribute('aria-pressed', String(!isNowMin));
     btn.title = isNowMin ? 'Expand sidebar' : 'Collapse sidebar';
+    btn.setAttribute('aria-label', isNowMin ? 'Expand sidebar navigation menu' : 'Collapse sidebar navigation menu');
     const icon = btn.querySelector('.sidebar-toggle-icon');
     if (icon) icon.textContent = isNowMin ? '›' : '‹';
     localStorage.setItem('sidebarMinimized', JSON.stringify(isNowMin));
+    announceToScreenReader(isNowMin ? 'Sidebar collapsed.' : 'Sidebar expanded.');
 
     // Toggle mobile overlay backdrop
     updateSidebarOverlay(!isNowMin);
