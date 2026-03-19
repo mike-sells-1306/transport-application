@@ -5,11 +5,11 @@
   Description: Desktop-style web application UI for a regional travel service with interactive OpenStreetMap.
 -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Transport for North West</title>
+  <title data-i18n="app.title">Transport for North West</title>
   <!-- Leaflet CSS for interactive map -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <link rel="stylesheet" href="style.css">
@@ -19,20 +19,20 @@
   <div id="sr-alert-region" class="visually-hidden" aria-live="assertive" aria-atomic="true"></div>
 
   <!-- Sidebar Navigation -->
-  <aside id="sidebar" class="sidebar" role="navigation" aria-label="Primary sidebar">
+  <aside id="sidebar" class="sidebar" role="navigation" aria-label="Primary sidebar" data-i18n-aria-label="navigation.primarySidebar">
     <div class="sidebar-header">
-      <h1 id="app-title">Transport for North West</h1>
+      <h1 id="app-title" data-i18n="app.title">Transport for North West</h1>
     </div>
     <!-- Sidebar content continues... -->
     <div class="sidebar-search">
-      <label for="from-input">Where would you like to travel today?</label>
+      <label for="from-input" data-i18n="journey.prompt">Where would you like to travel today?</label>
       <div class="journey-search-group">
         <div class="journey-box">
           <span class="journey-dot journey-dot-empty" aria-hidden="true"></span>
           <div class="autocomplete-wrapper">
-            <label for="from-input" class="visually-hidden">Select departure station</label>
-            <input id="from-input" type="text" placeholder="Search…" autocomplete="off" aria-label="Select departure station" aria-required="true" aria-invalid="false" aria-describedby="from-input-error" />
-            <div class="autocomplete-suggestions" id="from-suggestions" role="listbox" aria-label="Departure station suggestions"></div>
+            <label for="from-input" class="visually-hidden" data-i18n="journey.departureLabel">Select departure station</label>
+            <input id="from-input" type="text" placeholder="Search…" autocomplete="off" aria-label="Select departure station" data-i18n-placeholder="journey.searchPlaceholder" data-i18n-aria-label="journey.departureLabel" aria-required="true" aria-invalid="false" aria-describedby="from-input-error" />
+            <div class="autocomplete-suggestions" id="from-suggestions" role="listbox" aria-label="Departure station suggestions" data-i18n-aria-label="journey.departureSuggestions"></div>
             <p id="from-input-error" class="field-error" aria-live="polite"></p>
           </div>
         </div>
@@ -42,29 +42,29 @@
         <div class="journey-box">
           <span class="journey-dot journey-dot-filled" aria-hidden="true"></span>
           <div class="autocomplete-wrapper">
-            <label for="to-input" class="visually-hidden">Select arrival station</label>
-            <input id="to-input" type="text" placeholder="to" autocomplete="off" aria-label="Select arrival station" aria-required="true" aria-invalid="false" aria-describedby="to-input-error" />
-            <div class="autocomplete-suggestions" id="to-suggestions" role="listbox" aria-label="Arrival station suggestions"></div>
+            <label for="to-input" class="visually-hidden" data-i18n="journey.arrivalLabel">Select arrival station</label>
+            <input id="to-input" type="text" placeholder="to" autocomplete="off" aria-label="Select arrival station" data-i18n-placeholder="journey.toPlaceholder" data-i18n-aria-label="journey.arrivalLabel" aria-required="true" aria-invalid="false" aria-describedby="to-input-error" />
+            <div class="autocomplete-suggestions" id="to-suggestions" role="listbox" aria-label="Arrival station suggestions" data-i18n-aria-label="journey.arrivalSuggestions"></div>
             <p id="to-input-error" class="field-error" aria-live="polite"></p>
           </div>
         </div>
-        <button class="icon-btn journey-swap-btn" type="button" title="Swap departure and arrival stations" aria-label="Swap departure and arrival stations">
+        <button class="icon-btn journey-swap-btn" type="button" title="Swap departure and arrival stations" aria-label="Swap departure and arrival stations" data-i18n-title="journey.swapAria" data-i18n-aria-label="journey.swapAria">
           <span class="icon-swap" aria-hidden="true"></span>
         </button>
       </div>
     </div>
-    <nav class="sidebar-links" role="navigation" aria-label="Main navigation">
-      <a href="#account" id="account-link">Account</a>
-      <a href="#faq">FAQ</a>
-      <a href="#support" id="support-link">Customer Support</a>
-      <a href="#accessibility" id="accessibility-link" role="button" aria-expanded="false" aria-controls="accessibility-panel">Accessibility</a>
+    <nav class="sidebar-links" role="navigation" aria-label="Main navigation" data-i18n-aria-label="navigation.main">
+      <a href="#account" id="account-link" data-i18n="navigation.account">Account</a>
+      <a href="#faq" data-i18n="navigation.faq">FAQ</a>
+      <a href="#support" id="support-link" data-i18n="navigation.support">Customer Support</a>
+      <a href="#accessibility" id="accessibility-link" role="button" aria-expanded="false" aria-controls="accessibility-panel" data-i18n="navigation.accessibility">Accessibility</a>
     </nav>
   </aside>
 
   <!-- --------------------------------------------- -->
   <!-- Sidebar toggle button (fixed so always visible) -->
   <!-- --------------------------------------------- -->
-  <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle sidebar" aria-expanded="true" aria-controls="sidebar">
+  <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle sidebar" data-i18n-aria-label="navigation.toggleSidebar" aria-expanded="true" aria-controls="sidebar">
     <span class="sidebar-toggle-icon">‹</span>
   </button>
 
@@ -74,16 +74,16 @@
   <!-- Main Map Area -->
   <main class="map-area" role="main" aria-labelledby="app-title">
     <!-- Interactive OpenStreetMap container -->
-    <div id="map" class="leaflet-map" role="application" aria-label="Interactive map of North West England">
+    <div id="map" class="leaflet-map" role="application" aria-label="Interactive map of North West England" data-i18n-aria-label="map.ariaLabel">
       <!-- Map will be rendered here by Leaflet JS -->
     </div>
 
     <!-- Top-right icon buttons -->
     <div class="top-right-icons">
-      <button class="icon-btn" id="weather-btn" type="button" title="View weather updates" aria-label="View weather updates" aria-expanded="false" aria-controls="weather-panel">
+      <button class="icon-btn" id="weather-btn" type="button" title="View weather updates" aria-label="View weather updates" data-i18n-title="weather.openPanel" data-i18n-aria-label="weather.openPanel" aria-expanded="false" aria-controls="weather-panel">
         <span class="icon-cloud" aria-hidden="true"></span>
       </button>
-      <button class="icon-btn" id="notif-btn" type="button" title="View service notifications" aria-label="View service notifications" aria-expanded="false" aria-controls="notif-panel">
+      <button class="icon-btn" id="notif-btn" type="button" title="View service notifications" aria-label="View service notifications" data-i18n-title="notifications.openPanel" data-i18n-aria-label="notifications.openPanel" aria-expanded="false" aria-controls="notif-panel">
         <span class="icon-bell" aria-hidden="true"></span>
       </button>
     </div>
@@ -92,16 +92,16 @@
     <section class="route-modal hidden" id="route-modal" role="dialog" aria-modal="true" aria-labelledby="route-modal-title">
       <div class="route-modal-header" id="route-modal-title">
         Routes from Lancaster to Blackpool
-        <button id="close-route-modal" class="route-modal-close" type="button" aria-label="Close routes modal">×</button>
+        <button id="close-route-modal" class="route-modal-close" type="button" aria-label="Close routes modal" data-i18n-aria-label="route.closeModal">×</button>
       </div>
       <div class="route-modal-sort">
-        <label for="sort">Sort by:</label>
-        <select id="sort" aria-label="Sort routes by">
-          <option selected>Start Time</option>
-          <option>Fastest</option>
-          <option>Fewest Changes</option>
+        <label for="sort" data-i18n="route.sortBy">Sort by:</label>
+        <select id="sort" aria-label="Sort routes by" data-i18n-aria-label="route.sortByAria">
+          <option value="start_time" selected data-i18n="route.sort.startTime">Start Time</option>
+          <option value="fastest" data-i18n="route.sort.fastest">Fastest</option>
+          <option value="fewest_changes" data-i18n="route.sort.fewestChanges">Fewest Changes</option>
         </select>
-        <button id="download-routes-pdf" class="route-download-btn" type="button" aria-label="Download displayed routes as PDF" disabled>
+        <button id="download-routes-pdf" class="route-download-btn" type="button" aria-label="Download displayed routes as PDF" data-i18n="route.download" data-i18n-aria-label="route.downloadAria" disabled>
           Download Routes
         </button>
       </div>
@@ -112,74 +112,78 @@
 
     <!-- Weather Panel (hidden by default) - populated dynamically from API -->
     <section class="weather-panel hidden" id="weather-panel" role="region" aria-labelledby="weather-panel-title">
-      <div class="panel-header" id="weather-panel-title">Weather</div>
+      <div class="panel-header" id="weather-panel-title" data-i18n="weather.title">Weather</div>
       <div class="weather-search-wrapper">
-        <label for="weather-search-input" class="visually-hidden">Search weather by location</label>
-        <input type="text" id="weather-search-input" class="weather-search-input" placeholder="Search location…" autocomplete="off" aria-label="Search weather by location" />
+        <label for="weather-search-input" class="visually-hidden" data-i18n="weather.searchLabel">Search weather by location</label>
+        <input type="text" id="weather-search-input" class="weather-search-input" placeholder="Search location…" autocomplete="off" aria-label="Search weather by location" data-i18n-placeholder="weather.searchPlaceholder" data-i18n-aria-label="weather.searchLabel" />
       </div>
       <ul class="weather-list" id="weather-list" aria-live="polite">
-        <li class="weather-loading">Loading weather data…</li>
+        <li class="weather-loading" data-i18n="weather.loading">Loading weather data…</li>
       </ul>
     </section>
 
     <!-- Notifications Panel (hidden by default) -->
     <section class="notif-panel hidden" id="notif-panel" role="region" aria-labelledby="notif-panel-title">
-      <div class="panel-header" id="notif-panel-title">Notifications</div>
+      <div class="panel-header" id="notif-panel-title" data-i18n="notifications.title">Notifications</div>
       <div class="notif-list" role="log" aria-live="assertive" aria-relevant="additions text" aria-atomic="false">
         <div class="notif-item">
-          <strong>ANNOUNCEMENT:</strong> Train to Blackpool delayed by 12 minutes. <span class="notif-time">12m ago</span>
+          <strong data-i18n="notifications.announcementPrefix">ANNOUNCEMENT:</strong>
+          <span data-i18n="notifications.sample.one">Train to Blackpool delayed by 12 minutes.</span>
+          <span class="notif-time" data-i18n="notifications.sample.oneTime">12m ago</span>
         </div>
         <div class="notif-item">
-          <strong>ANNOUNCEMENT:</strong> Snow warning in Barrow-in-Furness. <span class="notif-time">4h ago</span>
+          <strong data-i18n="notifications.announcementPrefix">ANNOUNCEMENT:</strong>
+          <span data-i18n="notifications.sample.two">Snow warning in Barrow-in-Furness.</span>
+          <span class="notif-time" data-i18n="notifications.sample.twoTime">4h ago</span>
         </div>
-        <div class="notif-item more">View more…</div>
+        <div class="notif-item more" data-i18n="notifications.viewMore">View more…</div>
       </div>
     </section>
 
     <!-- FAQ Panel (hidden by default) -->
     <section class="faq-panel hidden" id="faq-panel" role="region" aria-labelledby="faq-panel-title" aria-hidden="true">
       <div class="faq-header">
-        <h2 id="faq-panel-title">FAQ</h2>
-        <button class="faq-close" id="faq-close" type="button" aria-label="Close FAQ">×</button>
+        <h2 id="faq-panel-title" data-i18n="faq.title">FAQ</h2>
+        <button class="faq-close" id="faq-close" type="button" aria-label="Close FAQ" data-i18n-aria-label="faq.close">×</button>
       </div>
       <div class="faq-content">
         <div class="faq-item">
-          <button class="faq-question" type="button" aria-expanded="false">
+          <button class="faq-question" type="button" aria-expanded="false" data-i18n="faq.q1.question">
             How do I view details for a location?
           </button>
-          <div class="faq-answer" aria-hidden="true">
+          <div class="faq-answer" aria-hidden="true" data-i18n="faq.q1.answer">
             You can search for information about a location by searching for it or clicking on the location on the map.
           </div>
         </div>
         <div class="faq-item">
-          <button class="faq-question" type="button" aria-expanded="false">
+          <button class="faq-question" type="button" aria-expanded="false" data-i18n="faq.q2.question">
             What area does the map cover?
           </button>
-          <div class="faq-answer" aria-hidden="true">
+          <div class="faq-answer" aria-hidden="true" data-i18n="faq.q2.answer">
             This map focuses on the coastal corridor between Preston and Lancaster, including Blackpool, the Fylde, and the Wyre coast.
           </div>
         </div>
         <div class="faq-item">
-          <button class="faq-question" type="button" aria-expanded="false">
+          <button class="faq-question" type="button" aria-expanded="false" data-i18n="faq.q3.question">
             How do I buy a ticket for a journey?
           </button>
-          <div class="faq-answer" aria-hidden="true">
+          <div class="faq-answer" aria-hidden="true" data-i18n="faq.q3.answer">
             Our service is only for the purposes of finding routes, buying a ticket should be done on another service such as the National Rail website or a local bus operator’s site.
           </div>
         </div>
         <div class="faq-item">
-          <button class="faq-question" type="button" aria-expanded="false">
+          <button class="faq-question" type="button" aria-expanded="false" data-i18n="faq.q4.question">
             How do I save routes as favourites?
           </button>
-          <div class="faq-answer" aria-hidden="true">
+          <div class="faq-answer" aria-hidden="true" data-i18n="faq.q4.answer">
             You can save routes to your account by clicking the "Save Route" button on a route result. You will need to be logged in to save routes.
           </div>
         </div>
         <div class="faq-item">
-          <button class="faq-question" type="button" aria-expanded="false">
+          <button class="faq-question" type="button" aria-expanded="false" data-i18n="faq.q5.question">
             What happens if there are changes to my saved routes?
           </button>
-          <div class="faq-answer" aria-hidden="true">
+          <div class="faq-answer" aria-hidden="true" data-i18n="faq.q5.answer">
             Whenever potential disruptions could happen, we will send you a notification about it to inform you. 
           </div>
         </div>
@@ -189,38 +193,38 @@
     <!-- Customer Support Panel (hidden by default) -->
     <section class="faq-panel support-panel hidden" id="support-panel" role="region" aria-labelledby="support-panel-title" aria-hidden="true">
       <div class="faq-header support-header">
-        <h2 id="support-panel-title">Customer Support</h2>
-        <button class="faq-close" id="support-close" type="button" aria-label="Close Customer Support">×</button>
+        <h2 id="support-panel-title" data-i18n="support.title">Customer Support</h2>
+        <button class="faq-close" id="support-close" type="button" aria-label="Close Customer Support" data-i18n-aria-label="support.close">×</button>
       </div>
       <div class="faq-content support-content">
         <article class="faq-item support-item">
-          <h3>Need help planning a journey?</h3>
-          <p>
+          <h3 data-i18n="support.journeyHelp.title">Need help planning a journey?</h3>
+          <p data-i18n="support.journeyHelp.body">
             If route results look incorrect or incomplete, try updating your from/to stops and running the search again.
             If the issue continues, contact us with your route details and time of search.
           </p>
         </article>
 
         <article class="faq-item support-item">
-          <h3>Contact channels</h3>
+          <h3 data-i18n="support.channels.title">Contact channels</h3>
           <ul class="support-list">
-            <li><strong>Email:</strong> support@transportnorthwest.example</li>
-            <li><strong>Phone:</strong> 0800 123 4567</li>
-            <li><strong>Live chat:</strong> Weekdays 08:00–18:00</li>
+            <li><strong data-i18n="support.channels.emailLabel">Email:</strong> <span data-i18n="support.channels.emailValue">support@transportnorthwest.example</span></li>
+            <li><strong data-i18n="support.channels.phoneLabel">Phone:</strong> <span data-i18n="support.channels.phoneValue">0800 123 4567</span></li>
+            <li><strong data-i18n="support.channels.chatLabel">Live chat:</strong> <span data-i18n="support.channels.chatValue">Weekdays 08:00–18:00</span></li>
           </ul>
         </article>
 
         <article class="faq-item support-item">
-          <h3>Report a disruption or data issue</h3>
-          <p>
+          <h3 data-i18n="support.reportIssue.title">Report a disruption or data issue</h3>
+          <p data-i18n="support.reportIssue.body">
             Include service type (bus/train), route start and end, expected departure time, and a screenshot if possible.
             This helps us investigate and resolve issues faster.
           </p>
         </article>
 
         <article class="faq-item support-item">
-          <h3>Account help</h3>
-          <p>
+          <h3 data-i18n="support.accountHelp.title">Account help</h3>
+          <p data-i18n="support.accountHelp.body">
             For login, password, or saved route issues, open the Account tab first, then contact support if the problem persists.
           </p>
         </article>
@@ -230,50 +234,71 @@
     <!-- Accessibility Panel (hidden by default) -->
     <section class="faq-panel accessibility-panel hidden" id="accessibility-panel" role="region" aria-labelledby="accessibility-panel-title" aria-hidden="true">
       <div class="faq-header accessibility-header">
-        <h2 id="accessibility-panel-title">Accessibility</h2>
-        <button class="faq-close" id="accessibility-close" type="button" aria-label="Close Accessibility">×</button>
+        <h2 id="accessibility-panel-title" data-i18n="accessibility.title">Accessibility</h2>
+        <button class="faq-close" id="accessibility-close" type="button" aria-label="Close Accessibility" data-i18n-aria-label="accessibility.close">×</button>
       </div>
       <div class="faq-content accessibility-content">
         <article class="faq-item accessibility-item">
-          <h3>Zoom</h3>
-          <p>Adjust interface text and control sizes.</p>
+          <h3 data-i18n="accessibility.languageTitle">Language</h3>
+          <p data-i18n="accessibility.languageDescription">Choose your preferred language and locale.</p>
+          <label for="accessibility-language" class="visually-hidden" data-i18n="accessibility.languageLabel">Application language</label>
+          <select id="accessibility-language" class="accessibility-select" aria-label="Application language" data-i18n-aria-label="accessibility.languageLabel">
+            <option value="en-GB">🇬🇧 English (United Kingdom)</option>
+            <option value="en-US">🇺🇸 English (United States)</option>
+            <option value="cy-GB">🏴 Cymraeg (Y Deyrnas Unedig)</option>
+            <option value="fr-FR">🇫🇷 Français (France)</option>
+            <option value="de-DE">🇩🇪 Deutsch (Deutschland)</option>
+            <option value="es-ES">🇪🇸 Español (España)</option>
+            <option value="zh-CN">🇨🇳 中文（中国）</option>
+            <option value="hi-IN">🇮🇳 हिन्दी (भारत)</option>
+            <option value="ar">🌍 العربية</option>
+            <option value="bn-BD">🇧🇩 বাংলা (বাংলাদেশ)</option>
+            <option value="pt-BR">🇧🇷 Português (Brasil)</option>
+            <option value="ru-RU">🇷🇺 Русский (Россия)</option>
+            <option value="ur-PK">🇵🇰 اردو (پاکستان)</option>
+          </select>
+        </article>
+
+        <article class="faq-item accessibility-item">
+          <h3 data-i18n="accessibility.zoomTitle">Zoom</h3>
+          <p data-i18n="accessibility.zoomDescription">Adjust interface text and control sizes.</p>
           <div class="accessibility-zoom-row">
-            <button id="zoom-out-btn" class="account-action-btn" type="button" aria-label="Decrease zoom">A−</button>
-            <label for="accessibility-zoom" class="visually-hidden">Adjust interface zoom level</label>
-            <input id="accessibility-zoom" type="range" min="0.85" max="1.4" step="0.05" value="1" aria-label="Adjust interface zoom level" />
-            <button id="zoom-in-btn" class="account-action-btn" type="button" aria-label="Increase zoom">A+</button>
+            <button id="zoom-out-btn" class="account-action-btn" type="button" aria-label="Decrease zoom" data-i18n-aria-label="accessibility.zoomDecrease">A−</button>
+            <label for="accessibility-zoom" class="visually-hidden" data-i18n="accessibility.zoomLabel">Adjust interface zoom level</label>
+            <input id="accessibility-zoom" type="range" min="0.85" max="1.4" step="0.05" value="1" aria-label="Adjust interface zoom level" data-i18n-aria-label="accessibility.zoomLabel" />
+            <button id="zoom-in-btn" class="account-action-btn" type="button" aria-label="Increase zoom" data-i18n-aria-label="accessibility.zoomIncrease">A+</button>
             <span id="accessibility-zoom-value" class="accessibility-value">100%</span>
           </div>
         </article>
 
         <article class="faq-item accessibility-item">
-          <h3>Colour profile</h3>
-          <p>Pick a profile designed for different colour vision needs.</p>
-          <fieldset class="accessibility-fieldset" aria-label="Colour profile">
-            <legend class="visually-hidden">Colour profile</legend>
-            <label><input type="radio" name="accessibility-colour" value="none" checked /> Default</label>
-            <label><input type="radio" name="accessibility-colour" value="deuteranopia" /> Red–Green (Deuteranopia)</label>
-            <label><input type="radio" name="accessibility-colour" value="protanopia" /> Red–Green (Protanopia)</label>
-            <label><input type="radio" name="accessibility-colour" value="tritanopia" /> Blue–Yellow (Tritanopia)</label>
-            <label><input type="radio" name="accessibility-colour" value="achromatopsia" /> Monochrome (Achromatopsia)</label>
+          <h3 data-i18n="accessibility.colourProfileTitle">Colour profile</h3>
+          <p data-i18n="accessibility.colourProfileDescription">Pick a profile designed for different colour vision needs.</p>
+          <fieldset class="accessibility-fieldset" aria-label="Colour profile" data-i18n-aria-label="accessibility.colourProfileTitle">
+            <legend class="visually-hidden" data-i18n="accessibility.colourProfileTitle">Colour profile</legend>
+            <label><input type="radio" name="accessibility-colour" value="none" checked /> <span data-i18n="accessibility.colour.default">Default</span></label>
+            <label><input type="radio" name="accessibility-colour" value="deuteranopia" /> <span data-i18n="accessibility.colour.deuteranopia">Red–Green (Deuteranopia)</span></label>
+            <label><input type="radio" name="accessibility-colour" value="protanopia" /> <span data-i18n="accessibility.colour.protanopia">Red–Green (Protanopia)</span></label>
+            <label><input type="radio" name="accessibility-colour" value="tritanopia" /> <span data-i18n="accessibility.colour.tritanopia">Blue–Yellow (Tritanopia)</span></label>
+            <label><input type="radio" name="accessibility-colour" value="achromatopsia" /> <span data-i18n="accessibility.colour.achromatopsia">Monochrome (Achromatopsia)</span></label>
           </fieldset>
         </article>
 
         <article class="faq-item accessibility-item">
-          <h3>Font size</h3>
-          <p>Choose a comfortable font size for the UI.</p>
-          <fieldset class="accessibility-fieldset" aria-label="Font size">
-            <legend class="visually-hidden">Font size</legend>
-            <label><input type="radio" name="accessibility-font-size" value="small" /> Small</label>
-            <label><input type="radio" name="accessibility-font-size" value="normal" checked /> Normal</label>
-            <label><input type="radio" name="accessibility-font-size" value="large" /> Large</label>
+          <h3 data-i18n="accessibility.fontSizeTitle">Font size</h3>
+          <p data-i18n="accessibility.fontSizeDescription">Choose a comfortable font size for the UI.</p>
+          <fieldset class="accessibility-fieldset" aria-label="Font size" data-i18n-aria-label="accessibility.fontSizeTitle">
+            <legend class="visually-hidden" data-i18n="accessibility.fontSizeTitle">Font size</legend>
+            <label><input type="radio" name="accessibility-font-size" value="small" /> <span data-i18n="accessibility.font.small">Small</span></label>
+            <label><input type="radio" name="accessibility-font-size" value="normal" checked /> <span data-i18n="accessibility.font.normal">Normal</span></label>
+            <label><input type="radio" name="accessibility-font-size" value="large" /> <span data-i18n="accessibility.font.large">Large</span></label>
           </fieldset>
         </article>
 
         <article class="faq-item accessibility-item accessibility-actions">
-          <button id="accessibility-save-btn" class="action-btn" type="button" aria-label="Save accessibility settings to account">Save to account</button>
-          <button id="accessibility-reset-btn" class="secondary-btn" type="button" aria-label="Reset accessibility settings to default">Reset defaults</button>
-          <p class="auth-help">Settings apply instantly. Save to account to sync them after login.</p>
+          <button id="accessibility-save-btn" class="action-btn" type="button" aria-label="Save accessibility settings to account" data-i18n="accessibility.save" data-i18n-aria-label="accessibility.saveAria">Save to account</button>
+          <button id="accessibility-reset-btn" class="secondary-btn" type="button" aria-label="Reset accessibility settings to default" data-i18n="accessibility.reset" data-i18n-aria-label="accessibility.resetAria">Reset defaults</button>
+          <p class="auth-help" data-i18n="accessibility.saveHelp">Settings apply instantly. Save to account to sync them after login.</p>
         </article>
       </div>
     </section>
@@ -281,43 +306,43 @@
     <!-- Authentication Modal (hidden by default) -->
     <section class="auth-modal hidden" id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
       <div class="auth-modal-header">
-        <h2 id="auth-modal-title">Account Login</h2>
-        <button class="faq-close" id="close-auth-modal" type="button" aria-label="Close account login">×</button>
+        <h2 id="auth-modal-title" data-i18n="auth.loginTitle">Account Login</h2>
+        <button class="faq-close" id="close-auth-modal" type="button" aria-label="Close account login" data-i18n-aria-label="auth.closeLogin">×</button>
       </div>
       <div class="auth-modal-body">
         <div id="auth-login-view" class="auth-view">
-          <p class="auth-help">Sign in to your account to save routes and manage preferences.</p>
+          <p class="auth-help" data-i18n="auth.loginHelp">Sign in to your account to save routes and manage preferences.</p>
           <form id="login-form" class="auth-form" novalidate>
-            <h3>Login</h3>
-            <label for="login-email">Email</label>
-            <input id="login-email" type="email" placeholder="Email" required aria-required="true" aria-invalid="false" aria-describedby="login-email-error" />
+            <h3 data-i18n="auth.loginHeading">Login</h3>
+            <label for="login-email" data-i18n="auth.emailLabel">Email</label>
+            <input id="login-email" type="email" placeholder="Email" data-i18n-placeholder="auth.emailPlaceholder" required aria-required="true" aria-invalid="false" aria-describedby="login-email-error" />
             <p id="login-email-error" class="field-error" aria-live="polite"></p>
-            <label for="login-password">Password</label>
-            <input id="login-password" type="password" placeholder="Password" required aria-required="true" aria-invalid="false" aria-describedby="login-password-error" />
+            <label for="login-password" data-i18n="auth.passwordLabel">Password</label>
+            <input id="login-password" type="password" placeholder="Password" data-i18n-placeholder="auth.passwordPlaceholder" required aria-required="true" aria-invalid="false" aria-describedby="login-password-error" />
             <p id="login-password-error" class="field-error" aria-live="polite"></p>
             <p id="login-form-message" class="field-error" aria-live="polite"></p>
-            <button type="submit" class="action-btn" aria-label="Log in to account">Log In</button>
+            <button type="submit" class="action-btn" aria-label="Log in to account" data-i18n="auth.logIn" data-i18n-aria-label="auth.logInAria">Log In</button>
           </form>
-          <button id="show-register-view-btn" class="secondary-btn" type="button" aria-label="Open create account form">Create Account</button>
+          <button id="show-register-view-btn" class="secondary-btn" type="button" aria-label="Open create account form" data-i18n="auth.createAccount" data-i18n-aria-label="auth.openCreateAccountAria">Create Account</button>
         </div>
 
         <div id="auth-register-view" class="auth-view hidden">
-          <p class="auth-help">Create an account to save routes and manage preferences.</p>
+          <p class="auth-help" data-i18n="auth.registerHelp">Create an account to save routes and manage preferences.</p>
           <form id="register-form" class="auth-form" novalidate>
-            <h3>Create Account</h3>
-            <label for="register-username">Username</label>
-            <input id="register-username" type="text" placeholder="Username" required aria-required="true" aria-invalid="false" aria-describedby="register-username-error" />
+            <h3 data-i18n="auth.registerHeading">Create Account</h3>
+            <label for="register-username" data-i18n="auth.usernameLabel">Username</label>
+            <input id="register-username" type="text" placeholder="Username" data-i18n-placeholder="auth.usernamePlaceholder" required aria-required="true" aria-invalid="false" aria-describedby="register-username-error" />
             <p id="register-username-error" class="field-error" aria-live="polite"></p>
-            <label for="register-email">Email</label>
-            <input id="register-email" type="email" placeholder="Email" required aria-required="true" aria-invalid="false" aria-describedby="register-email-error" />
+            <label for="register-email" data-i18n="auth.emailLabel">Email</label>
+            <input id="register-email" type="email" placeholder="Email" data-i18n-placeholder="auth.emailPlaceholder" required aria-required="true" aria-invalid="false" aria-describedby="register-email-error" />
             <p id="register-email-error" class="field-error" aria-live="polite"></p>
-            <label for="register-password">Password (8+ characters)</label>
-            <input id="register-password" type="password" placeholder="Password (8+ chars)" required aria-required="true" aria-invalid="false" aria-describedby="register-password-error" />
+            <label for="register-password" data-i18n="auth.passwordRuleLabel">Password (8+ characters)</label>
+            <input id="register-password" type="password" placeholder="Password (8+ chars)" data-i18n-placeholder="auth.passwordRulePlaceholder" required aria-required="true" aria-invalid="false" aria-describedby="register-password-error" />
             <p id="register-password-error" class="field-error" aria-live="polite"></p>
             <p id="register-form-message" class="field-error" aria-live="polite"></p>
-            <button type="submit" class="action-btn" aria-label="Create a new account">Register</button>
+            <button type="submit" class="action-btn" aria-label="Create a new account" data-i18n="auth.register" data-i18n-aria-label="auth.registerAria">Register</button>
           </form>
-          <button id="show-login-view-btn" class="secondary-btn" type="button" aria-label="Return to login form">Back to Login</button>
+          <button id="show-login-view-btn" class="secondary-btn" type="button" aria-label="Return to login form" data-i18n="auth.backToLogin" data-i18n-aria-label="auth.returnLoginAria">Back to Login</button>
         </div>
 
       </div>
@@ -325,29 +350,29 @@
 
     <!-- Account Settings Modal (hidden by default) -->
     <section class="account-modal hidden" id="account-modal" role="dialog" aria-modal="true" aria-labelledby="account-modal-title">
-      <div class="account-modal-header" id="account-modal-title">Account Settings</div>
+      <div class="account-modal-header" id="account-modal-title" data-i18n="account.settingsTitle">Account Settings</div>
       <div class="account-modal-body">
         <div class="account-profile-card">
           <div class="account-avatar" aria-hidden="true"></div>
           <div class="account-info">
-            <div class="account-username">Username: <span id="account-username-value">-</span></div>
+            <div class="account-username"><span data-i18n="account.usernameLabel">Username:</span> <span id="account-username-value">-</span></div>
           </div>
         </div>
 
         <div class="account-content-grid">
           <section class="saved-routes-panel" aria-labelledby="saved-routes-title">
-            <h3 id="saved-routes-title">Saved Routes</h3>
+            <h3 id="saved-routes-title" data-i18n="account.savedRoutesTitle">Saved Routes</h3>
             <ul id="saved-routes-list">
-              <li class="saved-route-item empty">No saved routes yet.</li>
+              <li class="saved-route-item empty" data-i18n="account.noSavedRoutes">No saved routes yet.</li>
             </ul>
-            <button class="saved-routes-more hidden" type="button" aria-label="More saved routes">...</button>
+            <button class="saved-routes-more hidden" type="button" aria-label="More saved routes" data-i18n-aria-label="account.moreSavedRoutes">...</button>
           </section>
 
           <div class="account-actions-panel">
-            <button class="account-action-btn" id="update-password-btn" type="button" aria-label="Update account password">Update Password</button>
-            <button class="account-action-btn" id="logout-btn" type="button" aria-label="Log out of account">Log Out</button>
-            <button class="account-action-btn danger" id="delete-account-btn" type="button" aria-label="Delete account permanently">Delete Account</button>
-            <button class="account-close-btn" id="close-account-modal" type="button" aria-label="Close account settings">Close</button>
+            <button class="account-action-btn" id="update-password-btn" type="button" aria-label="Update account password" data-i18n="account.updatePassword" data-i18n-aria-label="account.updatePasswordAria">Update Password</button>
+            <button class="account-action-btn" id="logout-btn" type="button" aria-label="Log out of account" data-i18n="account.logOut" data-i18n-aria-label="account.logOutAria">Log Out</button>
+            <button class="account-action-btn danger" id="delete-account-btn" type="button" aria-label="Delete account permanently" data-i18n="account.deleteAccount" data-i18n-aria-label="account.deleteAccountAria">Delete Account</button>
+            <button class="account-close-btn" id="close-account-modal" type="button" aria-label="Close account settings" data-i18n="common.close" data-i18n-aria-label="account.closeSettingsAria">Close</button>
           </div>
         </div>
       </div>

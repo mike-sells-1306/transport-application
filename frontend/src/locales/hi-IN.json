@@ -1,0 +1,156 @@
+{
+  "app": { "title": "नॉर्थ वेस्ट ट्रांसपोर्ट" },
+  "navigation": {
+    "account": "खाता",
+    "faq": "अक्सर पूछे जाने वाले प्रश्न",
+    "support": "ग्राहक सहायता",
+    "accessibility": "सुगम्यता",
+    "accessibilityActive": "सुगम्यता ✓"
+  },
+  "journey": {
+    "prompt": "आज आप कहाँ यात्रा करना चाहेंगे?",
+    "departureLabel": "प्रस्थान स्टेशन चुनें",
+    "arrivalLabel": "आगमन स्टेशन चुनें",
+    "searchPlaceholder": "खोजें…",
+    "toPlaceholder": "तक",
+    "departureSuggestions": "प्रस्थान स्टेशन सुझाव",
+    "arrivalSuggestions": "आगमन स्टेशन सुझाव",
+    "swapAria": "प्रस्थान और आगमन स्टेशन बदलें",
+    "departureRequired": "कृपया सुझाव सूची से प्रस्थान स्टेशन चुनें।",
+    "arrivalRequired": "कृपया सुझाव सूची से आगमन स्टेशन चुनें।"
+  },
+  "faq": {
+    "title": "अक्सर पूछे जाने वाले प्रश्न",
+    "close": "FAQ बंद करें",
+    "q1": { "question": "किसी स्थान का विवरण कैसे देखें?", "answer": "स्थान खोजें या मानचित्र पर स्थान पर क्लिक करें।" },
+    "q2": { "question": "मानचित्र किस क्षेत्र को दिखाता है?", "answer": "यह मानचित्र प्रेस्टन से लैंकेस्टर तटीय क्षेत्र पर केंद्रित है।" },
+    "q3": { "question": "यात्रा के लिए टिकट कैसे खरीदें?", "answer": "यह सेवा केवल रूट खोजने के लिए है। टिकट के लिए अन्य सेवा का उपयोग करें।" },
+    "q4": { "question": "रूट को पसंदीदा में कैसे सहेजें?", "answer": "रूट परिणाम में “Save Route” दबाएँ। रूट सहेजने के लिए लॉग-इन आवश्यक है।" },
+    "q5": { "question": "सहेजे गए रूट बदलें तो क्या होगा?", "answer": "संभावित व्यवधान पर आपको सूचना भेजी जाएगी।" }
+  },
+  "support": {
+    "title": "ग्राहक सहायता",
+    "close": "ग्राहक सहायता बंद करें",
+    "journeyHelp": {
+      "title": "यात्रा योजना में मदद चाहिए?",
+      "body": "यदि परिणाम गलत लगें, from/to बदलकर फिर खोजें। समस्या बनी रहे तो हमें विवरण भेजें।"
+    },
+    "channels": {
+      "title": "संपर्क माध्यम",
+      "emailLabel": "ईमेल:",
+      "emailValue": "support@transportnorthwest.example",
+      "phoneLabel": "फ़ोन:",
+      "phoneValue": "0800 123 4567",
+      "chatLabel": "लाइव चैट:",
+      "chatValue": "कार्यदिवस 08:00–18:00"
+    },
+    "reportIssue": {
+      "title": "समस्या या व्यवधान रिपोर्ट करें",
+      "body": "सेवा प्रकार, प्रारंभ/अंत बिंदु, अपेक्षित समय और संभव हो तो स्क्रीनशॉट साझा करें।"
+    },
+    "accountHelp": {
+      "title": "खाता सहायता",
+      "body": "लॉग-इन, पासवर्ड या सेव रूट समस्या के लिए पहले Account टैब खोलें।"
+    }
+  },
+  "accessibility": {
+    "title": "सुगम्यता",
+    "close": "सुगम्यता बंद करें",
+    "languageTitle": "भाषा",
+    "languageDescription": "अपनी पसंदीदा भाषा और क्षेत्र चुनें।",
+    "languageLabel": "एप्लिकेशन भाषा",
+    "zoomTitle": "ज़ूम",
+    "zoomDescription": "इंटरफ़ेस टेक्स्ट और नियंत्रण आकार समायोजित करें।",
+    "zoomLabel": "इंटरफ़ेस ज़ूम स्तर समायोजित करें",
+    "zoomDecrease": "ज़ूम घटाएँ",
+    "zoomIncrease": "ज़ूम बढ़ाएँ",
+    "colourProfileTitle": "रंग प्रोफ़ाइल",
+    "colourProfileDescription": "विभिन्न रंग दृष्टि आवश्यकताओं के लिए प्रोफ़ाइल चुनें।",
+    "colour": {
+      "default": "डिफ़ॉल्ट",
+      "deuteranopia": "लाल–हरा (ड्यूटेरानोपिया)",
+      "protanopia": "लाल–हरा (प्रोटानोपिया)",
+      "tritanopia": "नीला–पीला (ट्राइटानोपिया)",
+      "achromatopsia": "एकरंगी (अक्रोमैटोप्सिया)"
+    },
+    "fontSizeTitle": "फ़ॉन्ट आकार",
+    "fontSizeDescription": "UI के लिए आरामदायक फ़ॉन्ट आकार चुनें।",
+    "font": {
+      "small": "छोटा",
+      "normal": "सामान्य",
+      "large": "बड़ा"
+    },
+    "save": "खाते में सहेजें",
+    "saveAria": "सुगम्यता सेटिंग्स खाते में सहेजें",
+    "reset": "रीसेट",
+    "resetAria": "सुगम्यता सेटिंग्स रीसेट करें",
+    "saveHelp": "सेटिंग्स तुरंत लागू होती हैं। लॉग-इन के बाद सिंक करने के लिए सहेजें।"
+  },
+  "auth": {
+    "loginTitle": "खाता लॉग-इन",
+    "registerTitle": "खाता बनाएँ",
+    "closeLogin": "खाता लॉग-इन बंद करें",
+    "loginHelp": "रूट सेव करने और प्राथमिकताएँ प्रबंधित करने के लिए लॉग-इन करें।",
+    "registerHelp": "रूट सेव करने और प्राथमिकताएँ प्रबंधित करने के लिए खाता बनाएँ।",
+    "loginHeading": "लॉग-इन",
+    "registerHeading": "खाता बनाएँ",
+    "emailLabel": "ईमेल",
+    "emailPlaceholder": "ईमेल",
+    "passwordLabel": "पासवर्ड",
+    "passwordPlaceholder": "पासवर्ड",
+    "passwordRuleLabel": "पासवर्ड (8+ अक्षर)",
+    "passwordRulePlaceholder": "पासवर्ड (8+ अक्षर)",
+    "usernameLabel": "उपयोगकर्ता नाम",
+    "usernamePlaceholder": "उपयोगकर्ता नाम",
+    "logIn": "लॉग-इन",
+    "logInAria": "खाते में लॉग-इन करें",
+    "createAccount": "खाता बनाएँ",
+    "openCreateAccountAria": "खाता बनाने का फ़ॉर्म खोलें",
+    "backToLogin": "लॉग-इन पर वापस जाएँ",
+    "register": "पंजीकरण करें",
+    "registerAria": "नया खाता बनाएँ",
+    "returnLoginAria": "लॉग-इन फ़ॉर्म पर लौटें"
+  },
+  "account": {
+    "settingsTitle": "खाता सेटिंग्स",
+    "usernameLabel": "उपयोगकर्ता नाम:",
+    "savedRoutesTitle": "सहेजे गए रूट",
+    "moreSavedRoutes": "और सहेजे गए रूट",
+    "updatePassword": "पासवर्ड अपडेट करें",
+    "updatePasswordAria": "खाते का पासवर्ड अपडेट करें",
+    "logOut": "लॉग-आउट",
+    "logOutAria": "खाते से लॉग-आउट करें",
+    "deleteAccount": "खाता हटाएँ",
+    "deleteAccountAria": "खाता स्थायी रूप से हटाएँ",
+    "closeSettingsAria": "खाता सेटिंग्स बंद करें",
+    "noSavedRoutes": "कोई सहेजा गया रूट नहीं।",
+    "routeFromTo": "{from} से {to}",
+    "savedRouteAria": "{from} से {to} सहेजा रूट खोजें",
+    "searchRoutesTitle": "रूट खोजें: {from} से {to}",
+    "promptCurrentPassword": "वर्तमान पासवर्ड दर्ज करें:",
+    "promptNewPassword": "नया पासवर्ड दर्ज करें (8+ अक्षर):",
+    "confirmDelete": "यह आपका खाता स्थायी रूप से हटा देगा। जारी रखें?",
+    "promptConfirmDeletePassword": "खाता हटाने के लिए पासवर्ड पुष्टि करें:"
+  },
+  "announce": {
+    "languageChanged": "भाषा {locale} में बदल दी गई है।"
+  },
+  "common": {
+    "close": "बंद करें"
+  },
+  "locale": {
+    "en-GB": "अंग्रेज़ी (यूनाइटेड किंगडम)",
+    "en-US": "अंग्रेज़ी (संयुक्त राज्य)",
+    "cy-GB": "वेल्श (यूनाइटेड किंगडम)",
+    "fr-FR": "फ़्रेंच (फ़्रांस)",
+    "de-DE": "जर्मन (जर्मनी)",
+    "es-ES": "स्पेनिश (स्पेन)",
+    "zh-CN": "चीनी (चीन)",
+    "hi-IN": "हिन्दी (भारत)",
+    "ar": "अरबी",
+    "bn-BD": "बंगाली (बांग्लादेश)",
+    "pt-BR": "पुर्तगाली (ब्राज़ील)",
+    "ru-RU": "रूसी (रूस)",
+    "ur-PK": "उर्दू (पाकिस्तान)"
+  }
+}

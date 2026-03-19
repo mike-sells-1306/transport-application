@@ -1,0 +1,355 @@
+{
+  "app": {
+    "title": "Transport for North West"
+  },
+  "map": {
+    "ariaLabel": "Interactive map of North West England",
+    "popupImageAlt": "Photo of {location}"
+  },
+  "navigation": {
+    "primarySidebar": "Primary sidebar",
+    "main": "Main navigation",
+    "account": "Account",
+    "faq": "FAQ",
+    "support": "Customer Support",
+    "accessibility": "Accessibility",
+    "accessibilityActive": "Accessibility ✓",
+    "toggleSidebar": "Toggle sidebar",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebarAria": "Expand sidebar navigation menu",
+    "collapseSidebarAria": "Collapse sidebar navigation menu"
+  },
+  "journey": {
+    "prompt": "Where would you like to travel today?",
+    "departureLabel": "Select departure station",
+    "arrivalLabel": "Select arrival station",
+    "searchPlaceholder": "Search…",
+    "toPlaceholder": "to",
+    "departureSuggestions": "Departure station suggestions",
+    "arrivalSuggestions": "Arrival station suggestions",
+    "swapAria": "Swap departure and arrival stations",
+    "departureRequired": "Please select a departure station from the suggestions list.",
+    "arrivalRequired": "Please select an arrival station from the suggestions list."
+  },
+  "weather": {
+    "openPanel": "View weather updates",
+    "title": "Weather",
+    "searchLabel": "Search weather by location",
+    "searchPlaceholder": "Search location…",
+    "loading": "Loading weather data…",
+    "unableToLoad": "Unable to load weather data",
+    "noLocations": "No locations found",
+    "searchingMore": "Searching more locations…",
+    "feelsLike": "Feels like {value}°C",
+    "humidity": "Humidity {value}%",
+    "wind": "Wind {value} {unit}",
+    "cloudCover": "Cloud cover {value}%",
+    "visibility": "Visibility {value} km",
+    "noDetail": "No detail available",
+    "temperatureUnavailable": "temperature unavailable",
+    "rowAria": "View weather details for {location}, {temperature}",
+    "iconAlt": "Weather icon"
+  },
+  "notifications": {
+    "openPanel": "View service notifications",
+    "title": "Notifications",
+    "none": "No notifications yet.",
+    "announcementPrefix": "ANNOUNCEMENT:",
+    "viewMore": "View more…",
+    "sample": {
+      "one": "Train to Blackpool delayed by 12 minutes.",
+      "oneTime": "12m ago",
+      "two": "Snow warning in Barrow-in-Furness.",
+      "twoTime": "4h ago"
+    }
+  },
+  "faq": {
+    "title": "FAQ",
+    "close": "Close FAQ",
+    "q1": {
+      "question": "How do I view details for a location?",
+      "answer": "You can search for information about a location by searching for it or clicking on the location on the map."
+    },
+    "q2": {
+      "question": "What area does the map cover?",
+      "answer": "This map focuses on the coastal corridor between Preston and Lancaster, including Blackpool, the Fylde, and the Wyre coast."
+    },
+    "q3": {
+      "question": "How do I buy a ticket for a journey?",
+      "answer": "Our service is only for finding routes. Buy tickets using another service such as National Rail or a local bus operator website."
+    },
+    "q4": {
+      "question": "How do I save routes as favourites?",
+      "answer": "You can save routes to your account by clicking the \"Save Route\" button on a route result. You need to be logged in to save routes."
+    },
+    "q5": {
+      "question": "What happens if there are changes to my saved routes?",
+      "answer": "When potential disruptions are detected, we send a notification so you can plan ahead."
+    }
+  },
+  "support": {
+    "title": "Customer Support",
+    "close": "Close Customer Support",
+    "journeyHelp": {
+      "title": "Need help planning a journey?",
+      "body": "If route results look incorrect or incomplete, update your from/to stops and search again. If the issue continues, contact us with your route details and search time."
+    },
+    "channels": {
+      "title": "Contact channels",
+      "emailLabel": "Email:",
+      "emailValue": "support@transportnorthwest.example",
+      "phoneLabel": "Phone:",
+      "phoneValue": "0800 123 4567",
+      "chatLabel": "Live chat:",
+      "chatValue": "Weekdays 08:00–18:00"
+    },
+    "reportIssue": {
+      "title": "Report a disruption or data issue",
+      "body": "Include service type (bus/train), route start and end, expected departure time, and a screenshot if possible. This helps us investigate and resolve issues faster."
+    },
+    "accountHelp": {
+      "title": "Account help",
+      "body": "For login, password, or saved route issues, open the Account tab first, then contact support if the problem persists."
+    }
+  },
+  "route": {
+    "defaultHeader": "Routes from Lancaster to Blackpool",
+    "closeModal": "Close routes modal",
+    "sortBy": "Sort by:",
+    "sortByAria": "Sort routes by",
+    "sort": {
+      "startTime": "Start Time",
+      "fastest": "Fastest",
+      "fewestChanges": "Fewest Changes"
+    },
+    "download": "Download Routes",
+    "downloadAria": "Download displayed routes as PDF",
+    "downloadTooltipEnabled": "Download all displayed route options",
+    "downloadTooltipDisabled": "Search for routes to enable route download",
+    "headerFromTo": "Routes from {from} to {to}",
+    "noResults": "No routes found for this journey.",
+    "viewDetails": "View route details",
+    "rowAria": "View route {index}, {startTime} to {endTime}, duration {duration}, {changes} change{suffix}.",
+    "changesBadge": "{count} change{suffix}",
+    "save": "Save Route",
+    "saveAria": "Save route {index} from {startTime} to {endTime}",
+    "saved": "Saved",
+    "savedAria": "Route saved to your account",
+    "walkingRoute": "Walking route",
+    "genericName": "Route",
+    "noLegDetails": "No detailed leg information available for this route.",
+    "leg": {
+      "walk": "Walk from {from} to {to} ({distance}m, {duration}) • {depart}–{arrive}",
+      "wait": "Change at {at} ({duration} wait) • {depart}–{arrive}",
+      "transport": "{service} from {from} to {to} ({duration}) • {depart}–{arrive}",
+      "walkSummary": "Walk {distance}m • {duration}",
+      "waitSummary": "Change at {at} • {duration} wait",
+      "transportSummary": "{service} • {duration}",
+      "stops": "{from} → {to}"
+    }
+  },
+  "transport": {
+    "bus": "Bus",
+    "train": "Train",
+    "walk": "Walk",
+    "wait": "Wait"
+  },
+  "accessibility": {
+    "title": "Accessibility",
+    "close": "Close Accessibility",
+    "languageTitle": "Language",
+    "languageDescription": "Choose your preferred language and locale.",
+    "languageLabel": "Application language",
+    "zoomTitle": "Zoom",
+    "zoomDescription": "Adjust interface text and control sizes.",
+    "zoomLabel": "Adjust interface zoom level",
+    "zoomDecrease": "Decrease zoom",
+    "zoomIncrease": "Increase zoom",
+    "colourProfileTitle": "Colour profile",
+    "colourProfileDescription": "Pick a profile designed for different colour vision needs.",
+    "colour": {
+      "default": "Default",
+      "deuteranopia": "Red–Green (Deuteranopia)",
+      "protanopia": "Red–Green (Protanopia)",
+      "tritanopia": "Blue–Yellow (Tritanopia)",
+      "achromatopsia": "Monochrome (Achromatopsia)"
+    },
+    "fontSizeTitle": "Font size",
+    "fontSizeDescription": "Choose a comfortable font size for the UI.",
+    "font": {
+      "small": "Small",
+      "normal": "Normal",
+      "large": "Large"
+    },
+    "save": "Save to account",
+    "saveAria": "Save accessibility settings to account",
+    "reset": "Reset defaults",
+    "resetAria": "Reset accessibility settings to default",
+    "saveHelp": "Settings apply instantly. Save to account to sync them after login."
+  },
+  "locale": {
+    "en-GB": "English (United Kingdom)",
+    "en-US": "English (United States)",
+    "cy-GB": "Cymraeg (Y Deyrnas Unedig)",
+    "fr-FR": "Français (France)",
+    "de-DE": "Deutsch (Deutschland)",
+    "es-ES": "Español (España)",
+    "zh-CN": "中文（中国）",
+    "hi-IN": "हिन्दी (भारत)",
+    "ar": "العربية",
+    "bn-BD": "বাংলা (বাংলাদেশ)",
+    "pt-BR": "Português (Brasil)",
+    "ru-RU": "Русский (Россия)",
+    "ur-PK": "اردو (پاکستان)"
+  },
+  "auth": {
+    "loginTitle": "Account Login",
+    "registerTitle": "Create Account",
+    "closeLogin": "Close account login",
+    "loginHelp": "Sign in to your account to save routes and manage preferences.",
+    "registerHelp": "Create an account to save routes and manage preferences.",
+    "loginHeading": "Login",
+    "registerHeading": "Create Account",
+    "emailLabel": "Email",
+    "emailPlaceholder": "Email",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Password",
+    "passwordRuleLabel": "Password (8+ characters)",
+    "passwordRulePlaceholder": "Password (8+ chars)",
+    "usernameLabel": "Username",
+    "usernamePlaceholder": "Username",
+    "logIn": "Log In",
+    "logInAria": "Log in to account",
+    "createAccount": "Create Account",
+    "openCreateAccountAria": "Open create account form",
+    "register": "Register",
+    "registerAria": "Create a new account",
+    "backToLogin": "Back to Login",
+    "returnLoginAria": "Return to login form"
+  },
+  "account": {
+    "settingsTitle": "Account Settings",
+    "usernameLabel": "Username:",
+    "savedRoutesTitle": "Saved Routes",
+    "moreSavedRoutes": "More saved routes",
+    "updatePassword": "Update Password",
+    "updatePasswordAria": "Update account password",
+    "logOut": "Log Out",
+    "logOutAria": "Log out of account",
+    "deleteAccount": "Delete Account",
+    "deleteAccountAria": "Delete account permanently",
+    "closeSettingsAria": "Close account settings",
+    "noSavedRoutes": "No saved routes yet.",
+    "routeFromTo": "{from} to {to}",
+    "savedRouteAria": "Search saved route from {from} to {to}",
+    "searchRoutesTitle": "Search routes: {from} to {to}",
+    "promptCurrentPassword": "Enter current password:",
+    "promptNewPassword": "Enter new password (8+ characters):",
+    "confirmDelete": "This will permanently delete your account. Continue?",
+    "promptConfirmDeletePassword": "Confirm your password to delete account:"
+  },
+  "alerts": {
+    "loginToSaveAccessibility": "Please log in to save accessibility preferences to your account.",
+    "accessibilitySaved": "Accessibility preferences saved to your account.",
+    "couldNotSavePreferences": "Could not save preferences right now.",
+    "couldNotLoadSavedJourneyRoutes": "Could not load routes for this saved journey.",
+    "couldNotLoadRoutesTryAgain": "Could not load routes. Please check your connection and try again.",
+    "passwordUpdated": "Password updated successfully.",
+    "accountDeleted": "Your account has been deleted.",
+    "unableToFindRoutes": "Unable to find routes for this journey.",
+    "searchRouteBeforePdf": "Search for a route first to download a PDF.",
+    "pdfUnavailable": "PDF export is unavailable right now. Please try again in a moment.",
+    "loginToSaveRoutes": "Please log in to save routes.",
+    "requestFailedGeneric": "Something went wrong. Please try again.",
+    "networkError": "Network error. Please check your connection.",
+    "invalidEmail": "Please enter a valid email address.",
+    "invalidPassword": "Please check your password and try again.",
+    "accountAlreadyExists": "An account with those details already exists.",
+    "unauthorized": "You are not authorized for this action.",
+    "forbidden": "This action is not allowed.",
+    "notFound": "The requested resource could not be found.",
+    "tooManyRequests": "Too many requests. Please wait and try again.",
+    "loginFailed": "Login failed. Please check your details and try again.",
+    "registrationFailed": "Registration failed. Please review your details and try again.",
+    "passwordUpdateFailed": "Could not update password right now.",
+    "accountDeletionFailed": "Could not delete your account right now.",
+    "saveRouteFailed": "Could not save this route right now."
+  },
+  "announce": {
+    "languageChanged": "Language changed to {locale}.",
+    "journeySwapped": "Departure and arrival stations swapped.",
+    "weatherUpdated": "Weather updated for {count} locations.",
+    "weatherLoadFailed": "Unable to load weather data.",
+    "weatherNoLocations": "No weather locations found.",
+    "weatherShowingResults": "Showing weather results for {count} locations.",
+    "weatherPanelOpened": "Weather panel opened. Live weather updates are available.",
+    "weatherPanelClosed": "Weather panel closed.",
+    "notificationsPanelOpened": "Notifications panel opened. Service announcements will be read automatically.",
+    "notificationsPanelClosed": "Notifications panel closed.",
+    "notificationsLoaded": "{count} notifications loaded.",
+    "faqOpened": "FAQ panel opened.",
+    "faqClosed": "FAQ panel closed.",
+    "supportOpened": "Customer support panel opened.",
+    "supportClosed": "Customer support panel closed.",
+    "accessibilityOpened": "Accessibility settings panel opened.",
+    "accessibilityClosed": "Accessibility settings panel closed.",
+    "authOpened": "Account login dialog opened.",
+    "authClosed": "Account login dialog closed.",
+    "accountOpened": "Account settings dialog opened.",
+    "accountClosed": "Account settings dialog closed.",
+    "noNotifications": "There are no notifications.",
+    "stopSuggestionsUnavailable": "Unable to load stop suggestions right now.",
+    "selectBothStops": "Please select both departure and arrival stations before searching routes.",
+    "routeFetchError": "Error fetching routes. Please try again.",
+    "routesShowing": "Showing {count} route options from {from} to {to}.",
+    "routesAvailable": "{count} routes available. Use Enter or Space on a route to view details.",
+    "routeSaved": "Route saved to your account.",
+    "routesModalClosed": "Routes modal closed.",
+    "sidebarCollapsed": "Sidebar collapsed.",
+    "sidebarExpanded": "Sidebar expanded."
+  },
+  "autocomplete": {
+    "noStops": "No stops found within the region",
+    "errorLoadingStops": "Error loading stops"
+  },
+  "common": {
+    "minutesOnly": "{minutes} min",
+    "hoursMinutes": "{hours}h {minutes} min",
+    "hoursOnly": "{hours}h",
+    "close": "Close"
+  },
+  "pdf": {
+    "completeRoutePlan": "Complete Route Plan",
+    "routePlanContinued": "Route Plan Continued",
+    "summaryMeta": "Exported {exportedAt} • {count} route option{suffix} • Sorted by {sortLabel}",
+    "routeMeta": "Times: {startTime} to {endTime} • Duration: {duration} • Changes: {changes}",
+    "routeTitle": "Route {index}: {summary}",
+    "intermediateStop": "Intermediate stop: {stop}",
+    "pageXofY": "Page {page} of {total}"
+  },
+  "locations": {
+    "liverpool": { "name": "Liverpool", "description": "Liverpool - Historic port city and cultural center on the Irish Sea coast." },
+    "manchester": { "name": "Manchester", "description": "Manchester - Major industrial and commercial city in the heart of Greater Manchester." },
+    "preston": { "name": "Preston", "description": "Preston - England's newest city, cultural hub of Lancashire." },
+    "blackburn": { "name": "Blackburn", "description": "Blackburn - Historic textile town, home to the cathedral." },
+    "lytham_st_annes": { "name": "Lytham-St-Annes", "description": "Lytham-St-Annes - Seaside town on the Fylde coast." },
+    "kirkham": { "name": "Kirkham", "description": "Kirkham - Market town in the heart of the Fylde." },
+    "poulton_le_fylde": { "name": "Poulton-le-Fylde", "description": "Poulton-le-Fylde - Market town in the heart of the Fylde." },
+    "fleetwood": { "name": "Fleetwood", "description": "Fleetwood - Coastal town at the mouth of the River Wyre and historic fishing port." },
+    "blackpool": { "name": "Blackpool", "description": "Blackpool - Iconic seaside resort with the famous Blackpool Tower." },
+    "garstang": { "name": "Garstang", "description": "Garstang - Historic market town on the River Wyre." },
+    "lancaster": { "name": "Lancaster", "description": "Lancaster - Historic city with a medieval castle and university." },
+    "morecambe": { "name": "Morecambe", "description": "Morecambe - Seaside town known for its promenade and bay views." },
+    "heysham": { "name": "Heysham", "description": "Heysham - Coastal village with nuclear power station and maritime heritage." },
+    "carnforth": { "name": "Carnforth", "description": "Carnforth - Village known for its railway heritage." },
+    "kirkby_lonsdale": { "name": "Kirkby-Lonsdale", "description": "Kirkby-Lonsdale - Picturesque village in the Lune Valley." },
+    "grange_over_sands": { "name": "Grange-Over-Sands", "description": "Grange-Over-Sands - Charming coastal resort on Morecambe Bay." },
+    "cartmel": { "name": "Cartmel", "description": "Cartmel - Picturesque village famous for its Priory and steeplechase racecourse." },
+    "kendal": { "name": "Kendal", "description": "Kendal - Gateway to the Lake District, historic market town." },
+    "windermere": { "name": "Windermere", "description": "Windermere - Heart of the Lake District with England's largest lake." },
+    "ambleside": { "name": "Ambleside", "description": "Ambleside - Picturesque Lake District town on the shores of Lake Windermere." },
+    "barrow_in_furness": { "name": "Barrow-in-Furness", "description": "Barrow-in-Furness - Industrial town on the Irish Sea coast." },
+    "keswick": { "name": "Keswick", "description": "Keswick - Historic market town in the northern Lake District." }
+  }
+}

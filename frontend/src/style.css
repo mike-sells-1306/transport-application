@@ -403,6 +403,8 @@ body.sidebar-minimized {
   padding: 8px 12px;
   border-radius: var(--radius-sm);
   margin: 0 -12px;
+  line-height: 1.35;
+  white-space: normal;
 }
 .sidebar-links a:hover {
   opacity: 1;
@@ -652,6 +654,7 @@ body.sidebar-minimized {
 .route-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   background: rgba(255,255,255,0.06);
   border-radius: var(--radius-sm);
   padding: 14px 18px;
@@ -695,6 +698,8 @@ body.sidebar-minimized {
   margin-left: 10px;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease;
+  white-space: normal;
+  text-align: center;
 }
 
 .route-save-btn:hover {
@@ -727,7 +732,7 @@ body.sidebar-minimized {
   border-radius: 8px;
   padding: 2px 7px;
   margin-left: 4px;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 /* Expand icon on the right of each route row */
@@ -1293,6 +1298,7 @@ body.sidebar-minimized {
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.95rem;
+  line-height: 1.3;
 }
 .accessibility-fieldset input[type="radio"] {
   accent-color: var(--red-main);
@@ -1389,9 +1395,8 @@ body.sidebar-minimized {
   color: #222;
   font-weight: 600;
   font-style: normal;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .account-content-grid {
@@ -1472,9 +1477,8 @@ body.sidebar-minimized {
 
 .saved-route-label {
   flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .saved-route-chevron {
@@ -1522,6 +1526,8 @@ body.sidebar-minimized {
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+  white-space: normal;
+  line-height: 1.25;
 }
 
 .account-action-btn:hover,
@@ -1553,6 +1559,8 @@ body.sidebar-minimized {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
+  white-space: normal;
+  line-height: 1.25;
 }
 .action-btn:hover {
   background: var(--red-light);
@@ -1599,6 +1607,8 @@ body.sidebar-minimized {
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
+  white-space: normal;
+  line-height: 1.25;
 }
 
 .auth-modal {
@@ -1607,7 +1617,7 @@ body.sidebar-minimized {
   top: 50%;
   transform: translate(-50%, -50%);
   z-index: 65;
-  width: 520px;
+  width: min(560px, 92vw);
   background: var(--grey-light);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -1684,7 +1694,8 @@ body.sidebar-minimized {
 .popup-content {
   font-family: 'Segoe UI', Arial, sans-serif;
   min-width: 220px;
-  max-width: 260px;
+  max-width: 320px;
+  overflow-wrap: anywhere;
 }
 
 .popup-title {

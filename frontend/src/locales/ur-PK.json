@@ -1,0 +1,156 @@
+{
+  "app": { "title": "شمال مغربی ٹرانسپورٹ" },
+  "navigation": {
+    "account": "اکاؤنٹ",
+    "faq": "اکثر پوچھے گئے سوالات",
+    "support": "کسٹمر سپورٹ",
+    "accessibility": "قابلِ رسائی",
+    "accessibilityActive": "قابلِ رسائی ✓"
+  },
+  "journey": {
+    "prompt": "آپ آج کہاں سفر کرنا چاہتے ہیں؟",
+    "departureLabel": "روانگی اسٹیشن منتخب کریں",
+    "arrivalLabel": "آمد اسٹیشن منتخب کریں",
+    "searchPlaceholder": "تلاش کریں…",
+    "toPlaceholder": "تک",
+    "departureSuggestions": "روانگی اسٹیشن تجاویز",
+    "arrivalSuggestions": "آمد اسٹیشن تجاویز",
+    "swapAria": "روانگی اور آمد اسٹیشن تبدیل کریں",
+    "departureRequired": "براہِ کرم تجاویز کی فہرست سے روانگی اسٹیشن منتخب کریں۔",
+    "arrivalRequired": "براہِ کرم تجاویز کی فہرست سے آمد اسٹیشن منتخب کریں۔"
+  },
+  "faq": {
+    "title": "اکثر پوچھے گئے سوالات",
+    "close": "FAQ بند کریں",
+    "q1": { "question": "کسی جگہ کی تفصیل کیسے دیکھیں؟", "answer": "جگہ تلاش کریں یا نقشے پر کلک کریں۔" },
+    "q2": { "question": "نقشہ کون سا علاقہ دکھاتا ہے؟", "answer": "یہ نقشہ Preston اور Lancaster کے ساحلی راہداری پر مرکوز ہے۔" },
+    "q3": { "question": "سفر کا ٹکٹ کیسے خریدیں؟", "answer": "یہ سروس صرف راستہ تلاش کرنے کے لیے ہے، ٹکٹ دوسری سروس سے خریدیں۔" },
+    "q4": { "question": "روٹ کو پسندیدہ میں کیسے محفوظ کریں؟", "answer": "روٹ نتیجے میں “Save Route” دبائیں۔ محفوظ کرنے کے لیے لاگ اِن ضروری ہے۔" },
+    "q5": { "question": "محفوظ شدہ روٹس میں تبدیلی ہو تو کیا ہوگا؟", "answer": "ممکنہ خلل کی صورت میں آپ کو اطلاع بھیجی جائے گی۔" }
+  },
+  "support": {
+    "title": "کسٹمر سپورٹ",
+    "close": "کسٹمر سپورٹ بند کریں",
+    "journeyHelp": {
+      "title": "سفر کی منصوبہ بندی میں مدد چاہیے؟",
+      "body": "اگر نتائج غلط لگیں تو from/to اپ ڈیٹ کر کے دوبارہ تلاش کریں۔"
+    },
+    "channels": {
+      "title": "رابطہ ذرائع",
+      "emailLabel": "ای میل:",
+      "emailValue": "support@transportnorthwest.example",
+      "phoneLabel": "فون:",
+      "phoneValue": "0800 123 4567",
+      "chatLabel": "لائیو چیٹ:",
+      "chatValue": "ہفتہ وار دن 08:00–18:00"
+    },
+    "reportIssue": {
+      "title": "مسئلہ یا خلل رپورٹ کریں",
+      "body": "سروس کی قسم، آغاز/اختتام، متوقع وقت اور ممکن ہو تو اسکرین شاٹ شامل کریں۔"
+    },
+    "accountHelp": {
+      "title": "اکاؤنٹ مدد",
+      "body": "لاگ اِن، پاس ورڈ یا محفوظ شدہ روٹس کے مسائل میں پہلے Account ٹیب کھولیں۔"
+    }
+  },
+  "accessibility": {
+    "title": "قابلِ رسائی",
+    "close": "قابلِ رسائی بند کریں",
+    "languageTitle": "زبان",
+    "languageDescription": "اپنی پسندیدہ زبان اور علاقہ منتخب کریں۔",
+    "languageLabel": "ایپ کی زبان",
+    "zoomTitle": "زوم",
+    "zoomDescription": "انٹرفیس متن اور کنٹرول کے سائز کو ایڈجسٹ کریں۔",
+    "zoomLabel": "انٹرفیس زوم لیول ایڈجسٹ کریں",
+    "zoomDecrease": "زوم کم کریں",
+    "zoomIncrease": "زوم بڑھائیں",
+    "colourProfileTitle": "رنگ پروفائل",
+    "colourProfileDescription": "مختلف رنگی بصارت کی ضروریات کے لیے پروفائل منتخب کریں۔",
+    "colour": {
+      "default": "ڈیفالٹ",
+      "deuteranopia": "سرخ–سبز (ڈیوٹیرانوپیا)",
+      "protanopia": "سرخ–سبز (پروٹانوپیا)",
+      "tritanopia": "نیلا–پیلا (ٹرائٹانوپیا)",
+      "achromatopsia": "یک رنگی (اکرومیٹوپسیا)"
+    },
+    "fontSizeTitle": "فونٹ سائز",
+    "fontSizeDescription": "UI کے لیے مناسب فونٹ سائز منتخب کریں۔",
+    "font": {
+      "small": "چھوٹا",
+      "normal": "عام",
+      "large": "بڑا"
+    },
+    "save": "اکاؤنٹ میں محفوظ کریں",
+    "saveAria": "قابلِ رسائی ترتیبات اکاؤنٹ میں محفوظ کریں",
+    "reset": "ری سیٹ",
+    "resetAria": "قابلِ رسائی ترتیبات ری سیٹ کریں",
+    "saveHelp": "ترتیبات فوراً لاگو ہوتی ہیں۔ لاگ اِن کے بعد ہم آہنگی کے لیے محفوظ کریں۔"
+  },
+  "auth": {
+    "loginTitle": "اکاؤنٹ لاگ اِن",
+    "registerTitle": "اکاؤنٹ بنائیں",
+    "closeLogin": "اکاؤنٹ لاگ اِن بند کریں",
+    "loginHelp": "روٹس محفوظ کرنے اور ترجیحات منظم کرنے کے لیے لاگ اِن کریں۔",
+    "registerHelp": "روٹس محفوظ کرنے اور ترجیحات منظم کرنے کے لیے اکاؤنٹ بنائیں۔",
+    "loginHeading": "لاگ اِن",
+    "registerHeading": "اکاؤنٹ بنائیں",
+    "emailLabel": "ای میل",
+    "emailPlaceholder": "ای میل",
+    "passwordLabel": "پاس ورڈ",
+    "passwordPlaceholder": "پاس ورڈ",
+    "passwordRuleLabel": "پاس ورڈ (8+ حروف)",
+    "passwordRulePlaceholder": "پاس ورڈ (8+)",
+    "usernameLabel": "صارف نام",
+    "usernamePlaceholder": "صارف نام",
+    "logIn": "لاگ اِن",
+    "logInAria": "اکاؤنٹ میں لاگ اِن کریں",
+    "createAccount": "اکاؤنٹ بنائیں",
+    "openCreateAccountAria": "اکاؤنٹ بنانے کا فارم کھولیں",
+    "backToLogin": "واپس لاگ اِن پر جائیں",
+    "register": "رجسٹر کریں",
+    "registerAria": "نیا اکاؤنٹ بنائیں",
+    "returnLoginAria": "لاگ اِن فارم پر واپس جائیں"
+  },
+  "account": {
+    "settingsTitle": "اکاؤنٹ سیٹنگز",
+    "usernameLabel": "صارف نام:",
+    "savedRoutesTitle": "محفوظ شدہ روٹس",
+    "moreSavedRoutes": "مزید محفوظ شدہ روٹس",
+    "updatePassword": "پاس ورڈ اپ ڈیٹ کریں",
+    "updatePasswordAria": "اکاؤنٹ پاس ورڈ اپ ڈیٹ کریں",
+    "logOut": "لاگ آؤٹ",
+    "logOutAria": "اکاؤنٹ سے لاگ آؤٹ کریں",
+    "deleteAccount": "اکاؤنٹ حذف کریں",
+    "deleteAccountAria": "اکاؤنٹ مستقل طور پر حذف کریں",
+    "closeSettingsAria": "اکاؤنٹ سیٹنگز بند کریں",
+    "noSavedRoutes": "کوئی محفوظ شدہ روٹ نہیں۔",
+    "routeFromTo": "{from} سے {to}",
+    "savedRouteAria": "{from} سے {to} محفوظ شدہ روٹ تلاش کریں",
+    "searchRoutesTitle": "روٹس تلاش کریں: {from} سے {to}",
+    "promptCurrentPassword": "موجودہ پاس ورڈ درج کریں:",
+    "promptNewPassword": "نیا پاس ورڈ درج کریں (8+ حروف):",
+    "confirmDelete": "اس سے آپ کا اکاؤنٹ مستقل طور پر حذف ہو جائے گا۔ جاری رکھیں؟",
+    "promptConfirmDeletePassword": "اکاؤنٹ حذف کرنے کے لیے پاس ورڈ کی تصدیق کریں:"
+  },
+  "announce": {
+    "languageChanged": "زبان {locale} میں تبدیل کر دی گئی ہے۔"
+  },
+  "common": {
+    "close": "بند کریں"
+  },
+  "locale": {
+    "en-GB": "انگریزی (برطانیہ)",
+    "en-US": "انگریزی (امریکہ)",
+    "cy-GB": "ویلش (برطانیہ)",
+    "fr-FR": "فرانسیسی (فرانس)",
+    "de-DE": "جرمن (جرمنی)",
+    "es-ES": "ہسپانوی (اسپین)",
+    "zh-CN": "چینی (چین)",
+    "hi-IN": "ہندی (بھارت)",
+    "ar": "عربی",
+    "bn-BD": "بنگالی (بنگلہ دیش)",
+    "pt-BR": "پرتگالی (برازیل)",
+    "ru-RU": "روسی (روس)",
+    "ur-PK": "اردو (پاکستان)"
+  }
+}

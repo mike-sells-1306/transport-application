@@ -1,0 +1,156 @@
+{
+  "app": { "title": "西北交通" },
+  "navigation": {
+    "account": "账户",
+    "faq": "常见问题",
+    "support": "客户支持",
+    "accessibility": "无障碍",
+    "accessibilityActive": "无障碍 ✓"
+  },
+  "journey": {
+    "prompt": "您今天想去哪里？",
+    "departureLabel": "选择出发站",
+    "arrivalLabel": "选择到达站",
+    "searchPlaceholder": "搜索…",
+    "toPlaceholder": "到",
+    "departureSuggestions": "出发站建议",
+    "arrivalSuggestions": "到达站建议",
+    "swapAria": "交换出发站和到达站",
+    "departureRequired": "请从建议列表中选择出发站。",
+    "arrivalRequired": "请从建议列表中选择到达站。"
+  },
+  "faq": {
+    "title": "常见问题",
+    "close": "关闭常见问题",
+    "q1": { "question": "如何查看地点详情？", "answer": "您可以搜索地点，或直接点击地图上的地点查看详情。" },
+    "q2": { "question": "地图覆盖哪些区域？", "answer": "地图重点覆盖普雷斯顿与兰卡斯特之间沿海走廊，包括布莱克浦及周边地区。" },
+    "q3": { "question": "如何购买行程车票？", "answer": "本服务用于路线查询。购票请使用 National Rail 或当地运营商网站。" },
+    "q4": { "question": "如何收藏路线？", "answer": "在路线结果中点击“保存路线”。保存前需要先登录账户。" },
+    "q5": { "question": "已保存路线发生变化怎么办？", "answer": "若检测到潜在中断，我们会发送通知帮助您提前安排。" }
+  },
+  "support": {
+    "title": "客户支持",
+    "close": "关闭客户支持",
+    "journeyHelp": {
+      "title": "需要行程规划帮助吗？",
+      "body": "如果路线结果看起来不准确或不完整，请更新起点/终点并重新搜索。若问题持续，请联系支持并提供路线信息和搜索时间。"
+    },
+    "channels": {
+      "title": "联系方式",
+      "emailLabel": "电子邮件：",
+      "emailValue": "support@transportnorthwest.example",
+      "phoneLabel": "电话：",
+      "phoneValue": "0800 123 4567",
+      "chatLabel": "在线聊天：",
+      "chatValue": "工作日 08:00–18:00"
+    },
+    "reportIssue": {
+      "title": "报告中断或数据问题",
+      "body": "请提供服务类型（公交/火车）、起终点、预计发车时间，以及可选截图，以便更快排查。"
+    },
+    "accountHelp": {
+      "title": "账户帮助",
+      "body": "如遇登录、密码或已保存路线问题，请先打开“账户”选项卡，再联系支持。"
+    }
+  },
+  "accessibility": {
+    "title": "无障碍",
+    "close": "关闭无障碍",
+    "languageTitle": "语言",
+    "languageDescription": "选择您偏好的语言和地区。",
+    "languageLabel": "应用语言",
+    "zoomTitle": "缩放",
+    "zoomDescription": "调整界面文字和控件大小。",
+    "zoomLabel": "调整界面缩放级别",
+    "zoomDecrease": "缩小",
+    "zoomIncrease": "放大",
+    "colourProfileTitle": "颜色模式",
+    "colourProfileDescription": "选择适用于不同色觉需求的配置。",
+    "colour": {
+      "default": "默认",
+      "deuteranopia": "红绿（绿色弱）",
+      "protanopia": "红绿（红色弱）",
+      "tritanopia": "蓝黄（蓝色弱）",
+      "achromatopsia": "黑白（全色盲）"
+    },
+    "fontSizeTitle": "字体大小",
+    "fontSizeDescription": "为界面选择舒适的字体大小。",
+    "font": {
+      "small": "小",
+      "normal": "中",
+      "large": "大"
+    },
+    "save": "保存到账户",
+    "saveAria": "将无障碍设置保存到账户",
+    "reset": "重置",
+    "resetAria": "重置无障碍设置",
+    "saveHelp": "设置会立即生效。登录后可保存并同步。"
+  },
+  "auth": {
+    "loginTitle": "账户登录",
+    "registerTitle": "创建账户",
+    "closeLogin": "关闭账户登录",
+    "loginHelp": "登录账户以保存路线并管理偏好设置。",
+    "registerHelp": "创建账户以保存路线并管理偏好设置。",
+    "loginHeading": "登录",
+    "registerHeading": "创建账户",
+    "emailLabel": "电子邮箱",
+    "emailPlaceholder": "电子邮箱",
+    "passwordLabel": "密码",
+    "passwordPlaceholder": "密码",
+    "passwordRuleLabel": "密码（8位以上）",
+    "passwordRulePlaceholder": "密码（8位以上）",
+    "usernameLabel": "用户名",
+    "usernamePlaceholder": "用户名",
+    "logIn": "登录",
+    "createAccount": "创建账户",
+    "backToLogin": "返回登录",
+    "logInAria": "登录账户",
+    "openCreateAccountAria": "打开创建账户表单",
+    "register": "注册",
+    "registerAria": "创建新账户",
+    "returnLoginAria": "返回登录表单"
+  },
+  "account": {
+    "settingsTitle": "账户设置",
+    "usernameLabel": "用户名：",
+    "savedRoutesTitle": "已保存路线",
+    "moreSavedRoutes": "更多已保存路线",
+    "updatePassword": "更新密码",
+    "updatePasswordAria": "更新账户密码",
+    "logOut": "退出登录",
+    "logOutAria": "退出账户",
+    "deleteAccount": "删除账户",
+    "closeSettingsAria": "关闭账户设置",
+    "deleteAccountAria": "永久删除账户",
+    "noSavedRoutes": "暂无已保存路线。",
+    "routeFromTo": "{from} 到 {to}",
+    "savedRouteAria": "搜索已保存路线：{from} 到 {to}",
+    "searchRoutesTitle": "搜索路线：{from} 到 {to}",
+    "promptCurrentPassword": "输入当前密码：",
+    "promptNewPassword": "输入新密码（8位以上）：",
+    "confirmDelete": "这将永久删除您的账户。是否继续？",
+    "promptConfirmDeletePassword": "确认密码以删除账户："
+  },
+  "announce": {
+    "languageChanged": "语言已切换为 {locale}。"
+  },
+  "common": {
+    "close": "关闭"
+  },
+  "locale": {
+    "en-GB": "英语（英国）",
+    "en-US": "英语（美国）",
+    "cy-GB": "威尔士语（英国）",
+    "fr-FR": "法语（法国）",
+    "de-DE": "德语（德国）",
+    "es-ES": "西班牙语（西班牙）",
+    "zh-CN": "中文（中国）",
+    "hi-IN": "印地语（印度）",
+    "ar": "阿拉伯语",
+    "bn-BD": "孟加拉语（孟加拉国）",
+    "pt-BR": "葡萄牙语（巴西）",
+    "ru-RU": "俄语（俄罗斯）",
+    "ur-PK": "乌尔都语（巴基斯坦）"
+  }
+}

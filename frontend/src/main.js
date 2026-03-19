@@ -22,6 +22,220 @@ const accessibilityState = {
   ...ACCESSIBILITY_DEFAULTS,
 };
 
+const DEFAULT_LOCALE = 'en-GB';
+const SUPPORTED_LOCALES = ['en-GB', 'en-US', 'cy-GB', 'fr-FR', 'de-DE', 'es-ES', 'zh-CN', 'hi-IN', 'ar', 'bn-BD', 'pt-BR', 'ru-RU', 'ur-PK'];
+const RESOURCE_LOCALES = ['en-GB', 'cy-GB', 'fr-FR', 'de-DE', 'es-ES', 'zh-CN', 'hi-IN', 'ar', 'bn-BD', 'pt-BR', 'ru-RU', 'ur-PK'];
+const LOCALE_STORAGE_KEY = 'preferredLocale';
+const LOCALE_DISPLAY_LABELS = {
+  'en-GB': '🇬🇧 English (United Kingdom)',
+  'en-US': '🇺🇸 English (United States)',
+  'cy-GB': '🏴 Cymraeg (Y Deyrnas Unedig)',
+  'fr-FR': '🇫🇷 Français (France)',
+  'de-DE': '🇩🇪 Deutsch (Deutschland)',
+  'es-ES': '🇪🇸 Español (España)',
+  'zh-CN': '🇨🇳 中文（中国）',
+  'hi-IN': '🇮🇳 हिन्दी (भारत)',
+  'ar': '🌍 العربية',
+  'bn-BD': '🇧🇩 বাংলা (বাংলাদেশ)',
+  'pt-BR': '🇧🇷 Português (Brasil)',
+  'ru-RU': '🇷🇺 Русский (Россия)',
+  'ur-PK': '🇵🇰 اردو (پاکستان)',
+};
+
+const i18nState = {
+  locale: DEFAULT_LOCALE,
+  bundles: new Map(),
+};
+
+function deepGetMessage(obj, key) {
+  if (!obj || !key) return undefined;
+  return key.split('.').reduce((acc, part) => (acc && acc[part] !== undefined ? acc[part] : undefined), obj);
+}
+
+function interpolateMessage(template, params = {}) {
+  return String(template).replace(/\{(\w+)\}/g, (_, token) => {
+    return params[token] != null ? String(params[token]) : `{${token}}`;
+  });
+}
+
+async function loadLocaleBundle(localeCode) {
+  const locale = String(localeCode || '').trim();
+  if (!locale) return {};
+
+  if (i18nState.bundles.has(locale)) {
+    return i18nState.bundles.get(locale);
+  }
+
+  try {
+    const response = await fetch(`locales/${locale}.json`);
+    if (!response.ok) {
+      throw new Error(`Missing locale bundle: ${locale}`);
+    }
+    const bundle = await response.json();
+    i18nState.bundles.set(locale, bundle);
+    return bundle;
+  } catch (error) {
+    console.warn(error.message);
+    i18nState.bundles.set(locale, {});
+    return {};
+  }
+}
+
+function resolveLanguageFallback(locale) {
+  const lang = String(locale || '').split('-')[0].toLowerCase();
+  if (!lang) return DEFAULT_LOCALE;
+
+  const match = RESOURCE_LOCALES.find(code => code.toLowerCase().startsWith(`${lang}-`) || code.toLowerCase() === lang);
+  return match || DEFAULT_LOCALE;
+}
+
+function t(key, params = {}) {
+  const locale = i18nState.locale || DEFAULT_LOCALE;
+
+  const specific = deepGetMessage(i18nState.bundles.get(locale), key);
+  if (specific !== undefined) {
+    return interpolateMessage(specific, params);
+  }
+
+  const genericLocale = resolveLanguageFallback(locale);
+  const generic = deepGetMessage(i18nState.bundles.get(genericLocale), key);
+  if (generic !== undefined) {
+    return interpolateMessage(generic, params);
+  }
+
+  const fallback = deepGetMessage(i18nState.bundles.get(DEFAULT_LOCALE), key);
+  if (fallback !== undefined) {
+    return interpolateMessage(fallback, params);
+  }
+
+  return key;
+}
+
+function getLocaleDisplayName(localeCode) {
+  if (LOCALE_DISPLAY_LABELS[localeCode]) {
+    return LOCALE_DISPLAY_LABELS[localeCode];
+  }
+  const translated = t(`locale.${localeCode}`);
+  return translated === `locale.${localeCode}` ? localeCode : translated;
+}
+
+function formatLocalizedNumber(value, options = {}) {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue)) {
+    return String(value ?? '');
+  }
+  return new Intl.NumberFormat(i18nState.locale || DEFAULT_LOCALE, options).format(numberValue);
+}
+
+function formatLocalizedDateTime(value, options = {}) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return String(value ?? '');
+  }
+
+  return new Intl.DateTimeFormat(i18nState.locale || DEFAULT_LOCALE, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    ...options,
+  }).format(date);
+}
+
+function formatLocalizedClockTime(timeString) {
+  if (!timeString || typeof timeString !== 'string') {
+    return String(timeString || '');
+  }
+
+  const [hourStr, minuteStr] = timeString.split(':');
+  const hour = Number(hourStr);
+  const minute = Number(minuteStr);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) {
+    return timeString;
+  }
+
+  const date = new Date(Date.UTC(2000, 0, 1, hour, minute, 0));
+  return new Intl.DateTimeFormat(i18nState.locale || DEFAULT_LOCALE, {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'UTC',
+  }).format(date);
+}
+
+function applyTranslations(root = document) {
+  root.querySelectorAll('[data-i18n]').forEach(node => {
+    const key = node.getAttribute('data-i18n');
+    if (!key) return;
+    node.textContent = t(key);
+  });
+
+  root.querySelectorAll('[data-i18n-placeholder]').forEach(node => {
+    const key = node.getAttribute('data-i18n-placeholder');
+    if (!key) return;
+    node.setAttribute('placeholder', t(key));
+  });
+
+  root.querySelectorAll('[data-i18n-aria-label]').forEach(node => {
+    const key = node.getAttribute('data-i18n-aria-label');
+    if (!key) return;
+    node.setAttribute('aria-label', t(key));
+  });
+
+  root.querySelectorAll('[data-i18n-title]').forEach(node => {
+    const key = node.getAttribute('data-i18n-title');
+    if (!key) return;
+    node.setAttribute('title', t(key));
+  });
+
+  document.title = t('app.title');
+}
+
+async function setLocale(locale, options = {}) {
+  const { persist = true, announce = true } = options;
+  const requested = SUPPORTED_LOCALES.includes(locale) ? locale : DEFAULT_LOCALE;
+
+  await loadLocaleBundle(DEFAULT_LOCALE);
+  await loadLocaleBundle(resolveLanguageFallback(requested));
+
+  i18nState.locale = requested;
+  document.documentElement.setAttribute('lang', requested);
+
+  if (persist) {
+    localStorage.setItem(LOCALE_STORAGE_KEY, requested);
+  }
+
+  applyTranslations();
+  refreshMapPopupTranslations();
+  weatherCache = null;
+  weatherCacheTimestamp = 0;
+  updateRouteModalHeader();
+  syncAccessibilityControls();
+  updateAccessibilityLinkState(!document.getElementById('accessibility-panel')?.classList.contains('hidden'));
+  updateRouteDownloadButtonState();
+
+  if (currentRoutesData && !document.getElementById('route-modal')?.classList.contains('hidden')) {
+    const sortMethod = document.getElementById('sort')?.value || 'start_time';
+    renderRoutesTable(sortRoutes(sortMethod, currentRoutesData.routes));
+  }
+
+  if (!document.getElementById('weather-panel')?.classList.contains('hidden')) {
+    renderWeatherPanel();
+  }
+
+  if (announce) {
+    announceToScreenReader(t('announce.languageChanged', { locale: getLocaleDisplayName(requested) }));
+  }
+}
+
+async function initializeLocalization() {
+  await Promise.all(RESOURCE_LOCALES.map(loadLocaleBundle));
+
+  const storedLocale = localStorage.getItem(LOCALE_STORAGE_KEY);
+  const browserLocale = (navigator.languages || [navigator.language || DEFAULT_LOCALE])
+    .find(code => SUPPORTED_LOCALES.includes(code) || SUPPORTED_LOCALES.some(supported => supported.split('-')[0] === String(code).split('-')[0]));
+
+  const initialLocale = storedLocale || (SUPPORTED_LOCALES.includes(browserLocale) ? browserLocale : DEFAULT_LOCALE);
+  await setLocale(initialLocale, { persist: false, announce: false });
+}
+
 function announceToScreenReader(message, priority = 'polite') {
   if (!message) {
     return;
@@ -54,11 +268,196 @@ function validateEmailFormat(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
 }
 
+function localizeApiErrorMessage(rawMessage, fallbackKey = 'alerts.requestFailedGeneric') {
+  const message = String(rawMessage || '').trim().toLowerCase();
+  if (!message) {
+    return t(fallbackKey);
+  }
+
+  const mappedErrors = [
+    { pattern: 'invalid email', key: 'alerts.invalidEmail' },
+    { pattern: 'invalid password', key: 'alerts.invalidPassword' },
+    { pattern: 'already exists', key: 'alerts.accountAlreadyExists' },
+    { pattern: 'unauthorized', key: 'alerts.unauthorized' },
+    { pattern: 'forbidden', key: 'alerts.forbidden' },
+    { pattern: 'not found', key: 'alerts.notFound' },
+    { pattern: 'too many requests', key: 'alerts.tooManyRequests' },
+    { pattern: 'network', key: 'alerts.networkError' },
+    { pattern: 'request failed', key: 'alerts.requestFailedGeneric' },
+  ];
+
+  const match = mappedErrors.find(item => message.includes(item.pattern));
+  return match ? t(match.key) : t(fallbackKey);
+}
+
 // Track which marker has an open popup
 let currentOpenPopup = null;
 
 // Store map marker references for theme updates
 let mapMarkers = [];
+
+const LOCATION_CATALOG = [
+  {
+    id: 'liverpool',
+    lat: 53.4072,
+    lng: -2.9917,
+    image: 'https://www.hope.ac.uk/media/lifeathope/images/City%20of%20Liverpool%20Main%20Image%20880x425.jpg',
+  },
+  {
+    id: 'manchester',
+    lat: 53.4795,
+    lng: -2.2451,
+    image: 'https://images.ctfassets.net/szez98lehkfm/5Et7n40qkVp1XWiFp8prq0/0d863f37c9779a0332b641616e280975/MyIC_Article_93787?w=730&h=410&fm=jpg&fit=fill',
+  },
+  {
+    id: 'preston',
+    lat: 53.7593,
+    lng: -2.6993,
+    image: 'https://visitpreston.co.uk/image/13304/Preston-Flag-Market/related.jpg?m=1677680887777',
+  },
+  {
+    id: 'blackburn',
+    lat: 53.7493,
+    lng: -2.4841,
+    image: 'https://upload.wikimedia.org/wikipedia/commons/5/55/Blackburn_Lancashire_Townscape.jpg',
+  },
+  {
+    id: 'lytham_st_annes',
+    lat: 53.7485,
+    lng: -2.9991,
+    image: 'https://hampshire.redkitedays.co.uk/wp-content/uploads/2024/06/Visit-Lytham-St-Annes-scaled.jpeg',
+  },
+  {
+    id: 'kirkham',
+    lat: 53.7827,
+    lng: -2.8715,
+    image: 'https://www.english-heritage.org.uk/siteassets/home/visit/places-to-visit/kirkham-priory/kirkham-twitter-card.jpg',
+  },
+  {
+    id: 'poulton_le_fylde',
+    lat: 53.8461,
+    lng: -2.9905,
+    image: 'https://upload.wikimedia.org/wikipedia/commons/1/1d/Market_day_in_Poulton_-_geograph.org.uk_-_4103554.jpg',
+  },
+  {
+    id: 'fleetwood',
+    lat: 53.9220,
+    lng: -3.0327,
+    image: 'https://www.visitfyldecoast.info/wp-content/uploads/2024/05/IMG_8526-scaled-1.jpg',
+  },
+  {
+    id: 'blackpool',
+    lat: 53.8179,
+    lng: -3.0510,
+    image: 'https://i.guim.co.uk/img/media/5d9e2da10d2400d30c68ed77c725bd04e124e0cd/0_179_5404_3242/master/5404.jpg?width=1200&height=900&quality=85&auto=format&fit=crop&s=86096e66ab7a04d4183121b8aa78f8c6',
+  },
+  {
+    id: 'garstang',
+    lat: 53.9016,
+    lng: -2.7735,
+    image: 'https://canalrivertrust.org.uk/media/image/ZUEi447LPBxcv0Ri4kX8tw/Jzvw5PsTGFJIY8aaA7cX9ZwNHe-7eZMHn3Ehx1aJ1P4/rs:fill:1900:1187:1:0/g:ce/aHR0cHM6Ly9jcnRwcm9kY21zdWtzMDEuYmxvYi5jb3JlLndpbmRvd3MubmV0L2ltYWdlLzAxODk5MjczLWNiMjQtNzk0YS04YjM1LTExNTU3MGNjMDY5Yg.webp',
+  },
+  {
+    id: 'lancaster',
+    lat: 54.0488,
+    lng: -2.8013,
+    image: 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/02/20/ac/the-newly-restored-lower.jpg?w=800&h=500&s=1',
+  },
+  {
+    id: 'morecambe',
+    lat: 54.0721,
+    lng: -2.8651,
+    image: 'https://www.hawthornscaravanpark.co.uk/wp-content/uploads/2023/09/lancashires-coastline-morecambe-bay-scaled.jpg',
+  },
+  {
+    id: 'heysham',
+    lat: 54.0495,
+    lng: -2.8903,
+    image: 'https://nt.global.ssl.fastly.net/binaries/content/gallery/website/national/regions/liverpool-lancashire/places/heysham-coast/library/beach-heysham-coast-lancashire-1525498.jpg',
+  },
+  {
+    id: 'carnforth',
+    lat: 54.1282,
+    lng: -2.7701,
+    image: 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/28/eb/14/0c/leighton-hall-front-view.jpg?w=600&h=-1&s=1',
+  },
+  {
+    id: 'kirkby_lonsdale',
+    lat: 54.2018,
+    lng: -2.5967,
+    image: 'https://www.thetimes.com/imageserver/image/%2Fmethode%2Fsundaytimes%2Fprod%2Fweb%2Fbin%2F2fb016a4-44d1-11e9-8121-489737db5c2b.jpg?crop=2250%2C1266%2C0%2C117',
+  },
+  {
+    id: 'grange_over_sands',
+    lat: 54.1931,
+    lng: -2.9095,
+    image: 'https://www.visitcumbria.com/wp-content/uploads/2024/11/Grange-over-Sands-Village.jpg',
+  },
+  {
+    id: 'cartmel',
+    lat: 54.2009,
+    lng: -2.9529,
+    image: 'https://www.sykescottages.co.uk/inspiration/wp-content/uploads/things-to-do-in-Cartmel.jpg',
+  },
+  {
+    id: 'kendal',
+    lat: 54.3290,
+    lng: -2.7472,
+    image: 'https://eu-assets.simpleview-europe.com/golakes/imageresizer/?image=%2Fdmsimgs%2F6D1CFF58CABBCFA6EE82AAFCEE101B4D85DCC848.jpg&action=ProductDetailPro',
+  },
+  {
+    id: 'windermere',
+    lat: 54.3792,
+    lng: -2.9063,
+    image: 'https://www.lakelovers.co.uk/blog/wp-content/uploads/sites/15/2025/04/Blog-header-image-1400-x-950-18.png',
+  },
+  {
+    id: 'ambleside',
+    lat: 54.4316,
+    lng: -2.9622,
+    image: 'https://www.thegables-ambleside.co.uk/images/galleries/thingstodo/ambleside2.jpg',
+  },
+  {
+    id: 'barrow_in_furness',
+    lat: 54.289,
+    lng: -3.2269,
+    image: 'https://www.leahough.co.uk/wp-content/uploads/2025/06/Barrow-in-Furness.jpg',
+  },
+  {
+    id: 'keswick',
+    lat: 54.6010,
+    lng: -3.1376,
+    image: 'https://www.mountain-goat.com/getmedia/75c36f97-015f-4347-95ec-cf08f8133057/Keswick-Page-Image.jpg.aspx',
+  },
+];
+
+function getLocalizedLocation(locationId) {
+  return {
+    name: t(`locations.${locationId}.name`),
+    description: t(`locations.${locationId}.description`),
+  };
+}
+
+function buildMapPopupMarkup(location) {
+  const localized = getLocalizedLocation(location.id);
+  const popupImageMarkup = location.image
+    ? `<img src="${location.image}" alt="${t('map.popupImageAlt', { location: localized.name })}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 10px; margin-bottom: 10px;" />`
+    : '';
+
+  return `
+      <div class="popup-content">
+        ${popupImageMarkup}
+        <h3 class="popup-title">${localized.name}</h3>
+        <p class="popup-description">${localized.description}</p>
+      </div>
+    `;
+}
+
+function refreshMapPopupTranslations() {
+  mapMarkers.forEach(({ marker, location }) => {
+    marker.bindPopup(buildMapPopupMarkup(location));
+  });
+}
 
 // Store current routes data for sorting
 let currentRoutesData = null;
@@ -91,7 +490,7 @@ function setupSwapButton() {
 
       setFieldError('from-input', 'from-input-error', '');
       setFieldError('to-input', 'to-input-error', '');
-      announceToScreenReader('Departure and arrival stations swapped.');
+      announceToScreenReader(t('announce.journeySwapped'));
       
       // Search for routes if both stops are selected
       if (selectedStops.from && selectedStops.to) {
@@ -118,163 +517,7 @@ function initializeMap() {
     minZoom: 9,
   }).addTo(map);
 
-  // Define key towns and locations in the North West region
-  const locations = [
-    {
-      name: 'Liverpool',
-      lat: 53.4072,
-      lng: -2.9917,
-      description: 'Liverpool - Historic port city and cultural center on the Irish Sea coast.',
-      image: 'https://www.hope.ac.uk/media/lifeathope/images/City%20of%20Liverpool%20Main%20Image%20880x425.jpg',
-    },
-    {
-      name: 'Manchester',
-      lat: 53.4795,
-      lng: -2.2451,
-      description: 'Manchester - Major industrial and commercial city in the heart of Greater Manchester.',
-      image: 'https://images.ctfassets.net/szez98lehkfm/5Et7n40qkVp1XWiFp8prq0/0d863f37c9779a0332b641616e280975/MyIC_Article_93787?w=730&h=410&fm=jpg&fit=fill',
-    },
-    {
-      name: 'Preston',
-      lat: 53.7593,
-      lng: -2.6993,
-      description: 'Preston - England\'s newest city, cultural hub of Lancashire.',
-      image: 'https://visitpreston.co.uk/image/13304/Preston-Flag-Market/related.jpg?m=1677680887777',
-    },
-    {
-      name: 'Blackburn',
-      lat: 53.7493,
-      lng: -2.4841,
-      description: 'Blackburn - Historic textile town, home to the cathedral.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/5/55/Blackburn_Lancashire_Townscape.jpg',
-    },
-    {
-      name: 'Lytham-St-Annes',
-      lat: 53.7485,
-      lng: -2.9991,
-      description: 'Lytham-St-Annes - Seaside town on the Fylde coast.',
-      image: 'https://hampshire.redkitedays.co.uk/wp-content/uploads/2024/06/Visit-Lytham-St-Annes-scaled.jpeg',
-    },
-    {
-      name: 'Kirkham',
-      lat: 53.7827,
-      lng: -2.8715,
-      description: 'Kirkham - Market town in the heart of the Fylde.',
-      image: 'https://www.english-heritage.org.uk/siteassets/home/visit/places-to-visit/kirkham-priory/kirkham-twitter-card.jpg',
-    },
-    {
-      name: 'Poulton-le-Fylde',
-      lat: 53.8461,
-      lng: -2.9905,
-      description: 'Poulton-le-Fylde - Market town in the heart of the Fylde.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/1/1d/Market_day_in_Poulton_-_geograph.org.uk_-_4103554.jpg',
-    },
-    {
-      name: 'Fleetwood',
-      lat: 53.9220,
-      lng: -3.0327,
-      description: 'Fleetwood - Coastal town at the mouth of the River Wyre and historic fishing port.',
-      image: 'https://www.visitfyldecoast.info/wp-content/uploads/2024/05/IMG_8526-scaled-1.jpg',
-    },
-    {
-      name: 'Blackpool',
-      lat: 53.8179,
-      lng: -3.0510,
-      description: 'Blackpool - Iconic seaside resort with the famous Blackpool Tower.',
-      image: 'https://i.guim.co.uk/img/media/5d9e2da10d2400d30c68ed77c725bd04e124e0cd/0_179_5404_3242/master/5404.jpg?width=1200&height=900&quality=85&auto=format&fit=crop&s=86096e66ab7a04d4183121b8aa78f8c6',
-    },
-    {
-      name: 'Garstang',
-      lat: 53.9016,
-      lng: -2.7735,
-      description: 'Garstang - Historic market town on the River Wyre.',
-      image: 'https://canalrivertrust.org.uk/media/image/ZUEi447LPBxcv0Ri4kX8tw/Jzvw5PsTGFJIY8aaA7cX9ZwNHe-7eZMHn3Ehx1aJ1P4/rs:fill:1900:1187:1:0/g:ce/aHR0cHM6Ly9jcnRwcm9kY21zdWtzMDEuYmxvYi5jb3JlLndpbmRvd3MubmV0L2ltYWdlLzAxODk5MjczLWNiMjQtNzk0YS04YjM1LTExNTU3MGNjMDY5Yg.webp',
-    },
-    {
-      name: 'Lancaster',
-      lat: 54.0488,
-      lng: -2.8013,
-      description: 'Lancaster - Historic city with a medieval castle and university.',
-      image: 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/02/20/ac/the-newly-restored-lower.jpg?w=800&h=500&s=1',
-    },
-    {
-      name: 'Morecambe',
-      lat: 54.0721,
-      lng: -2.8651,
-      description: 'Morecambe - Seaside town known for its promenade and bay views.',
-      image: 'https://www.hawthornscaravanpark.co.uk/wp-content/uploads/2023/09/lancashires-coastline-morecambe-bay-scaled.jpg',
-    },
-    {
-      name: 'Heysham',
-      lat: 54.0495,
-      lng: -2.8903,
-      description: 'Heysham - Coastal village with nuclear power station and maritime heritage.',
-      image: 'https://nt.global.ssl.fastly.net/binaries/content/gallery/website/national/regions/liverpool-lancashire/places/heysham-coast/library/beach-heysham-coast-lancashire-1525498.jpg',
-    },
-    {
-      name: 'Carnforth',
-      lat: 54.1282,
-      lng: -2.7701,
-      description: 'Carnforth - Village known for its railway heritage.',
-      image: 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/28/eb/14/0c/leighton-hall-front-view.jpg?w=600&h=-1&s=1',
-    },
-    {
-      name: 'Kirkby-Lonsdale',
-      lat: 54.2018,
-      lng: -2.5967,
-      description: 'Kirkby-Lonsdale - Picturesque village in the Lune Valley.',
-      image: 'https://www.thetimes.com/imageserver/image/%2Fmethode%2Fsundaytimes%2Fprod%2Fweb%2Fbin%2F2fb016a4-44d1-11e9-8121-489737db5c2b.jpg?crop=2250%2C1266%2C0%2C117',
-    },
-    {
-      name: 'Grange-Over-Sands',
-      lat: 54.1931,
-      lng: -2.9095,
-      description: 'Grange-Over-Sands - Charming coastal resort on Morecambe Bay.',
-      image: 'https://www.visitcumbria.com/wp-content/uploads/2024/11/Grange-over-Sands-Village.jpg',
-    },
-    {
-      name: 'Cartmel',
-      lat: 54.2009,
-      lng: -2.9529,
-      description: 'Cartmel - Picturesque village famous for its Priory and steeplechase racecourse.',
-      image: 'https://www.sykescottages.co.uk/inspiration/wp-content/uploads/things-to-do-in-Cartmel.jpg',
-    },
-    {
-      name: 'Kendal',
-      lat: 54.3290,
-      lng: -2.7472,
-      description: 'Kendal - Gateway to the Lake District, historic market town.',
-      image: 'https://eu-assets.simpleview-europe.com/golakes/imageresizer/?image=%2Fdmsimgs%2F6D1CFF58CABBCFA6EE82AAFCEE101B4D85DCC848.jpg&action=ProductDetailPro',
-    },
-    {
-      name: 'Windermere',
-      lat: 54.3792,
-      lng: -2.9063,
-      description: 'Windermere - Heart of the Lake District with England\'s largest lake.',
-      image: 'https://www.lakelovers.co.uk/blog/wp-content/uploads/sites/15/2025/04/Blog-header-image-1400-x-950-18.png',
-    },
-    {
-      name: 'Ambleside',
-      lat: 54.4316,
-      lng: -2.9622,
-      description: 'Ambleside - Picturesque Lake District town on the shores of Lake Windermere.',
-      image: 'https://www.thegables-ambleside.co.uk/images/galleries/thingstodo/ambleside2.jpg',
-    },
-    {
-      name: 'Barrow-in-Furness',
-      lat: 54.289,
-      lng: -3.2269,
-      description: 'Barrow-in-Furness - Industrial town on the Irish Sea coast.',
-      image: 'https://www.leahough.co.uk/wp-content/uploads/2025/06/Barrow-in-Furness.jpg',
-    },
-    {
-      name: 'Keswick',
-      lat: 54.6010,
-      lng: -3.1376,
-      description: 'Keswick - Historic market town in the northern Lake District.',
-      image: 'https://www.mountain-goat.com/getmedia/75c36f97-015f-4347-95ec-cf08f8133057/Keswick-Page-Image.jpg.aspx',
-    },
-  ];
+  const locations = LOCATION_CATALOG;
 
   // Add markers for each location with popups and toggle functionality
   locations.forEach(location => {
@@ -287,21 +530,11 @@ function initializeMap() {
       opacity: 1,
       fillOpacity: colors.fillOpacity,
     });
-    mapMarkers.push(marker);
+    mapMarkers.push({ marker, location });
 
     marker.addTo(map);
 
-    const popupImageMarkup = location.image
-      ? `<img src="${location.image}" alt="${location.name} photo" style="width: 100%; height: 120px; object-fit: cover; border-radius: 10px; margin-bottom: 10px;" />`
-      : '';
-
-    marker.bindPopup(`
-      <div class="popup-content">
-        ${popupImageMarkup}
-        <h3 class="popup-title">${location.name}</h3>
-        <p class="popup-description">${location.description}</p>
-      </div>
-    `);
+    marker.bindPopup(buildMapPopupMarkup(location));
 
     // Handle popup toggle: close old popup if different marker clicked,
     // or close current popup if same marker clicked again
@@ -393,7 +626,7 @@ function updateAccessibilityLinkState(isOpen = false) {
   }
 
   const hasCustomPreference = accessibilityState.colorMode !== 'none' || Math.abs(accessibilityState.zoomLevel - 1) > 0.001;
-  sidebarLink.textContent = hasCustomPreference ? 'Accessibility ✓' : 'Accessibility';
+  sidebarLink.textContent = hasCustomPreference ? t('navigation.accessibilityActive') : t('navigation.accessibility');
   sidebarLink.setAttribute('aria-expanded', String(isOpen));
 }
 
@@ -402,6 +635,7 @@ function syncAccessibilityControls() {
   const zoomValue = document.getElementById('accessibility-zoom-value');
   const modeRadios = document.querySelectorAll('input[name="accessibility-colour"]');
   const fontRadios = document.querySelectorAll('input[name="accessibility-font-size"]');
+  const languageSelect = document.getElementById('accessibility-language');
 
   if (zoomSlider) {
     zoomSlider.value = String(accessibilityState.zoomLevel);
@@ -417,6 +651,10 @@ function syncAccessibilityControls() {
 
   if (fontRadios && fontRadios.length) {
     fontRadios.forEach(r => r.checked = (r.value === (accessibilityState.fontSize || ACCESSIBILITY_DEFAULTS.fontSize)));
+  }
+
+  if (languageSelect) {
+    languageSelect.value = i18nState.locale;
   }
 }
 
@@ -488,7 +726,7 @@ function getMarkerColors() {
  */
 function updateMapMarkerColors() {
   const colors = getMarkerColors();
-  mapMarkers.forEach(marker => {
+  mapMarkers.forEach(({ marker }) => {
     marker.setStyle({
       fillColor: colors.fillColor,
       color: colors.color,
@@ -513,31 +751,15 @@ function applyColorblindMode(enabled) {
 // LIVE WEATHER FUNCTIONALITY
 // ============================================================================
 
-// Weather locations: all 22 map locations with coordinates for API calls
-const weatherLocations = [
-  { name: 'Ambleside', lat: 54.4316, lon: -2.9622 },
-  { name: 'Barrow-in-Furness', lat: 54.1289, lon: -3.2269 },
-  { name: 'Blackburn', lat: 53.7493, lon: -2.4841 },
-  { name: 'Blackpool', lat: 53.8179, lon: -3.0510 },
-  { name: 'Carnforth', lat: 54.1282, lon: -2.7701 },
-  { name: 'Cartmel', lat: 54.2009, lon: -2.9529 },
-  { name: 'Fleetwood', lat: 53.9220, lon: -3.0327 },
-  { name: 'Garstang', lat: 53.9016, lon: -2.7735 },
-  { name: 'Grange-Over-Sands', lat: 54.1931, lon: -2.9095 },
-  { name: 'Heysham', lat: 54.0495, lon: -2.8903 },
-  { name: 'Kendal', lat: 54.3290, lon: -2.7472 },
-  { name: 'Keswick', lat: 54.6010, lon: -3.1376 },
-  { name: 'Kirkby-Lonsdale', lat: 54.2018, lon: -2.5967 },
-  { name: 'Kirkham', lat: 53.7827, lon: -2.8715 },
-  { name: 'Lancaster', lat: 54.0488, lon: -2.8013 },
-  { name: 'Liverpool', lat: 53.4072, lon: -2.9917 },
-  { name: 'Lytham-St-Annes', lat: 53.7485, lon: -2.9991 },
-  { name: 'Manchester', lat: 53.4795, lon: -2.2451 },
-  { name: 'Morecambe', lat: 54.0721, lon: -2.8651 },
-  { name: 'Poulton-le-Fylde', lat: 53.8461, lon: -2.9905 },
-  { name: 'Preston', lat: 53.7593, lon: -2.6993 },
-  { name: 'Windermere', lat: 54.3792, lon: -2.9063 },
-];
+// Weather locations: all map locations with coordinates for API calls
+function getWeatherLocations() {
+  return LOCATION_CATALOG.map(location => ({
+    id: location.id,
+    name: t(`locations.${location.id}.name`),
+    lat: location.lat,
+    lon: location.lng,
+  }));
+}
 
 // Cache for weather data to avoid repeated API calls
 let weatherCache = null;
@@ -563,7 +785,7 @@ async function fetchWeatherForAllLocations() {
   }
 
   const results = await Promise.allSettled(
-    weatherLocations.map(async (loc) => {
+    getWeatherLocations().map(async (loc) => {
       try {
         const res = await fetch(`/api/weather?lat=${loc.lat}&lon=${loc.lon}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -645,7 +867,7 @@ function buildWeatherListItem(name, weather) {
       iconWrap.className = 'weather-icon-bg';
       const iconImg = document.createElement('img');
       iconImg.src = `/api/weather/icon/${iconCode}`;
-      iconImg.alt = weather.conditions?.description || 'weather';
+      iconImg.alt = weather.conditions?.description || t('weather.iconAlt');
       iconImg.className = 'weather-icon-img';
       iconImg.width = 32;
       iconImg.height = 32;
@@ -689,24 +911,24 @@ function buildWeatherListItem(name, weather) {
     const desc = description.charAt(0).toUpperCase() + description.slice(1);
     let detailHTML = `<span class="weather-detail-desc">${desc}</span>`;
     const extras = [];
-    if (feelsLike != null) extras.push(`Feels like ${Math.round(feelsLike)}\u00b0C`);
-    if (humidity != null) extras.push(`Humidity ${humidity}%`);
-    if (windSpeed != null) extras.push(`Wind ${windSpeed} ${windUnit}`);
-    if (cloudCoverage != null) extras.push(`Cloud cover ${cloudCoverage}%`);
-    if (visibility != null) extras.push(`Visibility ${(visibility / 1000).toFixed(1)} km`);
+    if (feelsLike != null) extras.push(t('weather.feelsLike', { value: formatLocalizedNumber(Math.round(feelsLike)) }));
+    if (humidity != null) extras.push(t('weather.humidity', { value: formatLocalizedNumber(humidity) }));
+    if (windSpeed != null) extras.push(t('weather.wind', { value: formatLocalizedNumber(windSpeed), unit: windUnit }));
+    if (cloudCoverage != null) extras.push(t('weather.cloudCover', { value: formatLocalizedNumber(cloudCoverage) }));
+    if (visibility != null) extras.push(t('weather.visibility', { value: formatLocalizedNumber(visibility / 1000, { maximumFractionDigits: 1 }) }));
     if (extras.length) {
       detailHTML += `<span class="weather-detail-extras">${extras.join(' \u00b7 ')}</span>`;
     }
     detail.innerHTML = detailHTML;
   } else {
-    detail.innerHTML = '<span class="weather-detail-desc">No detail available</span>';
+    detail.innerHTML = `<span class="weather-detail-desc">${t('weather.noDetail')}</span>`;
   }
 
   li.appendChild(row);
   li.appendChild(detail);
 
-  const weatherLabel = rightSide.querySelector('.weather-temp')?.textContent || 'temperature unavailable';
-  row.setAttribute('aria-label', `View weather details for ${name}, ${weatherLabel}`);
+  const weatherLabel = rightSide.querySelector('.weather-temp')?.textContent || t('weather.temperatureUnavailable');
+  row.setAttribute('aria-label', t('weather.rowAria', { location: name, temperature: weatherLabel }));
 
   // Toggle expand/collapse on click
   row.addEventListener('click', () => {
@@ -733,7 +955,7 @@ async function renderWeatherPanel() {
   if (!weatherList) return;
 
   // Show loading state
-  weatherList.innerHTML = '<li class="weather-loading">Loading weather data\u2026</li>';
+  weatherList.innerHTML = `<li class="weather-loading">${t('weather.loading')}</li>`;
 
   try {
     const weatherData = await fetchWeatherForAllLocations();
@@ -741,11 +963,11 @@ async function renderWeatherPanel() {
     weatherData.forEach(({ name, weather }) => {
       weatherList.appendChild(buildWeatherListItem(name, weather));
     });
-    announceToScreenReader(`Weather updated for ${weatherData.length} locations.`);
+    announceToScreenReader(t('announce.weatherUpdated', { count: weatherData.length }));
   } catch (err) {
     console.error('Failed to load weather data:', err);
-    weatherList.innerHTML = '<li class="weather-loading">Unable to load weather data</li>';
-    announceToScreenReader('Unable to load weather data.', 'assertive');
+    weatherList.innerHTML = `<li class="weather-loading">${t('weather.unableToLoad')}</li>`;
+    announceToScreenReader(t('announce.weatherLoadFailed'), 'assertive');
   }
 }
 
@@ -759,14 +981,14 @@ function renderWeatherSearchResults(results) {
 
   weatherList.innerHTML = '';
   if (!results.length) {
-    weatherList.innerHTML = '<li class="weather-loading">No locations found</li>';
-    announceToScreenReader('No weather locations found.');
+    weatherList.innerHTML = `<li class="weather-loading">${t('weather.noLocations')}</li>`;
+    announceToScreenReader(t('announce.weatherNoLocations'));
     return;
   }
   results.forEach(({ name, weather }) => {
     weatherList.appendChild(buildWeatherListItem(name, weather));
   });
-  announceToScreenReader(`Showing weather results for ${results.length} locations.`);
+  announceToScreenReader(t('announce.weatherShowingResults', { count: results.length }));
 }
 
 /**
@@ -814,13 +1036,12 @@ function initWeatherSearch() {
       if (weatherList) {
         const loadingLi = document.createElement('li');
         loadingLi.className = 'weather-loading';
-        loadingLi.textContent = 'Searching more locations\u2026';
+        loadingLi.textContent = t('weather.searchingMore');
         weatherList.appendChild(loadingLi);
       }
 
       const apiResults = await searchWeatherLocations(query);
 
-      // Merge: default locations matching query + API results, deduplicated
       const seen = new Set();
       const merged = [];
 
@@ -899,12 +1120,12 @@ function toggleWeatherPanel() {
         renderWeatherPanel();
       }
     }, WEATHER_CACHE_DURATION_MS);
-    announceToScreenReader('Weather panel opened. Live weather updates are available.');
+    announceToScreenReader(t('announce.weatherPanelOpened'));
   } else {
     // Panel is closing — stop auto-refresh
     clearInterval(weatherRefreshInterval);
     weatherRefreshInterval = null;
-    announceToScreenReader('Weather panel closed.');
+    announceToScreenReader(t('announce.weatherPanelClosed'));
   }
 }
 
@@ -936,9 +1157,9 @@ function toggleNotificationsPanel() {
     authModal?.classList.add('hidden');
     accountModal?.classList.add('hidden');
     updateAccessibilityLinkState(false);
-    announceToScreenReader('Notifications panel opened. Service announcements will be read automatically.', 'assertive');
+    announceToScreenReader(t('announce.notificationsPanelOpened'), 'assertive');
   } else {
-    announceToScreenReader('Notifications panel closed.');
+    announceToScreenReader(t('announce.notificationsPanelClosed'));
   }
 }
 
@@ -965,7 +1186,7 @@ function openFaqPanel() {
     authModal?.classList.add('hidden');
     accountModal?.classList.add('hidden');
     updateAccessibilityLinkState(false);
-    announceToScreenReader('FAQ panel opened.');
+    announceToScreenReader(t('announce.faqOpened'));
   }
 }
 
@@ -988,7 +1209,7 @@ function closeFaqPanel() {
         answer.setAttribute('aria-hidden', 'true');
       }
     });
-    announceToScreenReader('FAQ panel closed.');
+    announceToScreenReader(t('announce.faqClosed'));
   }
 }
 
@@ -1047,7 +1268,7 @@ function openSupportPanel() {
     authModal?.classList.add('hidden');
     accountModal?.classList.add('hidden');
     updateAccessibilityLinkState(false);
-    announceToScreenReader('Customer support panel opened.');
+    announceToScreenReader(t('announce.supportOpened'));
   }
 }
 
@@ -1056,7 +1277,7 @@ function closeSupportPanel() {
   if (supportPanel) {
     supportPanel.classList.add('hidden');
     supportPanel.setAttribute('aria-hidden', 'true');
-    announceToScreenReader('Customer support panel closed.');
+    announceToScreenReader(t('announce.supportClosed'));
   }
 }
 
@@ -1094,7 +1315,7 @@ function openAccessibilityPanel() {
 
   syncAccessibilityControls();
   updateAccessibilityLinkState(true);
-  announceToScreenReader('Accessibility settings panel opened.');
+  announceToScreenReader(t('announce.accessibilityOpened'));
 }
 
 function closeAccessibilityPanel() {
@@ -1106,7 +1327,7 @@ function closeAccessibilityPanel() {
   panel.classList.add('hidden');
   panel.setAttribute('aria-hidden', 'true');
   updateAccessibilityLinkState(false);
-  announceToScreenReader('Accessibility settings panel closed.');
+  announceToScreenReader(t('announce.accessibilityClosed'));
 }
 
 function toggleAccessibilityPanel() {
@@ -1125,7 +1346,7 @@ function toggleAccessibilityPanel() {
 
 async function saveAccessibilityToAccount() {
   if (!authState.token) {
-    alert('Please log in to save accessibility preferences to your account.');
+    alert(t('alerts.loginToSaveAccessibility'));
     openAuthModal();
     return;
   }
@@ -1144,10 +1365,10 @@ async function saveAccessibilityToAccount() {
     });
 
     authState.user = response.user;
-    alert('Accessibility preferences saved to your account.');
+    alert(t('alerts.accessibilitySaved'));
   } catch (err) {
     console.warn('Failed to save accessibility preferences:', err.message);
-    alert('Could not save preferences right now.');
+    alert(t('alerts.couldNotSavePreferences'));
   }
 }
 
@@ -1205,19 +1426,19 @@ function openAuthModal() {
   faqPanel?.classList.add('hidden');
   supportPanel?.classList.add('hidden');
   updateAccessibilityLinkState(false);
-  announceToScreenReader('Account login dialog opened.');
+  announceToScreenReader(t('announce.authOpened'));
 }
 
 function closeAuthModal() {
   document.getElementById('auth-modal')?.classList.add('hidden');
   showLoginAuthView();
-  announceToScreenReader('Account login dialog closed.');
+  announceToScreenReader(t('announce.authClosed'));
 }
 
 function showLoginAuthView() {
   const authTitle = document.getElementById('auth-modal-title');
   if (authTitle) {
-    authTitle.textContent = 'Account Login';
+    authTitle.textContent = t('auth.loginTitle');
   }
   document.getElementById('auth-login-view')?.classList.remove('hidden');
   document.getElementById('auth-register-view')?.classList.add('hidden');
@@ -1226,7 +1447,7 @@ function showLoginAuthView() {
 function showRegisterAuthView() {
   const authTitle = document.getElementById('auth-modal-title');
   if (authTitle) {
-    authTitle.textContent = 'Create Account';
+    authTitle.textContent = t('auth.registerTitle');
   }
   document.getElementById('auth-login-view')?.classList.add('hidden');
   document.getElementById('auth-register-view')?.classList.remove('hidden');
@@ -1250,12 +1471,12 @@ function openAccountModal() {
   faqPanel?.classList.add('hidden');
   supportPanel?.classList.add('hidden');
   updateAccessibilityLinkState(false);
-  announceToScreenReader('Account settings dialog opened.');
+  announceToScreenReader(t('announce.accountOpened'));
 }
 
 function closeAccountModal() {
   document.getElementById('account-modal')?.classList.add('hidden');
-  announceToScreenReader('Account settings dialog closed.');
+  announceToScreenReader(t('announce.accountClosed'));
 }
 
 async function refreshAccountView() {
@@ -1302,7 +1523,7 @@ function renderSavedRoutes(savedRoutes) {
   if (!savedRoutes.length) {
     const emptyItem = document.createElement('li');
     emptyItem.className = 'saved-route-item empty';
-    emptyItem.textContent = 'No saved routes yet.';
+    emptyItem.textContent = t('account.noSavedRoutes');
     list.appendChild(emptyItem);
     updateSavedRoutesScrollButton();
     return;
@@ -1313,8 +1534,8 @@ function renderSavedRoutes(savedRoutes) {
     item.className = 'saved-route-item clickable';
     item.setAttribute('role', 'button');
     item.setAttribute('tabindex', '0');
-    item.title = `Search routes: ${route.routeStart} to ${route.routeEnd}`;
-    item.setAttribute('aria-label', `Search saved route from ${route.routeStart} to ${route.routeEnd}`);
+    item.title = t('account.searchRoutesTitle', { from: route.routeStart, to: route.routeEnd });
+    item.setAttribute('aria-label', t('account.savedRouteAria', { from: route.routeStart, to: route.routeEnd }));
 
     const icon = document.createElement('span');
     icon.className = 'saved-route-icon';
@@ -1327,7 +1548,7 @@ function renderSavedRoutes(savedRoutes) {
 
     const label = document.createElement('span');
     label.className = 'saved-route-label';
-    label.textContent = `${route.routeStart} to ${route.routeEnd}`;
+    label.textContent = t('account.routeFromTo', { from: route.routeStart, to: route.routeEnd });
 
     const chevron = document.createElement('span');
     chevron.className = 'saved-route-chevron';
@@ -1374,7 +1595,7 @@ async function viewSavedRoute(savedRoute) {
 
     if (!response.ok) {
       const err = await response.json();
-      alert(err.error || 'Could not load routes for this saved journey.');
+      alert(t('alerts.couldNotLoadSavedJourneyRoutes'));
       return;
     }
 
@@ -1382,7 +1603,7 @@ async function viewSavedRoute(savedRoute) {
     displayRoutesModal(data);
   } catch (error) {
     console.error('Error loading saved route:', error);
-    alert('Could not load routes. Please check your connection and try again.');
+    alert(t('alerts.couldNotLoadRoutesTryAgain'));
   }
 }
 
@@ -1424,9 +1645,9 @@ function renderNotifications(notifications) {
   if (!notifications.length) {
     const emptyNode = document.createElement('div');
     emptyNode.className = 'notif-item';
-    emptyNode.textContent = 'No notifications yet.';
+    emptyNode.textContent = t('notifications.none');
     notifList.appendChild(emptyNode);
-    announceToScreenReader('There are no notifications.');
+    announceToScreenReader(t('announce.noNotifications'));
     return;
   }
 
@@ -1437,7 +1658,7 @@ function renderNotifications(notifications) {
     notifList.appendChild(row);
   });
 
-  announceToScreenReader(`${Math.min(notifications.length, 5)} notifications loaded.`, 'assertive');
+  announceToScreenReader(t('announce.notificationsLoaded', { count: Math.min(notifications.length, 5) }), 'assertive');
 }
 
 async function handleLoginSubmit(event) {
@@ -1456,7 +1677,7 @@ async function handleLoginSubmit(event) {
     await refreshAccountView();
     openAccountModal();
   } catch (error) {
-    alert(error.message);
+    alert(localizeApiErrorMessage(error.message, 'alerts.loginFailed'));
   }
 }
 
@@ -1477,7 +1698,7 @@ async function handleRegisterSubmit(event) {
     await refreshAccountView();
     openAccountModal();
   } catch (error) {
-    alert(error.message);
+    alert(localizeApiErrorMessage(error.message, 'alerts.registrationFailed'));
   }
 }
 
@@ -1499,11 +1720,11 @@ async function handleUpdatePassword() {
     return;
   }
 
-  const currentPassword = window.prompt('Enter current password:');
+  const currentPassword = window.prompt(t('account.promptCurrentPassword'));
   if (!currentPassword) {
     return;
   }
-  const newPassword = window.prompt('Enter new password (8+ characters):');
+  const newPassword = window.prompt(t('account.promptNewPassword'));
   if (!newPassword) {
     return;
   }
@@ -1513,9 +1734,9 @@ async function handleUpdatePassword() {
       method: 'PATCH',
       body: { currentPassword, newPassword },
     });
-    alert('Password updated successfully.');
+    alert(t('alerts.passwordUpdated'));
   } catch (error) {
-    alert(error.message);
+    alert(localizeApiErrorMessage(error.message, 'alerts.passwordUpdateFailed'));
   }
 }
 
@@ -1524,12 +1745,12 @@ async function handleDeleteAccount() {
     return;
   }
 
-  const confirmation = window.confirm('This will permanently delete your account. Continue?');
+  const confirmation = window.confirm(t('account.confirmDelete'));
   if (!confirmation) {
     return;
   }
 
-  const password = window.prompt('Confirm your password to delete account:');
+  const password = window.prompt(t('account.promptConfirmDeletePassword'));
   if (!password) {
     return;
   }
@@ -1543,9 +1764,9 @@ async function handleDeleteAccount() {
     authState.user = null;
     closeAccountModal();
     openAuthModal();
-    alert('Your account has been deleted.');
+    alert(t('alerts.accountDeleted'));
   } catch (error) {
-    alert(error.message);
+    alert(localizeApiErrorMessage(error.message, 'alerts.accountDeletionFailed'));
   }
 }
 
@@ -1627,6 +1848,14 @@ function attachAccountEventHandlers() {
   });
 
   document.getElementById('accessibility-save-btn')?.addEventListener('click', saveAccessibilityToAccount);
+
+  document.getElementById('accessibility-language')?.addEventListener('change', async e => {
+    const nextLocale = e.target?.value;
+    if (!nextLocale) {
+      return;
+    }
+    await setLocale(nextLocale, { persist: true, announce: true });
+  });
 
   window.addEventListener('resize', updateSavedRoutesScrollButton);
 }
@@ -1804,7 +2033,7 @@ function displaySuggestions(stops, suggestionsContainer, input, inputType) {
  * Display no results message
  */
 function displayNoResults(suggestionsContainer) {
-  suggestionsContainer.innerHTML = '<div class="autocomplete-no-results" role="status">No stops found within the region</div>';
+  suggestionsContainer.innerHTML = `<div class="autocomplete-no-results" role="status">${t('autocomplete.noStops')}</div>`;
   showSuggestions(suggestionsContainer);
 }
 
@@ -1812,8 +2041,8 @@ function displayNoResults(suggestionsContainer) {
  * Display error message
  */
 function displayError(suggestionsContainer) {
-  suggestionsContainer.innerHTML = '<div class="autocomplete-no-results" role="status">Error loading stops</div>';
-  announceToScreenReader('Unable to load stop suggestions right now.', 'assertive');
+  suggestionsContainer.innerHTML = `<div class="autocomplete-no-results" role="status">${t('autocomplete.errorLoadingStops')}</div>`;
+  announceToScreenReader(t('announce.stopSuggestionsUnavailable'), 'assertive');
   showSuggestions(suggestionsContainer);
 }
 
@@ -1907,12 +2136,12 @@ async function searchRoutes() {
   if (!selectedStops.from || !selectedStops.to) {
     console.warn('Both from and to stops must be selected');
     if (!selectedStops.from) {
-      setFieldError('from-input', 'from-input-error', 'Please select a departure station from the suggestions list.');
+      setFieldError('from-input', 'from-input-error', t('journey.departureRequired'));
     }
     if (!selectedStops.to) {
-      setFieldError('to-input', 'to-input-error', 'Please select an arrival station from the suggestions list.');
+      setFieldError('to-input', 'to-input-error', t('journey.arrivalRequired'));
     }
-    announceToScreenReader('Please select both departure and arrival stations before searching routes.', 'assertive');
+    announceToScreenReader(t('announce.selectBothStops'), 'assertive');
     return;
   }
 
@@ -1934,7 +2163,7 @@ async function searchRoutes() {
     if (!response.ok) {
       const errorData = await response.json();
       console.error('Error searching routes:', errorData.error);
-      announceToScreenReader(errorData.error || 'Unable to find routes for this journey.', 'assertive');
+      announceToScreenReader(errorData.error || t('alerts.unableToFindRoutes'), 'assertive');
       return;
     }
 
@@ -1945,7 +2174,7 @@ async function searchRoutes() {
     displayRoutesModal(data);
   } catch (error) {
     console.error('Error fetching routes:', error);
-    announceToScreenReader('Error fetching routes. Please try again.', 'assertive');
+    announceToScreenReader(t('announce.routeFetchError'), 'assertive');
   }
 }
 
@@ -1954,7 +2183,6 @@ async function searchRoutes() {
  */
 function displayRoutesModal(data) {
   const modal = document.getElementById('route-modal');
-  const modalHeader = document.querySelector('.route-modal-header');
   const sortSelect = document.getElementById('sort');
   
   if (!modal) {
@@ -1966,29 +2194,25 @@ function displayRoutesModal(data) {
   currentRoutesData = data;
 
   // Update the modal header with from/to information
-  const headerText = document.createTextNode(`Routes from ${data.from} to ${data.to}`);
-  
-  // Clear previous content but preserve the close button
-  const closeBtn = modalHeader.querySelector('#close-route-modal');
-  modalHeader.textContent = ''; // Clear everything
-  modalHeader.appendChild(headerText); // Add the new text
-  if (closeBtn) {
-    modalHeader.appendChild(closeBtn); // Re-add the close button at the end
-  }
+  updateRouteModalHeader();
 
-  // Reset sort dropdown to default "Start Time"
+  // Reset sort dropdown to default start-time ordering
   if (sortSelect) {
-    sortSelect.value = 'Start Time';
+    sortSelect.value = 'start_time';
   }
 
   // Render the routes with default (earliest start time) sorting applied
-  const sorted = sortRoutes('Start Time', data.routes);
+  const sorted = sortRoutes('start_time', data.routes);
   renderRoutesTable(sorted);
   updateRouteDownloadButtonState();
 
   // Show the modal by removing the hidden class
   modal.classList.remove('hidden');
-  announceToScreenReader(`Showing ${Array.isArray(data.routes) ? data.routes.length : 0} route options from ${data.from} to ${data.to}.`);
+  announceToScreenReader(t('announce.routesShowing', {
+    count: Array.isArray(data.routes) ? data.routes.length : 0,
+    from: data.from,
+    to: data.to,
+  }));
 }
 
 /**
@@ -2005,7 +2229,7 @@ function sortRoutes(sortMethod, routes) {
   };
   
   switch (sortMethod) {
-    case 'Start Time':
+    case 'start_time':
       // Sort by earliest departure, then by duration
       return routesCopy.sort((a, b) => {
         const aTime = toSortableMinutes(a.start_time);
@@ -2016,7 +2240,7 @@ function sortRoutes(sortMethod, routes) {
         return a.duration_mins - b.duration_mins;
       });
 
-    case 'Fastest':
+    case 'fastest':
       // Sort by duration (ascending), then by start time
       return routesCopy.sort((a, b) => {
         if (a.duration_mins !== b.duration_mins) {
@@ -2027,7 +2251,7 @@ function sortRoutes(sortMethod, routes) {
         return aTime - bTime;
       });
     
-    case 'Fewest Changes':
+    case 'fewest_changes':
       // Sort by number of changes (ascending), then by duration
       return routesCopy.sort((a, b) => {
         if (a.changes !== b.changes) {
@@ -2045,10 +2269,12 @@ function sortRoutes(sortMethod, routes) {
  * Format a duration in minutes as human-readable text
  */
 function formatDuration(mins) {
-  if (mins < 60) return `${mins} min`;
+  if (mins < 60) return t('common.minutesOnly', { minutes: formatLocalizedNumber(mins) });
   const hours = Math.floor(mins / 60);
   const remainder = mins % 60;
-  return remainder > 0 ? `${hours}h ${remainder} min` : `${hours}h`;
+  return remainder > 0
+    ? t('common.hoursMinutes', { hours: formatLocalizedNumber(hours), minutes: formatLocalizedNumber(remainder) })
+    : t('common.hoursOnly', { hours: formatLocalizedNumber(hours) });
 }
 
 function getCurrentSortedRoutes() {
@@ -2056,8 +2282,26 @@ function getCurrentSortedRoutes() {
     return [];
   }
 
-  const sortMethod = document.getElementById('sort')?.value || 'Start Time';
+  const sortMethod = document.getElementById('sort')?.value || 'start_time';
   return sortRoutes(sortMethod, currentRoutesData.routes);
+}
+
+function updateRouteModalHeader() {
+  const modalHeader = document.querySelector('.route-modal-header');
+  if (!modalHeader) {
+    return;
+  }
+
+  const closeBtn = modalHeader.querySelector('#close-route-modal');
+  const headerLabel = currentRoutesData
+    ? t('route.headerFromTo', { from: currentRoutesData.from, to: currentRoutesData.to })
+    : t('route.defaultHeader');
+
+  modalHeader.textContent = '';
+  modalHeader.appendChild(document.createTextNode(headerLabel));
+  if (closeBtn) {
+    modalHeader.appendChild(closeBtn);
+  }
 }
 
 function updateRouteDownloadButtonState() {
@@ -2069,31 +2313,53 @@ function updateRouteDownloadButtonState() {
   const hasRoutes = getCurrentSortedRoutes().length > 0;
   downloadBtn.disabled = !hasRoutes;
   downloadBtn.title = hasRoutes
-    ? 'Download all displayed route options'
-    : 'Search for routes to enable route download';
+    ? t('route.downloadTooltipEnabled')
+    : t('route.downloadTooltipDisabled');
 }
 
 function formatRouteTransportSummary(route) {
   if (!route || !Array.isArray(route.transport) || route.transport.length === 0) {
-    return 'Walking route';
+    return t('route.walkingRoute');
   }
 
   return route.transport
-    .map(mode => mode.charAt(0).toUpperCase() + mode.slice(1))
+    .map(mode => t(`transport.${mode}`))
     .join(' → ');
 }
 
 function formatPdfLegDescription(leg) {
+  const departTime = formatLocalizedClockTime(leg.depart);
+  const arriveTime = formatLocalizedClockTime(leg.arrive);
+
   if (leg.mode === 'walk') {
-    return `Walk from ${leg.from_stop} to ${leg.to_stop} (${leg.distance_m}m, ${leg.duration_mins} min) • ${leg.depart}–${leg.arrive}`;
+    return t('route.leg.walk', {
+      from: leg.from_stop,
+      to: leg.to_stop,
+      distance: formatLocalizedNumber(leg.distance_m),
+      duration: formatDuration(leg.duration_mins),
+      depart: departTime,
+      arrive: arriveTime,
+    });
   }
 
   if (leg.mode === 'wait') {
-    return `Change at ${leg.from_stop} (${leg.duration_mins} min wait) • ${leg.depart}–${leg.arrive}`;
+    return t('route.leg.wait', {
+      at: leg.from_stop,
+      duration: formatDuration(leg.duration_mins),
+      depart: departTime,
+      arrive: arriveTime,
+    });
   }
 
   const service = leg.service || leg.mode;
-  return `${service} from ${leg.from_stop} to ${leg.to_stop} (${leg.duration_mins} min) • ${leg.depart}–${leg.arrive}`;
+  return t('route.leg.transport', {
+    service,
+    from: leg.from_stop,
+    to: leg.to_stop,
+    duration: formatDuration(leg.duration_mins),
+    depart: departTime,
+    arrive: arriveTime,
+  });
 }
 
 function sanitizePdfFileNamePart(value) {
@@ -2141,13 +2407,13 @@ function getWrappedPdfLineCount(doc, text, maxWidth) {
 function exportRoutesToPdf() {
   const routes = getCurrentSortedRoutes();
   if (!currentRoutesData || routes.length === 0) {
-    alert('Search for a route first to download a PDF.');
+    alert(t('alerts.searchRouteBeforePdf'));
     return;
   }
 
   const JsPdf = window.jspdf?.jsPDF;
   if (!JsPdf) {
-    alert('PDF export is unavailable right now. Please try again in a moment.');
+    alert(t('alerts.pdfUnavailable'));
     return;
   }
 
@@ -2158,7 +2424,14 @@ function exportRoutesToPdf() {
   const topMargin = 48;
   const bottomMargin = 48;
   const contentWidth = pageWidth - (marginX * 2);
-  const sortLabel = document.getElementById('sort')?.value || 'Start Time';
+  const sortLabel = document.getElementById('sort')?.value || 'start_time';
+  const sortLabelText = t(
+    sortLabel === 'fewest_changes'
+      ? 'route.sort.fewestChanges'
+      : sortLabel === 'fastest'
+        ? 'route.sort.fastest'
+        : 'route.sort.startTime'
+  );
   const exportedAt = new Date();
   const colors = {
     maroon: [139, 17, 17],
@@ -2186,9 +2459,9 @@ function exportRoutesToPdf() {
     doc.setTextColor(...colors.white);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
-    doc.text('Transport for North West', marginX, 38);
+    doc.text(t('app.title'), marginX, 38);
     doc.setFontSize(13);
-    doc.text(pageNumber === 1 ? 'Complete Route Plan' : 'Route Plan Continued', marginX, 60);
+    doc.text(pageNumber === 1 ? t('pdf.completeRoutePlan') : t('pdf.routePlanContinued'), marginX, 60);
 
     return 126;
   };
@@ -2196,7 +2469,12 @@ function exportRoutesToPdf() {
   let y = startStyledPage(currentPage);
 
   const summaryTitle = `${currentRoutesData.from} to ${currentRoutesData.to}`;
-  const summaryMeta = `Exported ${exportedAt.toLocaleString()} • ${routes.length} route option${routes.length === 1 ? '' : 's'} • Sorted by ${sortLabel}`;
+  const summaryMeta = t('pdf.summaryMeta', {
+    exportedAt: formatLocalizedDateTime(exportedAt),
+    count: routes.length,
+    suffix: routes.length === 1 ? '' : 's',
+    sortLabel: sortLabelText,
+  });
   const summaryTitleHeight = getWrappedPdfLineCount(doc, summaryTitle, contentWidth - 48) * 18;
   const summaryMetaHeight = getWrappedPdfLineCount(doc, summaryMeta, contentWidth - 40) * 14;
   const summaryBoxHeight = Math.max(86, 26 + summaryTitleHeight + summaryMetaHeight + 26);
@@ -2236,18 +2514,26 @@ function exportRoutesToPdf() {
   y = summaryStartY + summaryBoxHeight + 18;
 
   routes.forEach((route, routeIndex) => {
-    const routeTitle = `Route ${routeIndex + 1}: ${formatRouteTransportSummary(route)}`;
-    const routeMeta = `Times: ${route.start_time} to ${route.end_time} • Duration: ${formatDuration(route.duration_mins)} • Changes: ${route.changes}`;
+    const routeTitle = t('pdf.routeTitle', {
+      index: formatLocalizedNumber(routeIndex + 1),
+      summary: formatRouteTransportSummary(route),
+    });
+    const routeMeta = t('pdf.routeMeta', {
+      startTime: formatLocalizedClockTime(route.start_time),
+      endTime: formatLocalizedClockTime(route.end_time),
+      duration: formatDuration(route.duration_mins),
+      changes: formatLocalizedNumber(route.changes),
+    });
     const routeTitleHeight = getWrappedPdfLineCount(doc, routeTitle, contentWidth - 48) * 16;
     const routeMetaHeight = getWrappedPdfLineCount(doc, routeMeta, contentWidth - 48) * 13;
 
     let legHeight = 0;
     (route.legs || []).forEach((leg, legIndex) => {
-      legHeight += getWrappedPdfLineCount(doc, `${legIndex + 1}. ${formatPdfLegDescription(leg)}`, contentWidth - 78) * 13 + 14;
+      legHeight += getWrappedPdfLineCount(doc, `${formatLocalizedNumber(legIndex + 1)}. ${formatPdfLegDescription(leg)}`, contentWidth - 78) * 13 + 14;
       if (Array.isArray(leg.intermediate_stops) && leg.intermediate_stops.length > 0) {
         leg.intermediate_stops.forEach(stop => {
           const stopLabel = stop.time ? `${stop.time} ${stop.name}` : stop.name;
-          legHeight += getWrappedPdfLineCount(doc, `Intermediate stop: ${stopLabel}`, contentWidth - 108) * 11 + 6;
+          legHeight += getWrappedPdfLineCount(doc, t('pdf.intermediateStop', { stop: stopLabel }), contentWidth - 108) * 11 + 6;
         });
       }
     });
@@ -2295,7 +2581,7 @@ function exportRoutesToPdf() {
       doc.setFillColor(...accent);
       doc.circle(marginX + 28, y + 12, 4, 'F');
       doc.setTextColor(...colors.text);
-      y = addWrappedPdfText(doc, `${legIndex + 1}. ${formatPdfLegDescription(leg)}`, marginX + 40, y + 16, {
+      y = addWrappedPdfText(doc, `${formatLocalizedNumber(legIndex + 1)}. ${formatPdfLegDescription(leg)}`, marginX + 40, y + 16, {
         maxWidth: contentWidth - 78,
         lineHeight: 13,
         topMargin: 126,
@@ -2307,7 +2593,7 @@ function exportRoutesToPdf() {
         doc.setTextColor(...colors.muted);
         leg.intermediate_stops.forEach(stop => {
           const stopLabel = stop.time ? `${stop.time} ${stop.name}` : stop.name;
-          y = addWrappedPdfText(doc, `Intermediate stop: ${stopLabel}`, marginX + 56, y + 2, {
+          y = addWrappedPdfText(doc, t('pdf.intermediateStop', { stop: stopLabel }), marginX + 56, y + 2, {
             maxWidth: contentWidth - 108,
             lineHeight: 11,
             topMargin: 126,
@@ -2331,7 +2617,14 @@ function exportRoutesToPdf() {
     doc.setTextColor(...colors.muted);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.text(`Page ${pageIndex} of ${totalPages}`, pageWidth - marginX - 56, pageHeight - 14);
+    doc.text(
+      t('pdf.pageXofY', {
+        page: formatLocalizedNumber(pageIndex),
+        total: formatLocalizedNumber(totalPages),
+      }),
+      pageWidth - marginX - 56,
+      pageHeight - 14
+    );
   }
 
   const fileName = `${sanitizePdfFileNamePart(currentRoutesData.from)}-to-${sanitizePdfFileNamePart(currentRoutesData.to)}-routes.pdf`;
@@ -2342,8 +2635,8 @@ function buildRouteSavePayload(route) {
   const fromName = (currentRoutesData && currentRoutesData.from) || selectedStops.from?.name || '';
   const toName = (currentRoutesData && currentRoutesData.to) || selectedStops.to?.name || '';
   const transportLabel = (route.transport || [])
-    .map(mode => mode.charAt(0).toUpperCase() + mode.slice(1))
-    .join(' + ') || 'Route';
+    .map(mode => t(`transport.${mode}`))
+    .join(' + ') || t('route.genericName');
 
   return {
     routeName: `${transportLabel} (${route.start_time}–${route.end_time})`,
@@ -2354,7 +2647,7 @@ function buildRouteSavePayload(route) {
 
 async function handleSaveSearchedRoute(route, saveButton) {
   if (!authState.token) {
-    alert('Please log in to save routes.');
+    alert(t('alerts.loginToSaveRoutes'));
     openAuthModal();
     return;
   }
@@ -2366,15 +2659,15 @@ async function handleSaveSearchedRoute(route, saveButton) {
       body: payload,
     });
 
-    saveButton.textContent = 'Saved';
+    saveButton.textContent = t('route.saved');
     saveButton.classList.add('saved');
     saveButton.disabled = true;
-    saveButton.setAttribute('aria-label', 'Route saved to your account');
-    announceToScreenReader('Route saved to your account.');
+    saveButton.setAttribute('aria-label', t('route.savedAria'));
+    announceToScreenReader(t('announce.routeSaved'));
 
     await refreshAccountView();
   } catch (error) {
-    alert(error.message);
+    alert(localizeApiErrorMessage(error.message, 'alerts.saveRouteFailed'));
   }
 }
 
@@ -2384,13 +2677,15 @@ async function handleSaveSearchedRoute(route, saveButton) {
 function buildWalkLeg(leg) {
   const el = document.createElement('div');
   el.className = 'route-detail-leg route-detail-walk';
+  const departTime = formatLocalizedClockTime(leg.depart);
+  const arriveTime = formatLocalizedClockTime(leg.arrive);
   el.innerHTML = `
     <span class="leg-icon icon-walk"></span>
     <div class="leg-info">
-      <div class="leg-summary">Walk ${leg.distance_m}m • ${leg.duration_mins} min</div>
-      <div class="leg-stops">${leg.from_stop} → ${leg.to_stop}</div>
+      <div class="leg-summary">${t('route.leg.walkSummary', { distance: formatLocalizedNumber(leg.distance_m), duration: formatDuration(leg.duration_mins) })}</div>
+      <div class="leg-stops">${t('route.leg.stops', { from: leg.from_stop, to: leg.to_stop })}</div>
     </div>
-    <span class="leg-time">${leg.depart} – ${leg.arrive}</span>
+    <span class="leg-time">${departTime} – ${arriveTime}</span>
   `;
   return el;
 }
@@ -2401,12 +2696,14 @@ function buildWalkLeg(leg) {
 function buildWaitLeg(leg) {
   const el = document.createElement('div');
   el.className = 'route-detail-leg route-detail-wait';
+  const departTime = formatLocalizedClockTime(leg.depart);
+  const arriveTime = formatLocalizedClockTime(leg.arrive);
   el.innerHTML = `
     <span class="leg-icon icon-walk"></span>
     <div class="leg-info">
-      <div class="leg-summary">Change at ${leg.from_stop} • ${leg.duration_mins} min wait</div>
+      <div class="leg-summary">${t('route.leg.waitSummary', { at: leg.from_stop, duration: formatDuration(leg.duration_mins) })}</div>
     </div>
-    <span class="leg-time">${leg.depart} – ${leg.arrive}</span>
+    <span class="leg-time">${departTime} – ${arriveTime}</span>
   `;
   return el;
 }
@@ -2420,11 +2717,13 @@ function buildTransportLeg(leg) {
 
   const modeIcon = leg.mode === 'bus' ? 'icon-bus' : 'icon-train';
   const service = leg.service || leg.mode;
+  const departTime = formatLocalizedClockTime(leg.depart);
+  const arriveTime = formatLocalizedClockTime(leg.arrive);
 
   let intermediateHTML = '';
   if (leg.intermediate_stops && leg.intermediate_stops.length > 0) {
     const stopsHTML = leg.intermediate_stops
-      .map(s => `<li><span class="intermediate-time">${s.time}</span> ${s.name}</li>`)
+      .map(s => `<li><span class="intermediate-time">${formatLocalizedClockTime(s.time)}</span> ${s.name}</li>`)
       .join('');
     intermediateHTML = `<ul class="intermediate-stops">${stopsHTML}</ul>`;
   }
@@ -2432,11 +2731,11 @@ function buildTransportLeg(leg) {
   el.innerHTML = `
     <span class="leg-icon ${modeIcon}"></span>
     <div class="leg-info">
-      <div class="leg-summary">${service} • ${leg.duration_mins} min</div>
-      <div class="leg-stops">${leg.from_stop} → ${leg.to_stop}</div>
+      <div class="leg-summary">${t('route.leg.transportSummary', { service, duration: formatDuration(leg.duration_mins) })}</div>
+      <div class="leg-stops">${t('route.leg.stops', { from: leg.from_stop, to: leg.to_stop })}</div>
       ${intermediateHTML}
     </div>
-    <span class="leg-time">${leg.depart} – ${leg.arrive}</span>
+    <span class="leg-time">${departTime} – ${arriveTime}</span>
   `;
   return el;
 }
@@ -2481,7 +2780,7 @@ function toggleRouteDetail(routeRow, route) {
       }
     });
   } else {
-    detail.innerHTML = '<div class="route-detail-empty">No detailed leg information available for this route.</div>';
+    detail.innerHTML = `<div class="route-detail-empty">${t('route.noLegDetails')}</div>`;
   }
 
   // Insert detail right after the clicked row
@@ -2507,8 +2806,8 @@ function renderRoutesTable(routes) {
   routeList.innerHTML = '';
 
   if (!routes || routes.length === 0) {
-    routeList.innerHTML = '<div class="route-row">No routes found for this journey.</div>';
-    announceToScreenReader('No routes found for this journey.', 'assertive');
+    routeList.innerHTML = `<div class="route-row">${t('route.noResults')}</div>`;
+    announceToScreenReader(t('route.noResults'), 'assertive');
     return;
   }
 
@@ -2517,13 +2816,20 @@ function renderRoutesTable(routes) {
     const routeRow = document.createElement('div');
     routeRow.className = 'route-row' + (index % 2 === 1 ? ' alt' : '');
     routeRow.style.cursor = 'pointer';
-    routeRow.title = 'View route details';
+    routeRow.title = t('route.viewDetails');
     routeRow.setAttribute('role', 'button');
     routeRow.setAttribute('tabindex', '0');
     routeRow.setAttribute('aria-expanded', 'false');
     routeRow.setAttribute(
       'aria-label',
-      `View route ${index + 1}, ${route.start_time} to ${route.end_time}, duration ${formatDuration(route.duration_mins)}, ${route.changes} change${route.changes === 1 ? '' : 's'}.`
+      t('route.rowAria', {
+        index: index + 1,
+        startTime: formatLocalizedClockTime(route.start_time),
+        endTime: formatLocalizedClockTime(route.end_time),
+        duration: formatDuration(route.duration_mins),
+        changes: route.changes,
+        suffix: route.changes === 1 ? '' : 's',
+      })
     );
 
     // Build transport icons container (shows full chain, e.g. bus → train → bus)
@@ -2547,14 +2853,14 @@ function renderRoutesTable(routes) {
     if (route.changes > 0) {
       const badge = document.createElement('span');
       badge.className = 'changes-badge';
-      badge.textContent = `${route.changes} change${route.changes > 1 ? 's' : ''}`;
+      badge.textContent = t('route.changesBadge', { count: route.changes, suffix: route.changes > 1 ? 's' : '' });
       iconsContainer.appendChild(badge);
     }
 
     // Time display
     const timesSpan = document.createElement('span');
     timesSpan.className = 'route-times';
-    timesSpan.textContent = `${route.start_time} − ${route.end_time}`;
+    timesSpan.textContent = `${formatLocalizedClockTime(route.start_time)} − ${formatLocalizedClockTime(route.end_time)}`;
 
     // Duration display
     const durationSpan = document.createElement('span');
@@ -2565,8 +2871,12 @@ function renderRoutesTable(routes) {
     const saveBtn = document.createElement('button');
     saveBtn.className = 'route-save-btn';
     saveBtn.type = 'button';
-    saveBtn.textContent = 'Save Route';
-    saveBtn.setAttribute('aria-label', `Save route ${index + 1} from ${route.start_time} to ${route.end_time}`);
+    saveBtn.textContent = t('route.save');
+    saveBtn.setAttribute('aria-label', t('route.saveAria', {
+      index: index + 1,
+      startTime: formatLocalizedClockTime(route.start_time),
+      endTime: formatLocalizedClockTime(route.end_time),
+    }));
     saveBtn.addEventListener('click', event => {
       event.stopPropagation();
       handleSaveSearchedRoute(route, saveBtn);
@@ -2597,7 +2907,7 @@ function renderRoutesTable(routes) {
     routeList.appendChild(routeRow);
   });
 
-  announceToScreenReader(`${routes.length} routes available. Use Enter or Space on a route to view details.`);
+  announceToScreenReader(t('announce.routesAvailable', { count: routes.length }));
 }
 
 // ============================================================================
@@ -2605,7 +2915,10 @@ function renderRoutesTable(routes) {
 // ============================================================================
 
 // Initialize application when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+  await initializeLocalization();
+  updateRouteModalHeader();
+
   // Initialize the interactive map (store globally for later invalidation)
   window.appMap = initializeMap();
   
@@ -2636,7 +2949,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (closeRouteModalBtn && routeModal) {
     closeRouteModalBtn.addEventListener('click', () => {
       routeModal.classList.add('hidden');
-      announceToScreenReader('Routes modal closed.');
+      announceToScreenReader(t('announce.routesModalClosed'));
     });
   }
 
@@ -2662,7 +2975,7 @@ document.addEventListener('DOMContentLoaded', function() {
     routeModal.addEventListener('click', (event) => {
       if (event.target === routeModal) {
         routeModal.classList.add('hidden');
-        announceToScreenReader('Routes modal closed.');
+        announceToScreenReader(t('announce.routesModalClosed'));
       }
     });
   }
@@ -2747,8 +3060,8 @@ function setupSidebarToggle() {
   // Ensure button has an accessible pressed state and title
   btn.setAttribute('role', 'button');
   btn.setAttribute('aria-pressed', String(!saved));
-  btn.title = saved ? 'Expand sidebar' : 'Collapse sidebar';
-  btn.setAttribute('aria-label', saved ? 'Expand sidebar navigation menu' : 'Collapse sidebar navigation menu');
+  btn.title = saved ? t('navigation.expandSidebar') : t('navigation.collapseSidebar');
+  btn.setAttribute('aria-label', saved ? t('navigation.expandSidebarAria') : t('navigation.collapseSidebarAria'));
 
   btn.addEventListener('click', () => {
     const isNowMin = sidebar.classList.toggle('minimized');
@@ -2756,12 +3069,12 @@ function setupSidebarToggle() {
     document.body.classList.toggle('sidebar-minimized', isNowMin);
     btn.setAttribute('aria-expanded', String(!isNowMin));
     btn.setAttribute('aria-pressed', String(!isNowMin));
-    btn.title = isNowMin ? 'Expand sidebar' : 'Collapse sidebar';
-    btn.setAttribute('aria-label', isNowMin ? 'Expand sidebar navigation menu' : 'Collapse sidebar navigation menu');
+    btn.title = isNowMin ? t('navigation.expandSidebar') : t('navigation.collapseSidebar');
+    btn.setAttribute('aria-label', isNowMin ? t('navigation.expandSidebarAria') : t('navigation.collapseSidebarAria'));
     const icon = btn.querySelector('.sidebar-toggle-icon');
     if (icon) icon.textContent = isNowMin ? '›' : '‹';
     localStorage.setItem('sidebarMinimized', JSON.stringify(isNowMin));
-    announceToScreenReader(isNowMin ? 'Sidebar collapsed.' : 'Sidebar expanded.');
+    announceToScreenReader(isNowMin ? t('announce.sidebarCollapsed') : t('announce.sidebarExpanded'));
 
     // Toggle mobile overlay backdrop
     updateSidebarOverlay(!isNowMin);

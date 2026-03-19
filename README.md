@@ -95,6 +95,22 @@ npm run test:a11y
 - keyboard tab navigation smoke flow
 - live-region announcement check for notifications
 
+## Localisation
+
+The frontend now includes a locale-based internationalisation layer.
+
+- Supported locale codes: `en-GB`, `en-US`, `cy-GB`, `fr-FR`, `de-DE`, `es-ES`, `zh-CN`, `hi-IN`, `ar`, `bn-BD`, `pt-BR`, `ru-RU`, `ur-PK`
+- Language can be changed in **Accessibility → Language**
+- Selected locale is persisted in browser storage
+- `<html lang>` is updated dynamically for assistive technologies
+
+Translation resources are stored in:
+
+- [frontend/src/locales/en-GB.json](frontend/src/locales/en-GB.json)
+- [frontend/src/locales/fr-FR.json](frontend/src/locales/fr-FR.json)
+
+New locales can be added by creating another JSON file with the same key structure and adding the locale code to the frontend locale list.
+
 ## Account management integration
 
 The scaffold now includes a full account management API and UI hooks for:

@@ -1,0 +1,156 @@
+{
+  "app": { "title": "Transporte do Noroeste" },
+  "navigation": {
+    "account": "Conta",
+    "faq": "FAQ",
+    "support": "Suporte ao cliente",
+    "accessibility": "Acessibilidade",
+    "accessibilityActive": "Acessibilidade ✓"
+  },
+  "journey": {
+    "prompt": "Para onde gostaria de viajar hoje?",
+    "departureLabel": "Selecionar estação de partida",
+    "arrivalLabel": "Selecionar estação de chegada",
+    "searchPlaceholder": "Pesquisar…",
+    "toPlaceholder": "para",
+    "departureSuggestions": "Sugestões de estação de partida",
+    "arrivalSuggestions": "Sugestões de estação de chegada",
+    "swapAria": "Trocar estação de partida e chegada",
+    "departureRequired": "Selecione uma estação de partida na lista de sugestões.",
+    "arrivalRequired": "Selecione uma estação de chegada na lista de sugestões."
+  },
+  "faq": {
+    "title": "FAQ",
+    "close": "Fechar FAQ",
+    "q1": { "question": "Como vejo detalhes de um local?", "answer": "Pesquise o local ou clique nele no mapa." },
+    "q2": { "question": "Que área o mapa cobre?", "answer": "O mapa foca no corredor costeiro entre Preston e Lancaster." },
+    "q3": { "question": "Como compro um bilhete para a viagem?", "answer": "Este serviço é para encontrar rotas. Compre bilhetes noutro serviço." },
+    "q4": { "question": "Como guardo rotas como favoritas?", "answer": "Clique em “Guardar rota” no resultado. É necessário iniciar sessão." },
+    "q5": { "question": "E se houver alterações nas minhas rotas guardadas?", "answer": "Enviamos notificações quando houver potenciais perturbações." }
+  },
+  "support": {
+    "title": "Suporte ao cliente",
+    "close": "Fechar suporte ao cliente",
+    "journeyHelp": {
+      "title": "Precisa de ajuda a planear uma viagem?",
+      "body": "Se os resultados estiverem incorretos, atualize origem/destino e pesquise novamente."
+    },
+    "channels": {
+      "title": "Canais de contacto",
+      "emailLabel": "Email:",
+      "emailValue": "support@transportnorthwest.example",
+      "phoneLabel": "Telefone:",
+      "phoneValue": "0800 123 4567",
+      "chatLabel": "Chat ao vivo:",
+      "chatValue": "Dias úteis 08:00–18:00"
+    },
+    "reportIssue": {
+      "title": "Reportar perturbação ou erro de dados",
+      "body": "Inclua tipo de serviço, origem/destino, hora prevista e, se possível, captura de ecrã."
+    },
+    "accountHelp": {
+      "title": "Ajuda de conta",
+      "body": "Para problemas de login, palavra-passe ou rotas guardadas, abra primeiro o separador Conta."
+    }
+  },
+  "accessibility": {
+    "title": "Acessibilidade",
+    "close": "Fechar acessibilidade",
+    "languageTitle": "Idioma",
+    "languageDescription": "Escolha seu idioma e localidade preferidos.",
+    "languageLabel": "Idioma da aplicação",
+    "zoomTitle": "Zoom",
+    "zoomDescription": "Ajuste o tamanho do texto e dos controles da interface.",
+    "zoomLabel": "Ajustar nível de zoom da interface",
+    "zoomDecrease": "Reduzir zoom",
+    "zoomIncrease": "Aumentar zoom",
+    "colourProfileTitle": "Perfil de cores",
+    "colourProfileDescription": "Escolha um perfil para diferentes necessidades de visão de cores.",
+    "colour": {
+      "default": "Padrão",
+      "deuteranopia": "Vermelho–Verde (Deuteranopia)",
+      "protanopia": "Vermelho–Verde (Protanopia)",
+      "tritanopia": "Azul–Amarelo (Tritanopia)",
+      "achromatopsia": "Monocromático (Acromatopsia)"
+    },
+    "fontSizeTitle": "Tamanho da fonte",
+    "fontSizeDescription": "Escolha um tamanho de fonte confortável para a interface.",
+    "font": {
+      "small": "Pequena",
+      "normal": "Normal",
+      "large": "Grande"
+    },
+    "save": "Salvar na conta",
+    "saveAria": "Salvar configurações de acessibilidade na conta",
+    "reset": "Redefinir",
+    "resetAria": "Repor configurações de acessibilidade",
+    "saveHelp": "As configurações são aplicadas imediatamente. Salve para sincronizar após o login."
+  },
+  "auth": {
+    "loginTitle": "Entrar na conta",
+    "registerTitle": "Criar conta",
+    "closeLogin": "Fechar login da conta",
+    "loginHelp": "Entre na conta para salvar rotas e gerenciar preferências.",
+    "registerHelp": "Crie uma conta para salvar rotas e gerenciar preferências.",
+    "loginHeading": "Entrar",
+    "registerHeading": "Criar conta",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "E-mail",
+    "passwordLabel": "Senha",
+    "passwordPlaceholder": "Senha",
+    "passwordRuleLabel": "Senha (8+ caracteres)",
+    "passwordRulePlaceholder": "Senha (8+ caracteres)",
+    "usernameLabel": "Nome de utilizador",
+    "usernamePlaceholder": "Nome de utilizador",
+    "logIn": "Entrar",
+    "logInAria": "Entrar na conta",
+    "createAccount": "Criar conta",
+    "openCreateAccountAria": "Abrir formulário de criação de conta",
+    "backToLogin": "Voltar ao login",
+    "register": "Registar",
+    "registerAria": "Criar uma nova conta",
+    "returnLoginAria": "Voltar ao formulário de login"
+  },
+  "account": {
+    "settingsTitle": "Definições da conta",
+    "usernameLabel": "Nome de utilizador:",
+    "savedRoutesTitle": "Rotas guardadas",
+    "moreSavedRoutes": "Mais rotas guardadas",
+    "updatePassword": "Atualizar senha",
+    "updatePasswordAria": "Atualizar palavra-passe da conta",
+    "logOut": "Terminar sessão",
+    "logOutAria": "Terminar sessão da conta",
+    "deleteAccount": "Eliminar conta",
+    "deleteAccountAria": "Eliminar conta permanentemente",
+    "closeSettingsAria": "Fechar definições da conta",
+    "noSavedRoutes": "Sem rotas guardadas.",
+    "routeFromTo": "{from} para {to}",
+    "savedRouteAria": "Pesquisar rota guardada de {from} para {to}",
+    "searchRoutesTitle": "Pesquisar rotas: {from} para {to}",
+    "promptCurrentPassword": "Introduza a palavra-passe atual:",
+    "promptNewPassword": "Introduza a nova palavra-passe (8+ caracteres):",
+    "confirmDelete": "Isto irá eliminar a sua conta permanentemente. Continuar?",
+    "promptConfirmDeletePassword": "Confirme a palavra-passe para eliminar a conta:"
+  },
+  "announce": {
+    "languageChanged": "Idioma alterado para {locale}."
+  },
+  "common": {
+    "close": "Fechar"
+  },
+  "locale": {
+    "en-GB": "Inglês (Reino Unido)",
+    "en-US": "Inglês (Estados Unidos)",
+    "cy-GB": "Galês (Reino Unido)",
+    "fr-FR": "Francês (França)",
+    "de-DE": "Alemão (Alemanha)",
+    "es-ES": "Espanhol (Espanha)",
+    "zh-CN": "Chinês (China)",
+    "hi-IN": "Hindi (Índia)",
+    "ar": "Árabe",
+    "bn-BD": "Bengali (Bangladesh)",
+    "pt-BR": "Português (Brasil)",
+    "ru-RU": "Russo (Rússia)",
+    "ur-PK": "Urdu (Paquistão)"
+  }
+}
