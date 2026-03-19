@@ -4,21 +4,24 @@
   flex-direction: column;
   align-items: stretch;
   position: relative;
+  --journey-dot-size: 20px;
+  --journey-dot-center-offset: 6px;
   margin-top: 30px;
-  gap: 0;
+  gap: 8px;
   padding-right: 44px;
 }
 .journey-box {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   position: relative;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
 }
 .journey-dot {
-  width: 18px;
-  height: 18px;
+  width: var(--journey-dot-size);
+  height: var(--journey-dot-size);
   display: inline-block;
   margin-right: 10px;
+  margin-top: var(--journey-dot-center-offset);
   flex-shrink: 0;
 }
 .journey-dot-empty {
@@ -35,19 +38,25 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 18px;
-  margin-left: 8px;
-  margin-right: auto;
-  margin-bottom: 0.5rem;
-  width: 18px;
+  height: 32px;
+  margin: 0;
+  width: var(--journey-dot-size);
+  overflow: visible;
 }
 .journey-line {
-  border-left: 2px dotted #800000;
-  height: 50px;
   display: inline-block;
+  width: 4px;
+  height: 56px;
+  color: #800000;
+  opacity: 0.95;
+  transform: translate(2px, -15px);
+  background-image: radial-gradient(circle, currentColor 1.6px, transparent 1.7px);
+  background-repeat: repeat-y;
+  background-size: 4px 8px;
+  background-position: center top;
 }
 .journey-box input[type="text"] {
-  margin-top: 10px; /* Moves the search boxes downward, adjust as needed */
+  margin-top: 0;
   width: 100%;
   padding: 10px 14px;
   margin-bottom: 0;
@@ -74,14 +83,14 @@
   position: absolute;
   right: 0;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translateY(calc(-50% - 15px));
   z-index: 2;
   cursor: pointer;
   transition: transform 0.2s ease;
 }
 
 .journey-swap-btn:hover {
-  transform: translateY(-50%) scale(1.1);
+  transform: translateY(calc(-50% - 15px)) scale(1.1);
 }
 
 /* Custom size for 'to' location search box */
@@ -1924,7 +1933,7 @@ body.colorblind-mode .journey-dot-filled {
 }
 
 body.colorblind-mode .journey-line {
-  border-left-color: #0057B7;
+  color: #0057B7;
 }
 
 /* Focus styles in colourblind mode — orange for high contrast against blue theme */
