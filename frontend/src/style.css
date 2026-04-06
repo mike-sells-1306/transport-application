@@ -512,6 +512,23 @@ body.sidebar-minimized {
   background: #e0e0e0;
   box-shadow: 0 3px 12px rgba(0,0,0,0.15);
 }
+
+.top-right-icons .map-style-btn {
+  width: auto;
+  min-width: 170px;
+  border-radius: 999px;
+  padding: 0 12px;
+  margin-left: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #2d2d2d;
+  white-space: nowrap;
+}
+
+.top-right-icons .map-style-btn:focus-visible {
+  outline-offset: 3px;
+}
+
 .icon-cloud {
   width: 22px; height: 22px;
   display: inline-block;

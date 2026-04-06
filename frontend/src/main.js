@@ -295,6 +295,7 @@ let currentOpenPopup = null;
 
 // Store map marker references for theme updates
 let mapMarkers = [];
+let activeMapStyleId = 'osm-standard';
 
 const LOCATION_CATALOG = [
   {
@@ -507,15 +508,175 @@ function initializeMap() {
   const mapCenter = [53.88, -3.02];
   const initialZoom = 11;
 
+  const mapStylePresets = [
+    {
+      id: 'osm-standard',
+      label: 'OSM Standard',
+      shortLabel: 'OSM',
+      title: 'Switch map style (current: OSM Standard)',
+      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      options: {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19,
+        minZoom: 9,
+      },
+    },
+    {
+      id: 'osm-hot',
+      label: 'OSM Humanitarian',
+      shortLabel: 'HOT',
+      title: 'Switch map style (current: OSM Humanitarian)',
+      url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+      options: {
+        attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France',
+        maxZoom: 20,
+        minZoom: 9,
+      },
+    },
+    {
+      id: 'cyclosm',
+      label: 'CyclOSM',
+      shortLabel: 'CyclOSM',
+      title: 'Switch map style (current: CyclOSM)',
+      url: 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
+      options: {
+        attribution: '© OpenStreetMap contributors, CyclOSM',
+        subdomains: 'abc',
+        maxZoom: 20,
+        minZoom: 9,
+      },
+    },
+    {
+      id: 'opentopomap',
+      label: 'OpenTopoMap',
+      shortLabel: 'Topo',
+      title: 'Switch map style (current: OpenTopoMap)',
+      url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+      options: {
+        attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)',
+        maxZoom: 17,
+        minZoom: 9,
+      },
+    },
+    {
+      id: 'carto-voyager',
+      label: 'CARTO Voyager',
+      shortLabel: 'Voyager',
+      title: 'Switch map style (current: CARTO Voyager)',
+      url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      options: {
+        attribution: '© OpenStreetMap contributors © CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19,
+        minZoom: 9,
+      },
+    },
+    {
+      id: 'carto-voyager-labels-under',
+      label: 'CARTO Voyager Labels Under',
+      shortLabel: 'Voyager LU',
+      title: 'Switch map style (current: CARTO Voyager Labels Under)',
+      url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png',
+      options: {
+        attribution: '© OpenStreetMap contributors © CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19,
+        minZoom: 9,
+      },
+    },
+    {
+      id: 'carto-positron',
+      label: 'CARTO Positron',
+      shortLabel: 'Positron',
+      title: 'Switch map style (current: CARTO Positron)',
+      url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+      options: {
+        attribution: '© OpenStreetMap contributors © CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19,
+        minZoom: 9,
+      },
+    },
+    {
+      id: 'carto-darkmatter',
+      label: 'CARTO Dark Matter',
+      shortLabel: 'Dark',
+      title: 'Switch map style (current: CARTO Dark Matter)',
+      url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      options: {
+        attribution: '© OpenStreetMap contributors © CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19,
+        minZoom: 9,
+      },
+    },
+    {
+      id: 'esri-street',
+      label: 'Esri Street',
+      shortLabel: 'Esri Street',
+      title: 'Switch map style (current: Esri Street)',
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+      options: {
+        attribution: 'Tiles © Esri — Source: Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), swisstopo, OpenStreetMap contributors, and the GIS User Community',
+        maxZoom: 19,
+        minZoom: 9,
+      },
+    },
+    {
+      id: 'esri-topo',
+      label: 'Esri Topographic',
+      shortLabel: 'Esri Topo',
+      title: 'Switch map style (current: Esri Topographic)',
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+      options: {
+        attribution: 'Tiles © Esri — Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), swisstopo, OpenStreetMap contributors, and GIS User Community',
+        maxZoom: 19,
+        minZoom: 9,
+      },
+    },
+    {
+      id: 'esri-natgeo',
+      label: 'Esri NatGeo',
+      shortLabel: 'NatGeo',
+      title: 'Switch map style (current: Esri NatGeo)',
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}',
+      options: {
+        attribution: 'Tiles © Esri — National Geographic, Esri, DeLorme, NAVTEQ, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, iPC',
+        maxZoom: 16,
+        minZoom: 9,
+      },
+    },
+  ];
+
   // Create Leaflet map instance
   const map = L.map('map').setView(mapCenter, initialZoom);
 
-  // Add OpenStreetMap tile layer
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
-    maxZoom: 19,
-    minZoom: 9,
-  }).addTo(map);
+  // Add default tile layer and expose a cycle helper for quick in-app style testing.
+  let currentMapStyleIndex = 0;
+  let activeBaseLayer = L.tileLayer(mapStylePresets[currentMapStyleIndex].url, mapStylePresets[currentMapStyleIndex].options).addTo(map);
+
+  function applyMapStyleByIndex(nextIndex) {
+    const normalized = ((nextIndex % mapStylePresets.length) + mapStylePresets.length) % mapStylePresets.length;
+    const selected = mapStylePresets[normalized];
+
+    if (activeBaseLayer) {
+      map.removeLayer(activeBaseLayer);
+    }
+
+    activeBaseLayer = L.tileLayer(selected.url, selected.options).addTo(map);
+    currentMapStyleIndex = normalized;
+    activeMapStyleId = selected.id;
+    updateMapMarkerColors();
+    return selected;
+  }
+
+  map.getCurrentMapStyle = function() {
+    return mapStylePresets[currentMapStyleIndex];
+  };
+
+  map.cycleMapStyle = function() {
+    return applyMapStyleByIndex(currentMapStyleIndex + 1);
+  };
 
   const locations = LOCATION_CATALOG;
 
@@ -703,10 +864,94 @@ function applyAccessibilitySettings(settings, options = {}) {
 }
 
 /**
- * Get marker colours based on current theme.
- * Returns a per-mode palette with a safe fallback.
+ * Get marker colours based on current map style and accessibility mode.
  */
 function getMarkerColors() {
+  const stylePalettes = {
+    'osm-standard': {
+      none: { fillColor: '#d32f2f', color: '#8b0000', fillOpacity: 0.55 },
+      deuteranopia: { fillColor: '#1976D2', color: '#0057B7', fillOpacity: 0.64 },
+      protanopia: { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.66 },
+      tritanopia: { fillColor: '#7B1FA2', color: '#4A148C', fillOpacity: 0.66 },
+      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.7 },
+    },
+    'osm-hot': {
+      none: { fillColor: '#0D47A1', color: '#002171', fillOpacity: 0.66 },
+      deuteranopia: { fillColor: '#00695C', color: '#004D40', fillOpacity: 0.66 },
+      protanopia: { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.66 },
+      tritanopia: { fillColor: '#6A1B9A', color: '#4A148C', fillOpacity: 0.66 },
+      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.7 },
+    },
+    'cyclosm': {
+      none: { fillColor: '#AD1457', color: '#880E4F', fillOpacity: 0.66 },
+      deuteranopia: { fillColor: '#1565C0', color: '#0D47A1', fillOpacity: 0.66 },
+      protanopia: { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.66 },
+      tritanopia: { fillColor: '#6A1B9A', color: '#4A148C', fillOpacity: 0.66 },
+      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.7 },
+    },
+    'opentopomap': {
+      none: { fillColor: '#D81B60', color: '#880E4F', fillOpacity: 0.7 },
+      deuteranopia: { fillColor: '#1565C0', color: '#0D47A1', fillOpacity: 0.68 },
+      protanopia: { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.68 },
+      tritanopia: { fillColor: '#7B1FA2', color: '#4A148C', fillOpacity: 0.68 },
+      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.72 },
+    },
+    'carto-voyager': {
+      none: { fillColor: '#D32F2F', color: '#8E0000', fillOpacity: 0.62 },
+      deuteranopia: { fillColor: '#1976D2', color: '#0057B7', fillOpacity: 0.64 },
+      protanopia: { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.66 },
+      tritanopia: { fillColor: '#7B1FA2', color: '#4A148C', fillOpacity: 0.66 },
+      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.7 },
+    },
+    'carto-voyager-labels-under': {
+      none: { fillColor: '#C62828', color: '#7F0000', fillOpacity: 0.62 },
+      deuteranopia: { fillColor: '#1E88E5', color: '#0D47A1', fillOpacity: 0.64 },
+      protanopia: { fillColor: '#388E3C', color: '#1B5E20', fillOpacity: 0.66 },
+      tritanopia: { fillColor: '#8E24AA', color: '#4A148C', fillOpacity: 0.66 },
+      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.7 },
+    },
+    'carto-positron': {
+      none: { fillColor: '#C2185B', color: '#880E4F', fillOpacity: 0.68 },
+      deuteranopia: { fillColor: '#1976D2', color: '#0D47A1', fillOpacity: 0.66 },
+      protanopia: { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.66 },
+      tritanopia: { fillColor: '#7B1FA2', color: '#4A148C', fillOpacity: 0.66 },
+      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.72 },
+    },
+    'carto-darkmatter': {
+      none: { fillColor: '#FF6D00', color: '#FFAB40', fillOpacity: 0.78 },
+      deuteranopia: { fillColor: '#40C4FF', color: '#00B0FF', fillOpacity: 0.78 },
+      protanopia: { fillColor: '#69F0AE', color: '#00C853', fillOpacity: 0.78 },
+      tritanopia: { fillColor: '#EA80FC', color: '#D500F9', fillOpacity: 0.78 },
+      achromatopsia: { fillColor: '#BDBDBD', color: '#EEEEEE', fillOpacity: 0.8 },
+    },
+    'esri-street': {
+      none: { fillColor: '#AD1457', color: '#6A1B9A', fillOpacity: 0.66 },
+      deuteranopia: { fillColor: '#1565C0', color: '#0D47A1', fillOpacity: 0.66 },
+      protanopia: { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.66 },
+      tritanopia: { fillColor: '#8E24AA', color: '#4A148C', fillOpacity: 0.66 },
+      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.72 },
+    },
+    'esri-topo': {
+      none: { fillColor: '#D81B60', color: '#880E4F', fillOpacity: 0.68 },
+      deuteranopia: { fillColor: '#1565C0', color: '#0D47A1', fillOpacity: 0.68 },
+      protanopia: { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.68 },
+      tritanopia: { fillColor: '#7B1FA2', color: '#4A148C', fillOpacity: 0.68 },
+      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.72 },
+    },
+    'esri-natgeo': {
+      none: { fillColor: '#C62828', color: '#8E0000', fillOpacity: 0.68 },
+      deuteranopia: { fillColor: '#1565C0', color: '#0D47A1', fillOpacity: 0.66 },
+      protanopia: { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.66 },
+      tritanopia: { fillColor: '#7B1FA2', color: '#4A148C', fillOpacity: 0.66 },
+      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.72 },
+    },
+  };
+
+  const stylePalette = stylePalettes[activeMapStyleId] || stylePalettes['osm-standard'];
+  const mode = ACCESSIBILITY_MODES.has(accessibilityState.colorMode) ? accessibilityState.colorMode : 'none';
+  return stylePalette[mode] || stylePalette.none;
+
+  /*
   switch (accessibilityState.colorMode) {
     case 'protanopia':
       return { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.62 };
@@ -719,10 +964,11 @@ function getMarkerColors() {
     default:
       return { fillColor: '#d32f2f', color: '#b71c1c', fillOpacity: 0.35 };
   }
+  */
 }
 
 /**
- * Update all map marker colours to match the current theme.
+ * Update all map marker colours to match the current theme + map style.
  */
 function updateMapMarkerColors() {
   const colors = getMarkerColors();
@@ -2931,6 +3177,29 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Set up panel toggle event listeners
   const weatherBtn = document.getElementById('weather-btn');
   const notifBtn = document.getElementById('notif-btn');
+  const mapStyleBtn = document.getElementById('map-style-btn');
+
+  if (mapStyleBtn && window.appMap && typeof window.appMap.getCurrentMapStyle === 'function') {
+    const updateMapStyleButton = style => {
+      if (!style) return;
+      const compactLabel = style.shortLabel || style.label;
+      mapStyleBtn.textContent = `Map Style: ${compactLabel}`;
+      mapStyleBtn.title = style.title;
+      mapStyleBtn.setAttribute('aria-label', style.title);
+    };
+
+    updateMapStyleButton(window.appMap.getCurrentMapStyle());
+
+    mapStyleBtn.addEventListener('click', () => {
+      if (typeof window.appMap.cycleMapStyle !== 'function') {
+        return;
+      }
+
+      const nextStyle = window.appMap.cycleMapStyle();
+      updateMapStyleButton(nextStyle);
+      announceToScreenReader(`Map style changed to ${nextStyle.label}`);
+    });
+  }
   
   if (weatherBtn) {
     weatherBtn.addEventListener('click', toggleWeatherPanel);
