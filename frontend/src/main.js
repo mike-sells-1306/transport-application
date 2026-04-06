@@ -18,6 +18,13 @@ const ACCESSIBILITY_MODES = new Set(['none', 'deuteranopia', 'protanopia', 'trit
 
 const ACCESSIBILITY_FONT_SIZES = new Set(['small', 'normal', 'large']);
 
+const ACCESSIBILITY_MODE_DEFAULT_MAP_STYLE = {
+  deuteranopia: 'carto-positron',
+  protanopia: 'carto-voyager',
+  tritanopia: 'esri-street',
+  achromatopsia: 'carto-positron',
+};
+
 const accessibilityState = {
   ...ACCESSIBILITY_DEFAULTS,
 };
@@ -678,6 +685,14 @@ function initializeMap() {
     return applyMapStyleByIndex(currentMapStyleIndex + 1);
   };
 
+  map.setMapStyleById = function(styleId) {
+    const index = mapStylePresets.findIndex(style => style.id === styleId);
+    if (index === -1) {
+      return null;
+    }
+    return applyMapStyleByIndex(index);
+  };
+
   const locations = LOCATION_CATALOG;
 
   // Add markers for each location with popups and toggle functionality
@@ -687,8 +702,8 @@ function initializeMap() {
       radius: 9,
       fillColor: colors.fillColor,
       color: colors.color,
-      weight: 1,
-      opacity: 1,
+      weight: colors.weight,
+      opacity: colors.opacity,
       fillOpacity: colors.fillOpacity,
     });
     mapMarkers.push({ marker, location });
@@ -822,6 +837,7 @@ function syncAccessibilityControls() {
 function applyAccessibilitySettings(settings, options = {}) {
   const { persistLocal = true, syncControls = true } = options;
   const normalized = normalizeAccessibilitySettings(settings);
+  const previousColorMode = accessibilityState.colorMode;
 
   accessibilityState.zoomLevel = normalized.zoomLevel;
   accessibilityState.colorMode = normalized.colorMode;
@@ -859,6 +875,21 @@ function applyAccessibilitySettings(settings, options = {}) {
     syncAccessibilityControls();
   }
 
+  if (
+    normalized.colorMode !== previousColorMode
+    && normalized.colorMode !== 'none'
+    && window.appMap
+    && typeof window.appMap.setMapStyleById === 'function'
+  ) {
+    const preferredStyleId = ACCESSIBILITY_MODE_DEFAULT_MAP_STYLE[normalized.colorMode];
+    if (preferredStyleId) {
+      const appliedStyle = window.appMap.setMapStyleById(preferredStyleId);
+      if (appliedStyle) {
+        updateMapStyleButtonUI(appliedStyle);
+      }
+    }
+  }
+
   updateAccessibilityLinkState(!document.getElementById('accessibility-panel')?.classList.contains('hidden'));
   updateMapMarkerColors();
 }
@@ -867,104 +898,38 @@ function applyAccessibilitySettings(settings, options = {}) {
  * Get marker colours based on current map style and accessibility mode.
  */
 function getMarkerColors() {
-  const stylePalettes = {
-    'osm-standard': {
-      none: { fillColor: '#d32f2f', color: '#8b0000', fillOpacity: 0.55 },
-      deuteranopia: { fillColor: '#1976D2', color: '#0057B7', fillOpacity: 0.64 },
-      protanopia: { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.66 },
-      tritanopia: { fillColor: '#7B1FA2', color: '#4A148C', fillOpacity: 0.66 },
-      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.7 },
-    },
-    'osm-hot': {
-      none: { fillColor: '#0D47A1', color: '#002171', fillOpacity: 0.66 },
-      deuteranopia: { fillColor: '#00695C', color: '#004D40', fillOpacity: 0.66 },
-      protanopia: { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.66 },
-      tritanopia: { fillColor: '#6A1B9A', color: '#4A148C', fillOpacity: 0.66 },
-      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.7 },
-    },
-    'cyclosm': {
-      none: { fillColor: '#AD1457', color: '#880E4F', fillOpacity: 0.66 },
-      deuteranopia: { fillColor: '#1565C0', color: '#0D47A1', fillOpacity: 0.66 },
-      protanopia: { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.66 },
-      tritanopia: { fillColor: '#6A1B9A', color: '#4A148C', fillOpacity: 0.66 },
-      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.7 },
-    },
-    'opentopomap': {
-      none: { fillColor: '#D81B60', color: '#880E4F', fillOpacity: 0.7 },
-      deuteranopia: { fillColor: '#1565C0', color: '#0D47A1', fillOpacity: 0.68 },
-      protanopia: { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.68 },
-      tritanopia: { fillColor: '#7B1FA2', color: '#4A148C', fillOpacity: 0.68 },
-      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.72 },
-    },
-    'carto-voyager': {
-      none: { fillColor: '#D32F2F', color: '#8E0000', fillOpacity: 0.62 },
-      deuteranopia: { fillColor: '#1976D2', color: '#0057B7', fillOpacity: 0.64 },
-      protanopia: { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.66 },
-      tritanopia: { fillColor: '#7B1FA2', color: '#4A148C', fillOpacity: 0.66 },
-      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.7 },
-    },
-    'carto-voyager-labels-under': {
-      none: { fillColor: '#C62828', color: '#7F0000', fillOpacity: 0.62 },
-      deuteranopia: { fillColor: '#1E88E5', color: '#0D47A1', fillOpacity: 0.64 },
-      protanopia: { fillColor: '#388E3C', color: '#1B5E20', fillOpacity: 0.66 },
-      tritanopia: { fillColor: '#8E24AA', color: '#4A148C', fillOpacity: 0.66 },
-      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.7 },
-    },
-    'carto-positron': {
-      none: { fillColor: '#C2185B', color: '#880E4F', fillOpacity: 0.68 },
-      deuteranopia: { fillColor: '#1976D2', color: '#0D47A1', fillOpacity: 0.66 },
-      protanopia: { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.66 },
-      tritanopia: { fillColor: '#7B1FA2', color: '#4A148C', fillOpacity: 0.66 },
-      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.72 },
-    },
-    'carto-darkmatter': {
-      none: { fillColor: '#FF6D00', color: '#FFAB40', fillOpacity: 0.78 },
-      deuteranopia: { fillColor: '#40C4FF', color: '#00B0FF', fillOpacity: 0.78 },
-      protanopia: { fillColor: '#69F0AE', color: '#00C853', fillOpacity: 0.78 },
-      tritanopia: { fillColor: '#EA80FC', color: '#D500F9', fillOpacity: 0.78 },
-      achromatopsia: { fillColor: '#BDBDBD', color: '#EEEEEE', fillOpacity: 0.8 },
-    },
-    'esri-street': {
-      none: { fillColor: '#AD1457', color: '#6A1B9A', fillOpacity: 0.66 },
-      deuteranopia: { fillColor: '#1565C0', color: '#0D47A1', fillOpacity: 0.66 },
-      protanopia: { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.66 },
-      tritanopia: { fillColor: '#8E24AA', color: '#4A148C', fillOpacity: 0.66 },
-      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.72 },
-    },
-    'esri-topo': {
-      none: { fillColor: '#D81B60', color: '#880E4F', fillOpacity: 0.68 },
-      deuteranopia: { fillColor: '#1565C0', color: '#0D47A1', fillOpacity: 0.68 },
-      protanopia: { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.68 },
-      tritanopia: { fillColor: '#7B1FA2', color: '#4A148C', fillOpacity: 0.68 },
-      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.72 },
-    },
-    'esri-natgeo': {
-      none: { fillColor: '#C62828', color: '#8E0000', fillOpacity: 0.68 },
-      deuteranopia: { fillColor: '#1565C0', color: '#0D47A1', fillOpacity: 0.66 },
-      protanopia: { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.66 },
-      tritanopia: { fillColor: '#7B1FA2', color: '#4A148C', fillOpacity: 0.66 },
-      achromatopsia: { fillColor: '#616161', color: '#212121', fillOpacity: 0.72 },
-    },
+  const defaultStylePalette = {
+    'osm-standard': { fillColor: '#d32f2f', color: '#8b0000', fillOpacity: 0.58, opacity: 0.95, weight: 1.5 },
+    'osm-hot': { fillColor: '#0D47A1', color: '#002171', fillOpacity: 0.68, opacity: 0.95, weight: 1.5 },
+    'cyclosm': { fillColor: '#AD1457', color: '#880E4F', fillOpacity: 0.68, opacity: 0.95, weight: 1.5 },
+    'opentopomap': { fillColor: '#D81B60', color: '#880E4F', fillOpacity: 0.72, opacity: 0.95, weight: 1.5 },
+    'carto-voyager': { fillColor: '#D32F2F', color: '#8E0000', fillOpacity: 0.64, opacity: 0.95, weight: 1.5 },
+    'carto-voyager-labels-under': { fillColor: '#C62828', color: '#7F0000', fillOpacity: 0.64, opacity: 0.95, weight: 1.5 },
+    'carto-positron': { fillColor: '#C2185B', color: '#880E4F', fillOpacity: 0.7, opacity: 0.95, weight: 1.5 },
+    'carto-darkmatter': { fillColor: '#FF6D00', color: '#FFAB40', fillOpacity: 0.8, opacity: 0.98, weight: 2 },
+    'esri-street': { fillColor: '#AD1457', color: '#6A1B9A', fillOpacity: 0.68, opacity: 0.95, weight: 1.5 },
+    'esri-topo': { fillColor: '#D81B60', color: '#880E4F', fillOpacity: 0.7, opacity: 0.95, weight: 1.5 },
+    'esri-natgeo': { fillColor: '#C62828', color: '#8E0000', fillOpacity: 0.7, opacity: 0.95, weight: 1.5 },
   };
 
-  const stylePalette = stylePalettes[activeMapStyleId] || stylePalettes['osm-standard'];
-  const mode = ACCESSIBILITY_MODES.has(accessibilityState.colorMode) ? accessibilityState.colorMode : 'none';
-  return stylePalette[mode] || stylePalette.none;
+  // Accessibility-first palette: when a colour-vision mode is active, these
+  // colours remain consistent across map styles to preserve recognisability.
+  const accessibleModePalette = {
+    deuteranopia: { fillColor: '#0057B7', color: '#003A78', fillOpacity: 0.78, opacity: 1, weight: 2.2 },
+    protanopia: { fillColor: '#7B1FA2', color: '#4A148C', fillOpacity: 0.8, opacity: 1, weight: 2.2 },
+    tritanopia: { fillColor: '#C62828', color: '#7F0000', fillOpacity: 0.8, opacity: 1, weight: 2.2 },
+    achromatopsia: { fillColor: '#F2F2F2', color: '#111111', fillOpacity: 0.9, opacity: 1, weight: 2.4 },
+  };
 
-  /*
-  switch (accessibilityState.colorMode) {
-    case 'protanopia':
-      return { fillColor: '#2E7D32', color: '#1B5E20', fillOpacity: 0.62 };
-    case 'tritanopia':
-      return { fillColor: '#7B1FA2', color: '#4A148C', fillOpacity: 0.62 };
-    case 'achromatopsia':
-      return { fillColor: '#616161', color: '#212121', fillOpacity: 0.66 };
-    case 'deuteranopia':
-      return { fillColor: '#1976D2', color: '#0057B7', fillOpacity: 0.6 };
-    default:
-      return { fillColor: '#d32f2f', color: '#b71c1c', fillOpacity: 0.35 };
+  const mode = ACCESSIBILITY_MODES.has(accessibilityState.colorMode)
+    ? accessibilityState.colorMode
+    : 'none';
+
+  if (mode !== 'none' && accessibleModePalette[mode]) {
+    return accessibleModePalette[mode];
   }
-  */
+
+  return defaultStylePalette[activeMapStyleId] || defaultStylePalette['osm-standard'];
 }
 
 /**
@@ -977,8 +942,22 @@ function updateMapMarkerColors() {
       fillColor: colors.fillColor,
       color: colors.color,
       fillOpacity: colors.fillOpacity,
+      opacity: colors.opacity,
+      weight: colors.weight,
     });
   });
+}
+
+function updateMapStyleButtonUI(style) {
+  if (!style) return;
+
+  const mapStyleBtn = document.getElementById('map-style-btn');
+  if (!mapStyleBtn) return;
+
+  const compactLabel = style.shortLabel || style.label;
+  mapStyleBtn.textContent = `Map Style: ${compactLabel}`;
+  mapStyleBtn.title = style.title;
+  mapStyleBtn.setAttribute('aria-label', style.title);
 }
 
 /**
@@ -3180,15 +3159,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   const mapStyleBtn = document.getElementById('map-style-btn');
 
   if (mapStyleBtn && window.appMap && typeof window.appMap.getCurrentMapStyle === 'function') {
-    const updateMapStyleButton = style => {
-      if (!style) return;
-      const compactLabel = style.shortLabel || style.label;
-      mapStyleBtn.textContent = `Map Style: ${compactLabel}`;
-      mapStyleBtn.title = style.title;
-      mapStyleBtn.setAttribute('aria-label', style.title);
-    };
-
-    updateMapStyleButton(window.appMap.getCurrentMapStyle());
+    updateMapStyleButtonUI(window.appMap.getCurrentMapStyle());
 
     mapStyleBtn.addEventListener('click', () => {
       if (typeof window.appMap.cycleMapStyle !== 'function') {
@@ -3196,7 +3167,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
 
       const nextStyle = window.appMap.cycleMapStyle();
-      updateMapStyleButton(nextStyle);
+      updateMapStyleButtonUI(nextStyle);
       announceToScreenReader(`Map style changed to ${nextStyle.label}`);
     });
   }

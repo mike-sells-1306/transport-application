@@ -263,14 +263,15 @@ body {
 /* --------------------------------------------- */
 .sidebar-toggle {
   position: fixed;
-  /* align vertically with the sidebar header */
-  top: 32px;
-  left: calc(var(--sidebar-width) - 22px);
+  /* align roughly to the vertical middle of Leaflet zoom controls */
+  top: 28px;
+  /* keep slight overlap with sidebar edge, but avoid covering map zoom +/- */
+  left: calc(var(--sidebar-width) - 34px);
   width: 44px;
   height: 44px;
   border-radius: var(--radius-sm);
   border: 2px solid rgba(255,255,255,0.08);
-  background: var(--red-main);
+  background: var(--red-panel);
   color: var(--white);
   display: flex;
   align-items: center;
@@ -326,6 +327,8 @@ body.sidebar-minimized {
 }
 .sidebar-header {
   padding: 36px 32px 18px 32px;
+  min-height: 120px;
+  box-sizing: border-box;
   background: var(--red-main);
 }
 .sidebar-header h1 {
@@ -514,10 +517,10 @@ body.sidebar-minimized {
 }
 
 .top-right-icons .map-style-btn {
-  width: auto;
-  min-width: 170px;
+  width: fit-content;
+  min-width: 0;
   border-radius: 999px;
-  padding: 0 12px;
+  padding: 0 14px;
   margin-left: 0;
   font-size: 0.82rem;
   font-weight: 700;
