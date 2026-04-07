@@ -219,7 +219,7 @@ async function setLocale(locale, options = {}) {
   updateRouteDownloadButtonState();
 
   if (currentRoutesData && !document.getElementById('route-modal')?.classList.contains('hidden')) {
-    const sortMethod = document.getElementById('sort')?.value || 'start_time';
+    const sortMethod = document.getElementById('sort')?.value || 'soonest_arrival';
     renderRoutesTable(sortRoutes(sortMethod, currentRoutesData.routes));
   }
 
@@ -469,6 +469,8 @@ function refreshMapPopupTranslations() {
 
 // Store current routes data for sorting
 let currentRoutesData = null;
+let activeRouteSearchController = null;
+const ROUTE_SEARCH_TIMEOUT_MS = 30000;
 
 // Swap button functionality
 function setupSwapButton() {
@@ -1809,14 +1811,20 @@ async function viewSavedRoute(savedRoute) {
   selectedStops.to = { name: savedRoute.routeEnd };
 
   try {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), ROUTE_SEARCH_TIMEOUT_MS);
+    const selectedSort = document.getElementById('sort')?.value || 'soonest_arrival';
     const response = await fetch('/api/routes/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
         from: selectedStops.from,
         to: selectedStops.to,
+        sort_by: selectedSort,
       }),
     });
+    window.clearTimeout(timeoutId);
 
     if (!response.ok) {
       const err = await response.json();
@@ -1828,7 +1836,11 @@ async function viewSavedRoute(savedRoute) {
     displayRoutesModal(data);
   } catch (error) {
     console.error('Error loading saved route:', error);
-    alert(t('alerts.couldNotLoadRoutesTryAgain'));
+    if (error && error.name === 'AbortError') {
+      alert('Route search timed out. Please try again.');
+    } else {
+      alert(t('alerts.couldNotLoadRoutesTryAgain'));
+    }
   }
 }
 
@@ -2374,21 +2386,36 @@ async function searchRoutes() {
   setFieldError('to-input', 'to-input-error', '');
 
   try {
+    if (activeRouteSearchController) {
+      activeRouteSearchController.abort();
+    }
+    const controller = new AbortController();
+    activeRouteSearchController = controller;
+    const timeoutId = window.setTimeout(() => controller.abort(), ROUTE_SEARCH_TIMEOUT_MS);
+
+    const selectedSort = document.getElementById('sort')?.value || 'soonest_arrival';
     const response = await fetch('/api/routes/search', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      signal: controller.signal,
       body: JSON.stringify({
         from: selectedStops.from,
         to: selectedStops.to,
+        sort_by: selectedSort,
       }),
     });
+    window.clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json().catch(() => ({}));
       console.error('Error searching routes:', errorData.error);
       announceToScreenReader(errorData.error || t('alerts.unableToFindRoutes'), 'assertive');
+      const modal = document.getElementById('route-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
       return;
     }
 
@@ -2399,7 +2426,15 @@ async function searchRoutes() {
     displayRoutesModal(data);
   } catch (error) {
     console.error('Error fetching routes:', error);
-    announceToScreenReader(t('announce.routeFetchError'), 'assertive');
+    if (error && error.name === 'AbortError') {
+      announceToScreenReader('Route search timed out. Please try again with different stops.', 'assertive');
+    } else {
+      announceToScreenReader(t('announce.routeFetchError'), 'assertive');
+    }
+  } finally {
+    if (activeRouteSearchController && activeRouteSearchController.signal.aborted) {
+      activeRouteSearchController = null;
+    }
   }
 }
 
@@ -2408,7 +2443,6 @@ async function searchRoutes() {
  */
 function displayRoutesModal(data) {
   const modal = document.getElementById('route-modal');
-  const sortSelect = document.getElementById('sort');
   
   if (!modal) {
     console.error('Route modal not found');
@@ -2421,14 +2455,8 @@ function displayRoutesModal(data) {
   // Update the modal header with from/to information
   updateRouteModalHeader();
 
-  // Reset sort dropdown to default start-time ordering
-  if (sortSelect) {
-    sortSelect.value = 'start_time';
-  }
-
-  // Render the routes with default (earliest start time) sorting applied
-  const sorted = sortRoutes('start_time', data.routes);
-  renderRoutesTable(sorted);
+  // Routes are already sorted server-side using the selected sort mode.
+  renderRoutesTable(data.routes || []);
   updateRouteDownloadButtonState();
 
   // Show the modal by removing the hidden class
@@ -2454,26 +2482,15 @@ function sortRoutes(sortMethod, routes) {
   };
   
   switch (sortMethod) {
-    case 'start_time':
-      // Sort by earliest departure, then by duration
+    case 'soonest_arrival':
+      // Sort by earliest arrival, then by duration
       return routesCopy.sort((a, b) => {
-        const aTime = toSortableMinutes(a.start_time);
-        const bTime = toSortableMinutes(b.start_time);
-        if (aTime !== bTime) {
-          return aTime - bTime;
+        const aArrive = toSortableMinutes(a.end_time);
+        const bArrive = toSortableMinutes(b.end_time);
+        if (aArrive !== bArrive) {
+          return aArrive - bArrive;
         }
         return a.duration_mins - b.duration_mins;
-      });
-
-    case 'fastest':
-      // Sort by duration (ascending), then by start time
-      return routesCopy.sort((a, b) => {
-        if (a.duration_mins !== b.duration_mins) {
-          return a.duration_mins - b.duration_mins;
-        }
-        const aTime = toSortableMinutes(a.start_time);
-        const bTime = toSortableMinutes(b.start_time);
-        return aTime - bTime;
       });
     
     case 'fewest_changes':
@@ -2507,7 +2524,7 @@ function getCurrentSortedRoutes() {
     return [];
   }
 
-  const sortMethod = document.getElementById('sort')?.value || 'start_time';
+  const sortMethod = document.getElementById('sort')?.value || 'soonest_arrival';
   return sortRoutes(sortMethod, currentRoutesData.routes);
 }
 
@@ -2649,14 +2666,9 @@ function exportRoutesToPdf() {
   const topMargin = 48;
   const bottomMargin = 48;
   const contentWidth = pageWidth - (marginX * 2);
-  const sortLabel = document.getElementById('sort')?.value || 'start_time';
-  const sortLabelText = t(
-    sortLabel === 'fewest_changes'
-      ? 'route.sort.fewestChanges'
-      : sortLabel === 'fastest'
-        ? 'route.sort.fastest'
-        : 'route.sort.startTime'
-  );
+  const sortSelect = document.getElementById('sort');
+  const sortLabelText = sortSelect?.options?.[sortSelect.selectedIndex]?.textContent?.trim()
+    || 'Arrive Soonest';
   const exportedAt = new Date();
   const colors = {
     maroon: [139, 17, 17],
@@ -3195,12 +3207,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // Set up sort dropdown for routes
   if (sortSelect) {
-    sortSelect.addEventListener('change', (e) => {
-      if (currentRoutesData && currentRoutesData.routes) {
-        const sortMethod = e.target.value;
-        const sortedRoutes = sortRoutes(sortMethod, currentRoutesData.routes);
-        renderRoutesTable(sortedRoutes);
-        updateRouteDownloadButtonState();
+    sortSelect.addEventListener('change', () => {
+      // Re-plan using the selected backend sort mode.
+      if (selectedStops.from && selectedStops.to) {
+        searchRoutes();
       }
     });
   }

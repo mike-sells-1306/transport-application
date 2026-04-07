@@ -1,4 +1,4 @@
-.PHONY: build up up-build down restart logs open run test test-a11y install podman-install check-compose
+.PHONY: build up up-build down restart logs open run test test-a11y install podman-install check-compose build-index run-index-worker
 
 # Podman / container commands
 # Uses `podman-compose` when available, falls back to `podman compose`.
@@ -57,6 +57,12 @@ install:
 
 run:
 	cd backend && . .venv/bin/activate && DATABASE_URL="sqlite:////tmp/transport.db" python3 app.py
+
+build-index:
+	cd backend && . .venv/bin/activate && PYTHONPATH=. python3 scripts/build_connection_index.py
+
+run-index-worker:
+	cd backend && . .venv/bin/activate && PYTHONPATH=. python3 scripts/run_connection_index_worker.py
 
 test:
 	cd backend && . .venv/bin/activate && DATABASE_URL="sqlite://" python3 -m pytest tests/ -v

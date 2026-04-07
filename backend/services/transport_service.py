@@ -23,8 +23,10 @@ class TransportService:
         xml_data = self.nptg.fetch_nptg()
         return self.nptg.parse_nptg(xml_data)
 
-    def get_naptan(self, full=False):
-        cache_key = 'full' if full else 'normal'
+    def get_naptan(self, dataset='lancashire', full=False):
+        if full:
+            dataset = 'full'
+        cache_key = dataset
         
         # Check if cache exists and is still valid (< 1 hour old)
         if cache_key in self._naptan_cache:
@@ -33,7 +35,7 @@ class TransportService:
                 return self._naptan_cache[cache_key]
         
         # Fetch and parse if not cached or expired
-        xml_data = self.naptan.fetch_naptan(full=full)
+        xml_data = self.naptan.fetch_naptan(dataset=dataset, full=full)
         parsed_data = self.naptan.parse_naptan(xml_data)
         
         # Update cache
@@ -56,16 +58,23 @@ class TransportService:
         return self.rail_departures.fetch_departures(crs_code)
 
     def get_routes(self, from_name, to_name, date=None, time=None,
-                   from_lat=None, from_lon=None, to_lat=None, to_lon=None):
+                   depart_time=None,
+                   from_lat=None, from_lon=None, to_lat=None, to_lon=None,
+                   from_stop_code=None, to_stop_code=None,
+                   sort_by='soonest_arrival'):
         """Plan routes between two locations using real API data.
 
-        Uses live rail departure boards and a curated bus-service
-        knowledge base to build multi-modal route options.
+        Uses SCC rail departure boards and SCC bus timetable datasets
+        (TransXChange) to build real multi-modal route options.
         """
         routes = self.route_planner.plan_routes(
             from_name, to_name,
             from_lat=from_lat, from_lon=from_lon,
             to_lat=to_lat, to_lon=to_lon,
+            from_stop_code=from_stop_code,
+            to_stop_code=to_stop_code,
+            depart_time=depart_time,
+            sort_by=sort_by,
         )
         return {"routes": routes}
 

@@ -10,6 +10,7 @@ from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from services.data_translator import DataTranslator
 from services.transport_service import TransportService
 from sqlalchemy import UniqueConstraint, event, text
+from sqlalchemy import or_
 from sqlalchemy.engine import Engine
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -163,6 +164,165 @@ def _json_error(message: str, status: int = 400):
 
 def _route_time_key(route):
     return tuple(int(part) for part in route["start_time"].split(":"))
+
+
+def _wants_rail(query_words):
+    return any(w in {"rail", "railway", "train", "station", "stn"} for w in query_words)
+
+
+def _wants_bus(query_words):
+    return any(w in {"bus", "coach"} for w in query_words)
+
+
+def _score_stop_match(query, query_words, common_name, locality_name, stop_type):
+    """Higher score means a better autocomplete candidate."""
+    common = (common_name or "").lower().strip()
+    locality = (locality_name or "").lower().strip()
+    q = (query or "").lower().strip()
+    score = 0.0
+
+    # Strong text match signals
+    if common == q:
+        score += 220
+    if common.startswith(q):
+        score += 160
+    if q and q in common:
+        score += 80
+    if all(w in common for w in query_words):
+        score += 55
+
+    # Locality relevance (important for ambiguous district-wide names)
+    if query_words:
+        locality_hits = sum(1 for w in query_words if w in locality)
+        score += locality_hits * 35
+        if query_words[-1] and locality == query_words[-1]:
+            score += 70
+
+    # Mode-intent relevance
+    if _wants_rail(query_words):
+        if stop_type == 'rail':
+            score += 120
+        if 'railway station' in common or common.endswith('station'):
+            score += 40
+    if _wants_bus(query_words):
+        if stop_type == 'bus':
+            score += 80
+
+    # Light penalty for very long/descriptive names
+    score -= min(len(common), 120) / 40.0
+    return score
+
+
+def _resolve_stop_coordinates(stop_name: str):
+    """Resolve a stop name to coordinates using StopCache.
+
+    Returns ``(lat, lon)`` or ``(None, None)``.
+    """
+    if not stop_name:
+        return None, None
+
+    cleaned = stop_name.strip().lower()
+    if not cleaned:
+        return None, None
+
+    query_words = [w for w in cleaned.split() if w]
+    if not query_words:
+        return None, None
+
+    try:
+        filters = [StopCache.search_text.contains(word) for word in query_words]
+        candidates = StopCache.query.filter(*filters).limit(200).all()
+        if not candidates:
+            return None, None
+
+        best = max(
+            candidates,
+            key=lambda s: _score_stop_match(
+                cleaned,
+                query_words,
+                s.common_name,
+                s.locality_name,
+                s.stop_type,
+            )
+        )
+        return float(best.latitude), float(best.longitude)
+    except Exception:
+        return None, None
+
+
+def _virtual_rail_station_candidates(query: str, query_words):
+    """Return virtual rail station suggestions from known CRS stations."""
+    if not _wants_rail(query_words):
+        return []
+
+    out = []
+    q = (query or '').lower().strip()
+    for crs, st in transport_service.route_planner.STATIONS.items():
+        base_name = st.get('name', '')
+        if not base_name:
+            continue
+        display = f"{base_name} Railway Station"
+        combined = display.lower()
+        if query_words and not all(w in combined for w in query_words):
+            continue
+        score = _score_stop_match(q, query_words, display, base_name, 'rail') + 300
+        out.append({
+            'name': display,
+            'atcoCode': f'CRS:{crs}',
+            'lat': float(st['lat']),
+            'lon': float(st['lon']),
+            'stopType': 'rail',
+            '_score': score,
+        })
+    out.sort(key=lambda x: x['_score'], reverse=True)
+    return out
+
+
+def _resolve_stop_by_atco(atco_code: str):
+    """Resolve an exact ATCO code to canonical stop metadata from StopCache."""
+    code = (atco_code or '').strip()
+    if not code:
+        return None
+    if code.upper().startswith('CRS:'):
+        crs = code.split(':', 1)[1].upper()
+        st = transport_service.route_planner.STATIONS.get(crs)
+        if st:
+            return {
+                'name': f"{st['name']} Railway Station",
+                'lat': float(st['lat']),
+                'lon': float(st['lon']),
+                'stopType': 'rail',
+            }
+        return None
+    try:
+        stop = StopCache.query.filter_by(atco_code=code).first()
+        if not stop:
+            # Fallback when StopCache is not yet populated.
+            try:
+                meta = transport_service.route_planner._load_naptan_lookup().get(code)
+            except Exception:
+                meta = None
+            if not meta:
+                return None
+            return {
+                'name': meta.get('name', code),
+                'lat': float(meta.get('lat')),
+                'lon': float(meta.get('lon')),
+                'stopType': 'bus',
+            }
+        display_name = stop.common_name
+        if stop.indicator:
+            display_name += f" ({stop.indicator})"
+        if stop.locality_name and stop.locality_name not in display_name:
+            display_name += f", {stop.locality_name}"
+        return {
+            'name': display_name,
+            'lat': float(stop.latitude),
+            'lon': float(stop.longitude),
+            'stopType': stop.stop_type,
+        }
+    except Exception:
+        return None
 
 
 def _generic_intermediate_stops(from_name, to_name, mode):
@@ -857,7 +1017,10 @@ def gazetteer():
 def naptan():
     try:
         full = request.args.get('full', 'false').lower() == 'true'
-        data = transport_service.get_naptan(full=full)
+        dataset = (request.args.get('dataset', 'lancashire') or 'lancashire').strip().lower()
+        if dataset in {'nw', 'northwest', 'north-west', 'north_west'}:
+            dataset = 'north_west_rail'
+        data = transport_service.get_naptan(dataset=dataset, full=full)
         return jsonify(data)
     except Exception as e:
         app.logger.error(f"NaPTAN error: {e}")
@@ -898,15 +1061,45 @@ def search_stops():
                     StopCache.longitude >= MIN_LON,
                     StopCache.longitude <= MAX_LON,
                 ]
-                for word in query_words:
-                    filters.append(StopCache.search_text.contains(word))
 
-                results = (
+                # Candidate prefilter: at least one query word present.
+                if query_words:
+                    filters.append(or_(*[StopCache.search_text.contains(word) for word in query_words]))
+
+                candidates = (
                     StopCache.query
                     .filter(*filters)
-                    .limit(limit)
+                    .limit(500)
                     .all()
                 )
+
+                min_coverage = len(query_words)
+                if len(query_words) >= 3 and not (_wants_bus(query_words) or _wants_rail(query_words)):
+                    min_coverage = len(query_words) - 1
+
+                scored = []
+                require_bus = _wants_bus(query_words)
+                require_rail = _wants_rail(query_words)
+                for s in candidates:
+                    if require_bus and s.stop_type != 'bus':
+                        continue
+                    if require_rail and not require_bus and s.stop_type != 'rail':
+                        continue
+                    search_text = (s.search_text or '').lower()
+                    coverage = sum(1 for w in query_words if w in search_text)
+                    if coverage < min_coverage:
+                        continue
+                    score = _score_stop_match(
+                        query,
+                        query_words,
+                        s.common_name,
+                        s.locality_name,
+                        s.stop_type,
+                    ) + (coverage * 25)
+                    scored.append((score, s))
+
+                ranked = [s for _, s in sorted(scored, key=lambda x: x[0], reverse=True)]
+                results = ranked[:limit]
 
                 matching_stops = []
                 for stop in results:
@@ -923,19 +1116,46 @@ def search_stops():
                         'stopType': stop.stop_type,
                     })
 
+                # Inject high-confidence virtual rail stations to avoid
+                # ambiguous bus-stop variants around station areas.
+                virtual = _virtual_rail_station_candidates(query, query_words)
+                if virtual:
+                    dedup = set(s.get('atcoCode') for s in matching_stops)
+                    merged = []
+                    for v in virtual:
+                        code = v.get('atcoCode')
+                        if code in dedup:
+                            continue
+                        vv = dict(v)
+                        vv.pop('_score', None)
+                        merged.append(vv)
+                    matching_stops = (merged + matching_stops)[:limit]
+
                 app.logger.info(f"Returning {len(matching_stops)} stops from DB cache for '{query}'")
                 return jsonify({"stops": matching_stops})
             except Exception as db_err:
                 app.logger.warning(f"StopCache query failed, falling back to API: {db_err}")
 
-        # ---------- Fallback: live API fetch (same as original) ----------
+        # ---------- Fallback: live API fetch from SCC NaPTAN datasets ----------
         app.logger.info(f"Cache not ready, fetching NaPTAN data for query: {query}")
-        naptan_data = transport_service.get_naptan(full=False)
-        stops_list = naptan_data.get('stops', []) if isinstance(naptan_data, dict) else naptan_data
+        merged_stops = []
+        seen_codes = set()
+        for dataset in ('north_west_rail', 'lancashire'):
+            naptan_data = transport_service.get_naptan(dataset=dataset)
+            stops_list = naptan_data.get('stops', []) if isinstance(naptan_data, dict) else naptan_data
+            for stop in (stops_list or []):
+                code = stop.get('ATCOCode', '')
+                if code and code in seen_codes:
+                    continue
+                if code:
+                    seen_codes.add(code)
+                merged_stops.append(stop)
 
-        matching_stops = []
-        if stops_list:
-            for stop in stops_list:
+        candidates = []
+        require_bus = _wants_bus(query_words)
+        require_rail = _wants_rail(query_words)
+        if merged_stops:
+            for stop in merged_stops:
                 lat = stop.get('Latitude')
                 lon = stop.get('Longitude')
                 if lat is None or lon is None:
@@ -951,25 +1171,64 @@ def search_stops():
                 stop_name = stop.get('CommonName', '').lower()
                 stop_locality = stop.get('LocalityName', '').lower()
                 combined = f"{stop_name} {stop_locality}"
+                stop_type_val = stop.get('StopType', 'bus')
 
-                # Word-order-independent matching
-                if all(w in combined for w in query_words):
-                    display_name = stop.get('CommonName', '')
-                    stop_indicator = stop.get('Indicator', '')
-                    stop_locality_raw = stop.get('LocalityName', '')
-                    if stop_indicator:
-                        display_name += f" ({stop_indicator})"
-                    if stop_locality_raw and stop_locality_raw not in display_name:
-                        display_name += f", {stop_locality_raw}"
-                    matching_stops.append({
-                        'name': display_name,
-                        'atcoCode': stop.get('ATCOCode', ''),
+                if require_bus and stop_type_val != 'bus':
+                    continue
+                if require_rail and not require_bus and stop_type_val != 'rail':
+                    continue
+
+                # Word-order-independent matching with relaxed N-1 coverage
+                # for longer queries (e.g. "lancaster university underpass").
+                coverage = sum(1 for w in query_words if w in combined)
+                min_coverage = len(query_words)
+                if len(query_words) >= 3 and not (_wants_bus(query_words) or _wants_rail(query_words)):
+                    min_coverage = len(query_words) - 1
+                if coverage >= min_coverage:
+                    candidates.append({
+                        'raw': stop,
                         'lat': lat,
                         'lon': lon,
-                        'stopType': stop.get('StopType', 'bus'),
+                        'score': _score_stop_match(
+                            query,
+                            query_words,
+                            stop.get('CommonName', ''),
+                            stop.get('LocalityName', ''),
+                                stop_type_val,
+                        ),
                     })
-                if len(matching_stops) >= limit:
-                    break
+
+        candidates.sort(key=lambda c: c['score'], reverse=True)
+        matching_stops = []
+        for c in candidates[:limit]:
+            stop = c['raw']
+            display_name = stop.get('CommonName', '')
+            stop_indicator = stop.get('Indicator', '')
+            stop_locality_raw = stop.get('LocalityName', '')
+            if stop_indicator:
+                display_name += f" ({stop_indicator})"
+            if stop_locality_raw and stop_locality_raw not in display_name:
+                display_name += f", {stop_locality_raw}"
+            matching_stops.append({
+                'name': display_name,
+                'atcoCode': stop.get('ATCOCode', ''),
+                'lat': c['lat'],
+                'lon': c['lon'],
+                'stopType': stop.get('StopType', 'bus'),
+            })
+
+        virtual = _virtual_rail_station_candidates(query, query_words)
+        if virtual:
+            dedup = set(s.get('atcoCode') for s in matching_stops)
+            merged = []
+            for v in virtual:
+                code = v.get('atcoCode')
+                if code in dedup:
+                    continue
+                vv = dict(v)
+                vv.pop('_score', None)
+                merged.append(vv)
+            matching_stops = (merged + matching_stops)[:limit]
 
         app.logger.info(f"Returning {len(matching_stops)} stops (API fallback) for '{query}'")
         return jsonify({"stops": matching_stops})
@@ -981,12 +1240,10 @@ def search_stops():
 
 @app.route('/api/routes/search', methods=['POST'])
 def search_routes():
-    """Search for routes between two stops using real transport API data.
+    """Search for routes between two stops using SCC transport API data.
 
-    The route planner fetches **live** rail departure boards from the SCC
-    transport API and combines them with a curated bus-service knowledge
-    base to return multi-modal route options with real times, operators,
-    and intermediate stops.
+    Bus legs are timetable-derived from SCC /bus/times datasets and rail
+    legs are derived from SCC /rail/departures scheduled calling points.
     """
     try:
         data = request.get_json(silent=True) or {}
@@ -999,15 +1256,41 @@ def search_routes():
 
         from_name = from_stop.get('name', '').strip()
         to_name = to_stop.get('name', '').strip()
+        from_stop_code = (from_stop.get('atcoCode') or from_stop.get('ATCOCode') or '').strip()
+        to_stop_code = (to_stop.get('atcoCode') or to_stop.get('ATCOCode') or '').strip()
+
+        if not from_stop_code or not to_stop_code:
+            return jsonify({
+                "error": "Please select both origin and destination from autocomplete suggestions."
+            }), 422
 
         if not from_name or not to_name:
             return jsonify({"error": "Stop names are required"}), 400
+
+        sort_by = (data.get('sort_by') or 'soonest_arrival').strip().lower()
+        if sort_by not in {'soonest_arrival', 'fewest_changes'}:
+            return jsonify({"error": "Invalid sort_by. Use 'soonest_arrival' or 'fewest_changes'."}), 400
+        depart_time = (data.get('departTime') or data.get('depart_time') or '').strip() or None
 
         # Extract coordinates for distance-aware route generation
         from_lat = from_stop.get('lat') or from_stop.get('latitude')
         from_lon = from_stop.get('lon') or from_stop.get('longitude')
         to_lat = to_stop.get('lat') or to_stop.get('latitude')
         to_lon = to_stop.get('lon') or to_stop.get('longitude')
+
+        # Prefer exact coordinates from selected ATCO codes when available.
+        exact_from = _resolve_stop_by_atco(from_stop_code)
+        exact_to = _resolve_stop_by_atco(to_stop_code)
+        if exact_from is None or exact_to is None:
+            return jsonify({
+                "error": "Selected stop codes could not be resolved. Please re-select both stops."
+            }), 422
+        if exact_from:
+            from_lat, from_lon = exact_from['lat'], exact_from['lon']
+            from_name = exact_from['name']
+        if exact_to:
+            to_lat, to_lon = exact_to['lat'], exact_to['lon']
+            to_name = exact_to['name']
 
         # Convert to float if present
         try:
@@ -1018,43 +1301,45 @@ def search_routes():
         except (ValueError, TypeError):
             from_lat = from_lon = to_lat = to_lon = None
 
+        # If coordinates are missing (e.g. saved route names), try resolving
+        # from the local stop cache.
+        if from_lat is None or from_lon is None:
+            from_lat, from_lon = _resolve_stop_coordinates(from_name)
+        if to_lat is None or to_lon is None:
+            to_lat, to_lon = _resolve_stop_coordinates(to_name)
+
+        if from_lat is None or from_lon is None or to_lat is None or to_lon is None:
+            return jsonify({
+                "error": "Could not resolve stop coordinates. Please select both stops from autocomplete suggestions."
+            }), 422
+
         app.logger.info(
             f"Route search: {from_name} → {to_name}  "
             f"({from_lat},{from_lon}) → ({to_lat},{to_lon})"
         )
 
-        if app.config.get("TESTING"):
-            routes = _generate_valid_mock_routes(
-                from_name,
-                to_name,
-                from_lat=from_lat,
-                from_lon=from_lon,
-                to_lat=to_lat,
-                to_lon=to_lon,
-            )
-        else:
-            routes_data = transport_service.get_routes(
-                from_name, to_name,
-                from_lat=from_lat, from_lon=from_lon,
-                to_lat=to_lat, to_lon=to_lon,
-            )
-            routes = routes_data.get('routes', [])
-            if not routes:
-                app.logger.info("Route planner returned no routes, using mock fallback")
-                routes = _generate_valid_mock_routes(
-                    from_name,
-                    to_name,
-                    from_lat=from_lat,
-                    from_lon=from_lon,
-                    to_lat=to_lat,
-                    to_lon=to_lon,
-                )
+        routes_data = transport_service.get_routes(
+            from_name, to_name,
+            from_lat=from_lat, from_lon=from_lon,
+            to_lat=to_lat, to_lon=to_lon,
+            from_stop_code=from_stop_code or None,
+            to_stop_code=to_stop_code or None,
+            depart_time=depart_time,
+            sort_by=sort_by,
+        )
+        routes = routes_data.get('routes', [])
+
+        if not routes:
+            return jsonify({
+                "error": "No valid public transport routes found for this journey right now. Try different stops or time."
+            }), 404
 
         app.logger.info(f"Route planner returned {len(routes)} routes")
 
         return jsonify({
             "from": from_name,
             "to": to_name,
+            "sort_by": sort_by,
             "routes": routes,
             "timestamp": datetime.utcnow().isoformat()
         }), 200
@@ -1346,15 +1631,10 @@ with app.app_context():
 # Background stop-cache loader
 # ---------------------------------------------------------------------------
 def _load_stop_cache():
-    """Fetch all NaPTAN stops from the external API *and* the supplemental
-    stop list, then insert every stop into the local StopCache table.
+    """Fetch NaPTAN stops from SCC datasets and insert them into StopCache.
     Runs once in a background thread so the first request is not blocked
     by the potentially slow XML download.
-
-    The supplemental stops are always loaded so that every red-dot location
-    on the map (Liverpool, Manchester, Keswick, …) is guaranteed to have
-    bus/train stop entries in the database, regardless of whether the
-    upstream NaPTAN feed covers those areas."""
+    """
     global _stop_cache_ready
     with app.app_context():
         try:
@@ -1362,31 +1642,43 @@ def _load_stop_cache():
             MIN_LAT, MAX_LAT = 53.0, 55.2
             MIN_LON, MAX_LON = -3.7, -1.9
 
-            # ---- 1. Fetch from external API ----
-            api_stops = []
-            try:
-                app.logger.info("StopCache: Fetching NaPTAN data from API …")
-                naptan_data = transport_service.get_naptan(full=False)
-                raw = naptan_data.get("stops", []) if isinstance(naptan_data, dict) else naptan_data
-                if raw:
-                    api_stops = list(raw)
-                app.logger.info(f"StopCache: API returned {len(api_stops)} stops")
-            except Exception as api_err:
-                app.logger.warning(f"StopCache: API fetch failed – {api_err}")
-
-            # ---- 2. Always include the supplemental (static) stops ----
-            supplemental = transport_service.naptan._get_supplemental_stops()
-            app.logger.info(f"StopCache: {len(supplemental)} supplemental stops available")
-
-            # Merge: API stops first, then supplemental (skip duplicates)
-            seen_codes = set()
+            # ---- 1. Fetch from SCC NaPTAN datasets ----
+            datasets = ['lancashire', 'north_west_rail']
             all_stops = []
-            for stop in api_stops + supplemental:
-                code = stop.get("ATCOCode", "")
-                if code in seen_codes:
-                    continue
-                seen_codes.add(code)
-                all_stops.append(stop)
+            seen_codes = set()
+            for dataset in datasets:
+                try:
+                    app.logger.info(f"StopCache: Fetching NaPTAN dataset '{dataset}' …")
+                    naptan_data = transport_service.get_naptan(dataset=dataset)
+                    raw = naptan_data.get("stops", []) if isinstance(naptan_data, dict) else naptan_data
+                    for stop in (raw or []):
+                        code = stop.get("ATCOCode", "")
+                        if code and code in seen_codes:
+                            continue
+                        if code:
+                            seen_codes.add(code)
+                        all_stops.append(stop)
+                    app.logger.info(f"StopCache: dataset '{dataset}' cumulative unique stops = {len(all_stops)}")
+                except Exception as api_err:
+                    app.logger.warning(f"StopCache: dataset '{dataset}' fetch failed – {api_err}")
+
+            # Use full UK dataset only when the smaller datasets produced very
+            # limited results, keeping startup faster in normal operation.
+            if len(all_stops) < 1000:
+                try:
+                    app.logger.info("StopCache: supplementing with dataset 'full' …")
+                    naptan_data = transport_service.get_naptan(dataset='full')
+                    raw = naptan_data.get("stops", []) if isinstance(naptan_data, dict) else naptan_data
+                    for stop in (raw or []):
+                        code = stop.get("ATCOCode", "")
+                        if code and code in seen_codes:
+                            continue
+                        if code:
+                            seen_codes.add(code)
+                        all_stops.append(stop)
+                    app.logger.info(f"StopCache: after 'full' dataset unique stops = {len(all_stops)}")
+                except Exception as api_err:
+                    app.logger.warning(f"StopCache: dataset 'full' fetch failed – {api_err}")
 
             app.logger.info(f"StopCache: {len(all_stops)} unique stops after merge")
 
@@ -1438,48 +1730,31 @@ def _load_stop_cache():
             app.logger.error(f"StopCache: Background load failed – {exc}")
             db.session.rollback()
 
-            # Last-resort: try to load *just* the supplemental stops so the
-            # database is never empty.
-            try:
-                app.logger.info("StopCache: Attempting fallback load of supplemental stops only …")
-                db.session.query(StopCache).delete()
-                db.session.flush()
-                count = 0
-                for stop in transport_service.naptan._get_supplemental_stops():
-                    lat = stop.get("Latitude")
-                    lon = stop.get("Longitude")
-                    if lat is None or lon is None:
-                        continue
-                    try:
-                        lat_f = float(lat)
-                        lon_f = float(lon)
-                    except (ValueError, TypeError):
-                        continue
 
-                    common_name = stop.get("CommonName", "")
-                    indicator = stop.get("Indicator", "")
-                    locality_name = stop.get("LocalityName", "")
-                    search_text = f"{common_name} {indicator} {locality_name}".lower()
-
-                    db.session.add(StopCache(
-                        atco_code=stop.get("ATCOCode", ""),
-                        naptan_code=stop.get("NaptanCode", ""),
-                        common_name=common_name,
-                        indicator=indicator,
-                        locality_name=locality_name,
-                        latitude=lat_f,
-                        longitude=lon_f,
-                        stop_type=stop.get("StopType", "bus"),
-                        search_text=search_text,
-                    ))
-                    count += 1
-                db.session.commit()
-                with _stop_cache_lock:
-                    _stop_cache_ready = True
-                app.logger.info(f"StopCache: Fallback loaded {count} supplemental stops")
-            except Exception as fallback_err:
-                app.logger.error(f"StopCache: Fallback load also failed – {fallback_err}")
-                db.session.rollback()
+def _warm_route_planner_cache():
+    """Warm expensive SCC-backed route planner caches in background."""
+    try:
+        planner = transport_service.route_planner
+        planner._fetch_bus_times_index()
+        planner._load_naptan_lookup()
+        # Warm a small set of representative timetable datasets so the first
+        # user route query is not blocked on full TransXChange parsing.
+        now_utc = datetime.utcnow()
+        warm_pairs = [
+            ("Lancaster", "Preston"),
+            ("Lancaster", "Manchester"),
+        ]
+        seen = set()
+        for frm, to in warm_pairs:
+            for ds in planner._select_bus_timetable_datasets(frm, to, now_utc)[:2]:
+                ds_id = ds.get('id')
+                if not ds_id or ds_id in seen:
+                    continue
+                seen.add(ds_id)
+                planner._parse_timetable_dataset(ds)
+        app.logger.info("RoutePlanner: cache warm-up completed")
+    except Exception as exc:
+        app.logger.warning(f"RoutePlanner: cache warm-up skipped ({exc})")
 
 
 # Kick off the background loader (daemon thread so it won't prevent shutdown)
@@ -1491,6 +1766,9 @@ if app.config.get("SQLALCHEMY_DATABASE_URI") == "sqlite://":
 else:
     _stop_loader_thread = threading.Thread(target=_load_stop_cache, daemon=True)
     _stop_loader_thread.start()
+
+_route_warm_thread = threading.Thread(target=_warm_route_planner_cache, daemon=True)
+_route_warm_thread.start()
 
 
 if __name__ == "__main__":
