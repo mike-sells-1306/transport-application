@@ -80,6 +80,32 @@ def test_route_search_empty_names(client):
     assert resp.status_code == 400
 
 
+def test_route_search_with_crs_codes(client):
+    """CRS-coded stops from autocomplete should be accepted and routed."""
+    resp = client.post(
+        "/api/routes/search",
+        json={
+            "from": {"name": "Lancaster Railway Station", "atcoCode": "CRS:LAN"},
+            "to": {"name": "Preston Railway Station", "atcoCode": "CRS:PRE"},
+        },
+    )
+    assert resp.status_code == 200
+    data = json.loads(resp.data)
+    assert len(data.get("routes", [])) > 0
+
+
+def test_route_search_invalid_atco_code(client):
+    """Invalid explicit stop codes should return 422 with a clear error."""
+    resp = client.post(
+        "/api/routes/search",
+        json={
+            "from": {"name": "Lancaster", "atcoCode": "BAD:CODE"},
+            "to": {"name": "Preston", "atcoCode": "CRS:PRE"},
+        },
+    )
+    assert resp.status_code == 422
+
+
 # ── Happy-path route search ────────────────────────────────────────────
 
 

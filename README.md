@@ -102,6 +102,7 @@ Environment flags:
 - `STATIC_DATA_ONLY=true` (default): static endpoints read from local DB/cache, not live API.
 - `AUTO_REFRESH_STATIC_ON_STARTUP=false` (default): do not auto-refresh static data on backend startup.
 - `LIVE_POLL_MIN_SECONDS=5` (default minimum): caps live API polling cadence (bus/rail/weather).
+- `ROUTE_CONNECTION_INDEX_DB=/tmp/transport_connection_index.sqlite3` (default): SQLite path for the route connection index.
 
 ## Viewing Backend Stop/Station Metrics
 

@@ -1931,6 +1931,31 @@ async function viewSavedRoute(savedRoute) {
   if (fromInput) fromInput.value = savedRoute.routeStart;
   if (toInput) toInput.value = savedRoute.routeEnd;
 
+  const resolveSavedRouteStop = async (name) => {
+    if (!name || typeof name !== 'string') {
+      return { name: name || '' };
+    }
+    try {
+      const response = await fetch(`/api/stops/search?q=${encodeURIComponent(name)}&limit=1`);
+      if (!response.ok) {
+        return { name };
+      }
+      const data = await response.json();
+      if (Array.isArray(data?.stops) && data.stops.length > 0) {
+        return data.stops[0];
+      }
+      return { name };
+    } catch (_error) {
+      return { name };
+    }
+  };
+
+  const [fromResolved, toResolved] = await Promise.all([
+    resolveSavedRouteStop(savedRoute.routeStart),
+    resolveSavedRouteStop(savedRoute.routeEnd),
+  ]);
+  selectedStops.from = fromResolved;
+  selectedStops.to = toResolved;
   setFieldError('from-input', 'from-input-error', '');
   setFieldError('to-input', 'to-input-error', '');
 

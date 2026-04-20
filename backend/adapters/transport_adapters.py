@@ -1763,8 +1763,15 @@ class RoutePlannerAdapter:
         for ds in index:
             if ds.get('status') != 'published':
                 continue
+            url = ds.get('url')
+            if not url and not self._static_data_only:
+                continue
 
             score = 0
+            if self._static_data_only and not url:
+                # Local cached timetable snapshots in static mode intentionally
+                # do not have remote URLs, but should still be eligible.
+                score += 3
             locs = [str(x.get('name', '')).lower() for x in ds.get('localities', [])]
             loc_blob = ' | '.join(locs)
             for t in from_terms:

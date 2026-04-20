@@ -31,6 +31,20 @@ This backend provides unified API endpoints for regional transport datasets and 
 - `GET /api/bus/live/<bus_code>`
   - Returns live bus data for specified service.
 
+### Route Search
+- `POST /api/routes/search`
+  - Input:
+    ```json
+    {
+      "from": {"name": "Lancaster Bus Station", "atcoCode": "2400LAC30001", "lat": 54.0488, "lon": -2.8013},
+      "to": {"name": "Preston Bus Station", "atcoCode": "2400LAA10001", "lat": 53.7593, "lon": -2.6993},
+      "sort_by": "soonest_arrival"
+    }
+    ```
+  - `atcoCode`/`ATCOCode` (or `CRS:<code>` for rail station suggestions) is preferred for exact stop matching.
+  - Name + coordinate payloads are also accepted for compatibility.
+  - Output: `{from, to, sort_by, routes, timestamp}` or an error (422/404).
+
 ### Rail Corpus
 - `GET /api/rail/corpus`
   - Returns rail movement/event corpus.
