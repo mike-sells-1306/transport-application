@@ -1035,17 +1035,17 @@ async function fetchWeatherForAllLocations(options = {}) {
     })
   );
 
-  const weatherData = results.map(r => (
+  const weatherData = results.map((r, index) => (
     r.status === 'fulfilled'
       ? r.value
-      : { name: 'Unknown location', weather: null }
+      : { key: `fallback-${index}`, name: 'Unknown location', weather: null }
   ));
   weatherCache = weatherData;
   weatherCacheTimestamp = now;
   return weatherData;
 }
 
-function weatherItemKey(entry) {
+function generateWeatherItemKey(entry) {
   const keyPart = entry?.key ? `id-${entry.key}` : `name-${entry?.name || 'unknown'}`;
   return keyPart.toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
 }
@@ -1065,6 +1065,13 @@ function weatherRenderSignature(name, weather) {
     description: weather?.conditions?.description ?? null,
     icon: weather?.icon?.code ?? null,
   });
+}
+
+function isWeatherItemInitiallyOpen(itemKey, existingItem) {
+  if (weatherExpandedRowState.has(itemKey)) {
+    return !!weatherExpandedRowState.get(itemKey);
+  }
+  return !!existingItem?.classList.contains('weather-item-open');
 }
 
 /**
@@ -1091,7 +1098,7 @@ async function searchWeatherLocations(query) {
  * @returns {HTMLLIElement}
  */
 function buildWeatherListItem(name, weather, options = {}) {
-  const { itemKey = weatherItemKey({ name }), signature = weatherRenderSignature(name, weather), initiallyOpen = false } = options;
+  const { itemKey = generateWeatherItemKey({ name }), signature = weatherRenderSignature(name, weather), initiallyOpen = false } = options;
   const li = document.createElement('li');
   li.className = 'weather-item';
   li.dataset.weatherKey = itemKey;
@@ -1220,11 +1227,7 @@ function buildWeatherListItem(name, weather, options = {}) {
 }
 
 function reconcileWeatherPanelList(weatherList, weatherData) {
-  Array.from(weatherList.children).forEach(child => {
-    if (!child.classList.contains('weather-item')) {
-      child.remove();
-    }
-  });
+  Array.from(weatherList.querySelectorAll('.weather-loading')).forEach(node => node.remove());
 
   const existingByKey = new Map(
     Array.from(weatherList.querySelectorAll('.weather-item')).map(item => [item.dataset.weatherKey, item])
@@ -1232,17 +1235,18 @@ function reconcileWeatherPanelList(weatherList, weatherData) {
   const nextNodes = [];
   const nextKeys = new Set();
 
-  weatherData.forEach(entry => {
+  weatherData.forEach((entry, index) => {
     const name = entry?.name || 'Unknown location';
     const weather = entry?.weather ?? null;
-    const itemKey = weatherItemKey(entry);
+    const keyedEntry = entry?.key ? entry : { ...entry, key: `row-${index}-${name}` };
+    const itemKey = generateWeatherItemKey(keyedEntry);
     if (nextKeys.has(itemKey)) return;
     nextKeys.add(itemKey);
     const signature = weatherRenderSignature(name, weather);
     const existing = existingByKey.get(itemKey);
-    const initiallyOpen = weatherExpandedRowState.get(itemKey) ?? existing?.classList.contains('weather-item-open') ?? false;
+    const initiallyOpen = isWeatherItemInitiallyOpen(itemKey, existing);
 
-    if (existing && existing.dataset.weatherSignature === signature && existing.dataset.weatherName === name) {
+    if (existing && existing.dataset.weatherSignature === signature) {
       nextNodes.push(existing);
     } else {
       nextNodes.push(buildWeatherListItem(name, weather, { itemKey, signature, initiallyOpen }));
