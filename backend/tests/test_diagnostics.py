@@ -56,10 +56,13 @@ def test_api_health_remains_backward_compatible_without_metrics_or_snapshot(clie
 
 
 def test_diagnostics_summary_handles_partial_failures(client, monkeypatch):
+    def _raise_metrics_error():
+        raise RuntimeError("metrics unavailable")
+
     monkeypatch.setattr(
         transport_service,
         "get_route_processing_metrics",
-        lambda: (_ for _ in ()).throw(RuntimeError("metrics unavailable")),
+        _raise_metrics_error,
     )
 
     resp = client.get("/api/diagnostics/summary")
