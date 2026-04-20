@@ -220,6 +220,8 @@ async function setLocale(locale, options = {}) {
     renderWeatherPanel({ announce: false });
   }
 
+  renderNotifications(latestNotifications, { announce: false });
+
   if (announce) {
     announceToScreenReader(t('announce.languageChanged', { locale: getLocaleDisplayName(requested) }));
   }
@@ -462,8 +464,9 @@ function refreshMapPopupTranslations() {
 
 // Store current routes data for sorting
 let currentRoutesData = null;
-let activeRouteSearchController = null;
+const activeRouteSearchControllers = new Set();
 const ROUTE_SEARCH_TIMEOUT_MS = 30000;
+let latestNotifications = [];
 
 // Swap button functionality
 function setupSwapButton() {
@@ -1928,34 +1931,27 @@ async function viewSavedRoute(savedRoute) {
   if (fromInput) fromInput.value = savedRoute.routeStart;
   if (toInput) toInput.value = savedRoute.routeEnd;
 
-  // Build minimal stop objects from the names (no coordinates available from saved data)
-  selectedStops.from = { name: savedRoute.routeStart };
-  selectedStops.to = { name: savedRoute.routeEnd };
+  setFieldError('from-input', 'from-input-error', '');
+  setFieldError('to-input', 'to-input-error', '');
 
   try {
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), ROUTE_SEARCH_TIMEOUT_MS);
-    const selectedSort = document.getElementById('sort')?.value || 'soonest_arrival';
-    const response = await fetch('/api/routes/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
-      body: JSON.stringify({
-        from: selectedStops.from,
-        to: selectedStops.to,
-        sort_by: selectedSort,
-      }),
-    });
-    window.clearTimeout(timeoutId);
+    const [resolvedFrom, resolvedTo] = await Promise.all([
+      resolveSavedRouteStop(savedRoute.routeStart),
+      resolveSavedRouteStop(savedRoute.routeEnd),
+    ]);
 
-    if (!response.ok) {
-      const err = await response.json();
+    if (!resolvedFrom || !resolvedTo) {
       alert(t('alerts.couldNotLoadSavedJourneyRoutes'));
+      announceToScreenReader(t('alerts.couldNotLoadSavedJourneyRoutes'), 'assertive');
       return;
     }
 
-    const data = await response.json();
-    displayRoutesModal(data);
+    selectedStops.from = resolvedFrom;
+    selectedStops.to = resolvedTo;
+
+    // Use the standard route search flow so all journeys for this origin/destination
+    // are fetched and rendered consistently with normal autocomplete searches.
+    await searchRoutes();
   } catch (error) {
     console.error('Error loading saved route:', error);
     if (error && error.name === 'AbortError') {
@@ -1964,6 +1960,91 @@ async function viewSavedRoute(savedRoute) {
       alert(t('alerts.couldNotLoadRoutesTryAgain'));
     }
   }
+}
+
+function normalizeStopNameForMatching(name) {
+  return String(name || '')
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function pickBestSavedRouteStop(stopName, stops) {
+  if (!Array.isArray(stops) || stops.length === 0) {
+    return null;
+  }
+
+  const target = normalizeStopNameForMatching(stopName);
+  const withCodes = stops.filter(stop => stop && stop.atcoCode);
+  const candidates = withCodes.length ? withCodes : stops;
+
+  const exact = candidates.find(stop => normalizeStopNameForMatching(stop.name) === target);
+  if (exact) return exact;
+
+  const startsWith = candidates.find(stop => normalizeStopNameForMatching(stop.name).startsWith(target));
+  if (startsWith) return startsWith;
+
+  const includes = candidates.find(stop => normalizeStopNameForMatching(stop.name).includes(target));
+  if (includes) return includes;
+
+  return candidates[0] || null;
+}
+
+function buildSavedRouteStopQueries(stopName) {
+  const raw = String(stopName || '').trim();
+  if (!raw) {
+    return [];
+  }
+
+  const withoutBracketed = raw.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+  const beforeComma = raw.split(',')[0]?.trim() || '';
+  const beforeCommaNoBrackets = beforeComma.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+  const localityOnly = raw.split(',').slice(-1)[0]?.trim() || '';
+
+  const queries = [
+    raw,
+    withoutBracketed,
+    beforeComma,
+    beforeCommaNoBrackets,
+    localityOnly,
+  ].filter(Boolean);
+
+  const words = normalizeStopNameForMatching(beforeCommaNoBrackets || raw)
+    .split(' ')
+    .filter(Boolean);
+  if (words.length >= 2) {
+    queries.push(words.slice(0, 2).join(' '));
+  }
+  if (words.length >= 1) {
+    queries.push(words[0]);
+  }
+
+  // Preserve order and remove duplicates / too-short queries.
+  return Array.from(new Set(queries.map(q => q.trim()))).filter(q => q.length >= 2);
+}
+
+async function resolveSavedRouteStop(stopName) {
+  const queries = buildSavedRouteStopQueries(stopName);
+  if (!queries.length) {
+    return null;
+  }
+
+  for (const query of queries) {
+    const response = await fetch(`/api/stops/search?q=${encodeURIComponent(query)}&limit=10`);
+    if (!response.ok) {
+      continue;
+    }
+
+    const data = await response.json();
+    const best = pickBestSavedRouteStop(stopName, data?.stops || []);
+    if (best) {
+      return best;
+    }
+  }
+
+  return null;
 }
 
 function updateSavedRoutesScrollButton() {
@@ -1994,30 +2075,58 @@ function scrollSavedRoutes() {
   list.scrollBy({ top: scrollStep, behavior: 'smooth' });
 }
 
-function renderNotifications(notifications) {
+function localizeNotificationMessage(notification) {
+  const message = String(notification?.message || '').trim();
+  if (!message) {
+    return '';
+  }
+
+  if (/^Welcome to Transport for North West\. Your account is now active\.?$/i.test(message)) {
+    return t('notifications.messages.welcome');
+  }
+
+  const routeSavedMatch = message.match(/^Route saved:\s*(.+?)\s*(?:→|->)\s*(.+)$/i);
+  if (routeSavedMatch) {
+    return t('notifications.messages.routeSaved', {
+      from: routeSavedMatch[1].trim(),
+      to: routeSavedMatch[2].trim(),
+    });
+  }
+
+  return message;
+}
+
+function renderNotifications(notifications, options = {}) {
+  const { announce = true } = options;
   const notifList = document.querySelector('.notif-list');
   if (!notifList) {
     return;
   }
 
+  latestNotifications = Array.isArray(notifications) ? notifications : [];
+
   notifList.innerHTML = '';
-  if (!notifications.length) {
+  if (!latestNotifications.length) {
     const emptyNode = document.createElement('div');
     emptyNode.className = 'notif-item';
     emptyNode.textContent = t('notifications.none');
     notifList.appendChild(emptyNode);
-    announceToScreenReader(t('announce.noNotifications'));
+    if (announce) {
+      announceToScreenReader(t('announce.noNotifications'));
+    }
     return;
   }
 
-  notifications.slice(0, 5).forEach(item => {
+  latestNotifications.slice(0, 5).forEach(item => {
     const row = document.createElement('div');
     row.className = 'notif-item';
-    row.textContent = item.message;
+    row.textContent = localizeNotificationMessage(item);
     notifList.appendChild(row);
   });
 
-  announceToScreenReader(t('announce.notificationsLoaded', { count: Math.min(notifications.length, 5) }), 'assertive');
+  if (announce) {
+    announceToScreenReader(t('announce.notificationsLoaded', { count: Math.min(latestNotifications.length, 5) }), 'assertive');
+  }
 }
 
 async function handleLoginSubmit(event) {
@@ -2507,13 +2616,14 @@ async function searchRoutes() {
   setFieldError('from-input', 'from-input-error', '');
   setFieldError('to-input', 'to-input-error', '');
 
+  const requestFrom = selectedStops.from;
+  const requestTo = selectedStops.to;
+  const controller = new AbortController();
+  activeRouteSearchControllers.add(controller);
+  let timeoutId = null;
+
   try {
-    if (activeRouteSearchController) {
-      activeRouteSearchController.abort();
-    }
-    const controller = new AbortController();
-    activeRouteSearchController = controller;
-    const timeoutId = window.setTimeout(() => controller.abort(), ROUTE_SEARCH_TIMEOUT_MS);
+    timeoutId = window.setTimeout(() => controller.abort(), ROUTE_SEARCH_TIMEOUT_MS);
 
     const selectedSort = document.getElementById('sort')?.value || 'soonest_arrival';
     const response = await fetch('/api/routes/search', {
@@ -2523,8 +2633,8 @@ async function searchRoutes() {
       },
       signal: controller.signal,
       body: JSON.stringify({
-        from: selectedStops.from,
-        to: selectedStops.to,
+        from: requestFrom,
+        to: requestTo,
         sort_by: selectedSort,
       }),
     });
@@ -2554,9 +2664,10 @@ async function searchRoutes() {
       announceToScreenReader(t('announce.routeFetchError'), 'assertive');
     }
   } finally {
-    if (activeRouteSearchController && activeRouteSearchController.signal.aborted) {
-      activeRouteSearchController = null;
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
     }
+    activeRouteSearchControllers.delete(controller);
   }
 }
 

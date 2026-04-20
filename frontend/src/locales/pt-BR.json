@@ -1,11 +1,20 @@
 {
-  "app": { "title": "Transporte do Noroeste" },
+  "app": {
+    "title": "Transporte do Noroeste"
+  },
   "navigation": {
     "account": "Conta",
     "faq": "FAQ",
     "support": "Suporte ao cliente",
     "accessibility": "Acessibilidade",
-    "accessibilityActive": "Acessibilidade ✓"
+    "accessibilityActive": "Acessibilidade ✓",
+    "primarySidebar": "Barra lateral principal",
+    "main": "Navegação principal",
+    "toggleSidebar": "Alternar barra lateral",
+    "expandSidebar": "Expandir barra lateral",
+    "collapseSidebar": "Recolher barra lateral",
+    "expandSidebarAria": "Expandir o menu de navegação da barra lateral",
+    "collapseSidebarAria": "Recolher o menu de navegação da barra lateral"
   },
   "journey": {
     "prompt": "Para onde gostaria de viajar hoje?",
@@ -19,14 +28,69 @@
     "departureRequired": "Selecione uma estação de partida na lista de sugestões.",
     "arrivalRequired": "Selecione uma estação de chegada na lista de sugestões."
   },
+  "weather": {
+    "openPanel": "Ver atualizações meteorológicas",
+    "title": "Clima",
+    "searchLabel": "Pesquisar clima por local",
+    "searchPlaceholder": "Pesquisar local…",
+    "loading": "Carregando dados meteorológicos…",
+    "unableToLoad": "Não foi possível carregar os dados meteorológicos",
+    "noLocations": "Nenhum local encontrado",
+    "searchingMore": "Pesquisando mais locais…",
+    "feelsLike": "Sensação térmica {value}°C",
+    "humidity": "Umidade {value}%",
+    "wind": "Vento {value} {unit}",
+    "cloudCover": "Cobertura de nuvens {value}%",
+    "visibility": "Visibilidade {value} km",
+    "noDetail": "Sem detalhes disponíveis",
+    "temperatureUnavailable": "temperatura indisponível",
+    "rowAria": "Ver detalhes do clima de {location}, {temperature}",
+    "iconAlt": "Ícone do clima"
+  },
+  "notifications": {
+    "openPanel": "Ver notificações de serviço",
+    "title": "Notificações",
+    "none": "Ainda não há notificações.",
+    "announcementPrefix": "AVISO:",
+    "viewMore": "Ver mais…",
+    "sample": {
+      "one": "Trem para Blackpool com atraso de 12 minutos.",
+      "oneTime": "há 12 min",
+      "two": "Alerta de neve em Barrow-in-Furness.",
+      "twoTime": "há 4 h"
+    },
+    "messages": {
+      "welcome": "Bem-vindo ao Transporte do Noroeste. Sua conta está ativa.",
+      "routeSaved": "Rota guardada: {from} → {to}"
+    }
+  },
   "faq": {
     "title": "FAQ",
     "close": "Fechar FAQ",
-    "q1": { "question": "Como vejo detalhes de um local?", "answer": "Pesquise o local ou clique nele no mapa." },
-    "q2": { "question": "Que área o mapa cobre?", "answer": "O mapa foca no corredor costeiro entre Preston e Lancaster." },
-    "q3": { "question": "Como compro um bilhete para a viagem?", "answer": "Este serviço é para encontrar rotas. Compre bilhetes noutro serviço." },
-    "q4": { "question": "Como guardo rotas como favoritas?", "answer": "Clique em “Guardar rota” no resultado. É necessário iniciar sessão." },
-    "q5": { "question": "E se houver alterações nas minhas rotas guardadas?", "answer": "Enviamos notificações quando houver potenciais perturbações." }
+    "q1": {
+      "question": "Como vejo detalhes de um local?",
+      "answer": "Pesquise o local ou clique nele no mapa."
+    },
+    "q2": {
+      "question": "Que área o mapa cobre?",
+      "answer": "O mapa foca no corredor costeiro entre Preston e Lancaster."
+    },
+    "q3": {
+      "question": "Como compro um bilhete para a viagem?",
+      "answer": "Este serviço é para encontrar rotas. Compre bilhetes noutro serviço."
+    },
+    "q4": {
+      "question": "Como guardo rotas como favoritas?",
+      "answer": "Clique em “Guardar rota” no resultado. É necessário iniciar sessão."
+    },
+    "q5": {
+      "question": "E se houver alterações nas minhas rotas guardadas?",
+      "answer": "Enviamos notificações quando houver potenciais perturbações."
+    },
+    "q6": {
+      "question": "Quais recursos de acessibilidade posso usar?",
+      "answer": "Você pode alterar o idioma do site, ajustar o tamanho da fonte para facilitar a leitura e escolher um perfil de cores para diferentes necessidades de visão de cores. Você pode então salvar essas configurações em sua conta."
+    }
   },
   "support": {
     "title": "Suporte ao cliente",
@@ -133,10 +197,43 @@
     "promptConfirmDeletePassword": "Confirme a palavra-passe para eliminar a conta:"
   },
   "announce": {
-    "languageChanged": "Idioma alterado para {locale}."
+    "languageChanged": "Idioma alterado para {locale}.",
+    "journeySwapped": "As estações de partida e chegada foram trocadas.",
+    "weatherUpdated": "Tempo atualizado para locais {count}.",
+    "weatherLoadFailed": "Não foi possível carregar dados meteorológicos.",
+    "weatherNoLocations": "Nenhum local meteorológico encontrado.",
+    "weatherShowingResults": "Mostrando resultados meteorológicos para locais {count}.",
+    "weatherPanelOpened": "Painel meteorológico aberto. Atualizações meteorológicas ao vivo estão disponíveis.",
+    "weatherPanelClosed": "Painel meteorológico fechado.",
+    "notificationsPanelOpened": "Painel de notificações aberto. Os anúncios de serviço serão lidos automaticamente.",
+    "notificationsPanelClosed": "Painel de notificações fechado.",
+    "notificationsLoaded": "{count} notificações carregadas.",
+    "faqOpened": "Painel de perguntas frequentes aberto.",
+    "faqClosed": "Painel de perguntas frequentes fechado.",
+    "supportOpened": "Painel de suporte ao cliente aberto.",
+    "supportClosed": "Painel de suporte ao cliente fechado.",
+    "accessibilityOpened": "Painel de configurações de acessibilidade aberto.",
+    "accessibilityClosed": "Painel de configurações de acessibilidade fechado.",
+    "authOpened": "A caixa de diálogo de login da conta é aberta.",
+    "authClosed": "Caixa de diálogo de login da conta fechada.",
+    "accountOpened": "Caixa de diálogo de configurações da conta aberta.",
+    "accountClosed": "Caixa de diálogo de configurações da conta fechada.",
+    "noNotifications": "Não há notificações.",
+    "stopSuggestionsUnavailable": "Não é possível carregar sugestões de parada no momento.",
+    "selectBothStops": "Selecione as estações de partida e de chegada antes de pesquisar rotas.",
+    "routeFetchError": "Erro ao buscar rotas. Por favor, tente novamente.",
+    "routesShowing": "Mostrando opções de rota {count} de {from} a {to}.",
+    "routesAvailable": "{count} rotas disponíveis. Use Enter ou Espaço em uma rota para visualizar detalhes.",
+    "routeSaved": "Rota salva em sua conta.",
+    "routesModalClosed": "Modal de rotas fechado.",
+    "sidebarCollapsed": "A barra lateral entrou em colapso.",
+    "sidebarExpanded": "Barra lateral expandida."
   },
   "common": {
-    "close": "Fechar"
+    "close": "Fechar",
+    "minutesOnly": "{minutes} minutos",
+    "hoursMinutes": "{hours}h {minutes} minutos",
+    "hoursOnly": "{hours}h"
   },
   "locale": {
     "en-GB": "Inglês (Reino Unido)",
@@ -152,5 +249,181 @@
     "pt-BR": "Português (Brasil)",
     "ru-RU": "Russo (Rússia)",
     "ur-PK": "Urdu (Paquistão)"
+  },
+  "map": {
+    "ariaLabel": "Mapa interativo do Noroeste da Inglaterra",
+    "popupImageAlt": "Foto de {location}"
+  },
+  "route": {
+    "defaultHeader": "Rotas de Lancaster para Blackpool",
+    "closeModal": "Fechar modal de rotas",
+    "sortBy": "Ordenar por:",
+    "sortByAria": "Classificar rotas por",
+    "sort": {
+      "startTime": "Hora de início",
+      "fastest": "Mais rápido",
+      "fewestChanges": "Menos alterações"
+    },
+    "download": "Baixar rotas",
+    "downloadAria": "Baixe as rotas exibidas como PDF",
+    "downloadTooltipEnabled": "Baixe todas as opções de rota exibidas",
+    "downloadTooltipDisabled": "Procure rotas para ativar o download de rotas",
+    "headerFromTo": "Rotas de {from} a {to}",
+    "noResults": "Nenhuma rota encontrada para esta jornada.",
+    "viewDetails": "Ver detalhes da rota",
+    "rowAria": "Ver rota {index}, {startTime} para {endTime}, duração {duration}, {changes} mudança{suffix}.",
+    "changesBadge": "{count} alteração{suffix}",
+    "save": "Salvar rota",
+    "saveAria": "Salvar rota {index} de {startTime} para {endTime}",
+    "saved": "Salvo",
+    "savedAria": "Rota salva em sua conta",
+    "walkingRoute": "Percurso pedestre",
+    "genericName": "Rota",
+    "noLegDetails": "Nenhuma informação detalhada do trecho disponível para esta rota.",
+    "leg": {
+      "walk": "Caminhe de {from} a {to} ({distance}m, {duration}) • {depart}–{arrive}",
+      "wait": "Mudança em {at} ({duration} espera) • {depart}–{arrive}",
+      "transport": "{service} de {from} a {to} ({duration}) • {depart}–{arrive}",
+      "walkSummary": "Caminhada {distance}m • {duration}",
+      "waitSummary": "Alteração em {at} • {duration} aguarde",
+      "transportSummary": "{service} • {duration}",
+      "stops": "{from} → {to}"
+    }
+  },
+  "transport": {
+    "bus": "Ônibus",
+    "train": "Trem",
+    "walk": "Andar",
+    "wait": "Espere"
+  },
+  "alerts": {
+    "loginToSaveAccessibility": "Faça login para salvar as preferências de acessibilidade em sua conta.",
+    "accessibilitySaved": "Preferências de acessibilidade salvas em sua conta.",
+    "couldNotSavePreferences": "Não foi possível salvar as preferências no momento.",
+    "couldNotLoadSavedJourneyRoutes": "Não foi possível carregar rotas para esta jornada salva.",
+    "couldNotLoadRoutesTryAgain": "Não foi possível carregar rotas. Verifique sua conexão e tente novamente.",
+    "passwordUpdated": "Senha atualizada com sucesso.",
+    "accountDeleted": "Sua conta foi excluída.",
+    "unableToFindRoutes": "Não foi possível encontrar rotas para esta jornada.",
+    "searchRouteBeforePdf": "Procure primeiro uma rota para baixar um PDF.",
+    "pdfUnavailable": "A exportação de PDF não está disponível no momento. Por favor, tente novamente em alguns instantes.",
+    "loginToSaveRoutes": "Faça login para salvar rotas.",
+    "requestFailedGeneric": "Algo deu errado. Por favor, tente novamente.",
+    "networkError": "Erro de rede. Por favor, verifique sua conexão.",
+    "invalidEmail": "Insira um endereço de e-mail válido.",
+    "invalidPassword": "Verifique sua senha e tente novamente.",
+    "accountAlreadyExists": "Já existe uma conta com esses detalhes.",
+    "unauthorized": "Você não está autorizado para esta ação.",
+    "forbidden": "Esta ação não é permitida.",
+    "notFound": "O recurso solicitado não foi encontrado.",
+    "tooManyRequests": "Muitos pedidos. Aguarde e tente novamente.",
+    "loginFailed": "Falha no login. Verifique seus dados e tente novamente.",
+    "registrationFailed": "Falha no registro. Revise seus dados e tente novamente.",
+    "passwordUpdateFailed": "Não foi possível atualizar a senha no momento.",
+    "accountDeletionFailed": "Não foi possível excluir sua conta agora.",
+    "saveRouteFailed": "Não foi possível salvar esta rota no momento."
+  },
+  "autocomplete": {
+    "noStops": "Nenhuma parada encontrada na região",
+    "errorLoadingStops": "Erro ao carregar paradas"
+  },
+  "pdf": {
+    "completeRoutePlan": "Plano de rota completo",
+    "routePlanContinued": "Plano de Rota Continuação",
+    "summaryMeta": "Exportado {exportedAt} • {count} opção de rota{suffix} • Classificado por {sortLabel}",
+    "routeMeta": "Horários: {startTime} a {endTime} • Duração: {duration} • Mudanças: {changes}",
+    "routeTitle": "Rota {index}: {summary}",
+    "intermediateStop": "Parada intermediária: {stop}",
+    "pageXofY": "Página {page} de {total}"
+  },
+  "locations": {
+    "liverpool": {
+      "name": "Liverpool",
+      "description": "Liverpool - Cidade portuária histórica e centro cultural na costa do Mar da Irlanda."
+    },
+    "manchester": {
+      "name": "Manchester",
+      "description": "Manchester – Importante cidade industrial e comercial no coração da Grande Manchester."
+    },
+    "preston": {
+      "name": "Preston",
+      "description": "Preston - a mais nova cidade da Inglaterra, centro cultural de Lancashire."
+    },
+    "blackburn": {
+      "name": "Blackburn",
+      "description": "Blackburn - Cidade histórica têxtil, onde fica a catedral."
+    },
+    "lytham_st_annes": {
+      "name": "Lytham-St-Annes",
+      "description": "Lytham-St-Annes - Cidade litorânea na costa de Fylde."
+    },
+    "kirkham": {
+      "name": "Kirkham",
+      "description": "Kirkham – Cidade mercantil no coração de Fylde."
+    },
+    "poulton_le_fylde": {
+      "name": "Poulton-le-Fylde",
+      "description": "Poulton-le-Fylde – Cidade mercantil no coração de Fylde."
+    },
+    "fleetwood": {
+      "name": "Fleetwood",
+      "description": "Fleetwood - Cidade costeira na foz do rio Wyre e histórico porto de pesca."
+    },
+    "blackpool": {
+      "name": "Blackpool",
+      "description": "Blackpool - Icônica estância balnear com a famosa Torre de Blackpool."
+    },
+    "garstang": {
+      "name": "Garstang",
+      "description": "Garstang - histórica cidade mercantil às margens do rio Wyre."
+    },
+    "lancaster": {
+      "name": "Lancaster",
+      "description": "Lancaster - Cidade histórica com castelo medieval e universidade."
+    },
+    "morecambe": {
+      "name": "Morecambe",
+      "description": "Morecambe – Cidade litorânea conhecida por seu calçadão e vistas da baía."
+    },
+    "heysham": {
+      "name": "Heysham",
+      "description": "Heysham - Vila costeira com central nuclear e património marítimo."
+    },
+    "carnforth": {
+      "name": "Carnforth",
+      "description": "Carnforth – Vila conhecida por seu patrimônio ferroviário."
+    },
+    "kirkby_lonsdale": {
+      "name": "Kirkby-Lonsdale",
+      "description": "Kirkby-Lonsdale - Vila pitoresca no Vale Lune."
+    },
+    "grange_over_sands": {
+      "name": "Grange-Over-Sands",
+      "description": "Grange-Over-Sands – Charmoso resort costeiro na Baía de Morecambe."
+    },
+    "cartmel": {
+      "name": "Cartmel",
+      "description": "Cartmel - Vila pitoresca famosa por seu Priorado e pista de corrida com obstáculos."
+    },
+    "kendal": {
+      "name": "Kendal",
+      "description": "Kendal - Porta de entrada para Lake District, histórica cidade mercantil."
+    },
+    "windermere": {
+      "name": "Windermere",
+      "description": "Windermere - Coração do Lake District com o maior lago da Inglaterra."
+    },
+    "ambleside": {
+      "name": "Ambleside",
+      "description": "Ambleside - pitoresca cidade de Lake District, às margens do Lago Windermere."
+    },
+    "barrow_in_furness": {
+      "name": "Carrinho de mão em pele",
+      "description": "Barrow-in-Furness - Cidade industrial na costa do Mar da Irlanda."
+    },
+    "keswick": {
+      "name": "Keswick",
+      "description": "Keswick - histórica cidade mercantil no norte de Lake District."
+    }
   }
 }

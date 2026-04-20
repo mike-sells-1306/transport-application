@@ -1763,9 +1763,6 @@ class RoutePlannerAdapter:
         for ds in index:
             if ds.get('status') != 'published':
                 continue
-            url = ds.get('url')
-            if not url:
-                continue
 
             score = 0
             locs = [str(x.get('name', '')).lower() for x in ds.get('localities', [])]
@@ -2511,11 +2508,11 @@ class RoutePlannerAdapter:
 
         datasets = self._select_bus_timetable_datasets(from_name, to_name, now)
         if dist_km <= 8:
-            datasets = datasets[:1]
+            datasets = datasets[:4]
         elif dist_km <= 25:
-            datasets = datasets[:3]
+            datasets = datasets[:6]
         else:
-            datasets = datasets[:5]
+            datasets = datasets[:8]
 
         # Restrict bus legs to lines explicitly published by the selected
         # online SCC datasets for this query context.
@@ -2525,6 +2522,11 @@ class RoutePlannerAdapter:
                 norm = re.sub(r'[^A-Za-z0-9]+', '', str(ln or '').upper())
                 if norm:
                     allowed_lines.add(norm)
+
+        # Dataset `lines` metadata can be incomplete for local services.
+        # For local/medium journeys, avoid over-restricting by line code.
+        if dist_km <= 25:
+            allowed_lines.clear()
 
         def line_allowed(service_label):
             if not allowed_lines:
@@ -2710,9 +2712,9 @@ class RoutePlannerAdapter:
             d_to = self._haversine(md['lat'], md['lon'], to_lat, to_lon)
             if from_stop_code:
                 if from_exact_meta is None:
-                    from_limit = 0.35
+                    from_limit = 0.60
                 else:
-                    from_limit = 0.25
+                    from_limit = 0.45
                 if d_from > from_limit:
                     pass
                 else:
@@ -2731,7 +2733,7 @@ class RoutePlannerAdapter:
                 origin_access.append((ref, max(1, int(wm / self.WALK_SPEED)), wm))
 
             if to_stop_code:
-                to_limit = 0.35 if to_exact_meta is None else 0.25
+                to_limit = 0.60 if to_exact_meta is None else 0.45
                 if d_to > to_limit:
                     pass
                 else:
@@ -3203,7 +3205,7 @@ class RoutePlannerAdapter:
                 continue
             if from_exact is not None:
                 d_from_exact = self._haversine(from_exact['lat'], from_exact['lon'], nd['lat'], nd['lon'])
-                if d_from_exact <= 0.25:
+                if d_from_exact <= 0.45:
                     walk_neighbors[origin_id].append((nid, d_from_exact))
             elif not has_from_exact_bus and not from_crs:
                 d_from = self._haversine(from_lat, from_lon, nd['lat'], nd['lon'])
@@ -3211,7 +3213,7 @@ class RoutePlannerAdapter:
                     walk_neighbors[origin_id].append((nid, d_from))
             if to_exact is not None:
                 d_to_exact = self._haversine(nd['lat'], nd['lon'], to_exact['lat'], to_exact['lon'])
-                if d_to_exact <= 0.25:
+                if d_to_exact <= 0.45:
                     walk_neighbors[nid].append((dest_id, d_to_exact))
             elif not has_to_exact_bus and not to_crs:
                 d_to = self._haversine(nd['lat'], nd['lon'], to_lat, to_lon)

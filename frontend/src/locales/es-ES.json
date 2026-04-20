@@ -1,6 +1,11 @@
 {
-  "app": { "title": "Transporte del Noroeste" },
-  "map": { "ariaLabel": "Mapa interactivo del noroeste de Inglaterra", "popupImageAlt": "Foto de {location}" },
+  "app": {
+    "title": "Transporte del Noroeste"
+  },
+  "map": {
+    "ariaLabel": "Mapa interactivo del noroeste de Inglaterra",
+    "popupImageAlt": "Foto de {location}"
+  },
   "navigation": {
     "primarySidebar": "Barra lateral principal",
     "main": "Navegación principal",
@@ -57,6 +62,10 @@
       "oneTime": "hace 12 min",
       "two": "Aviso de nieve en Barrow-in-Furness.",
       "twoTime": "hace 4 h"
+    },
+    "messages": {
+      "welcome": "Bienvenido a Transporte del Noroeste. Tu cuenta ya está activa.",
+      "routeSaved": "Ruta guardada: {from} → {to}"
     }
   },
   "faq": {
@@ -81,6 +90,10 @@
     "q5": {
       "question": "¿Qué pasa si cambian mis rutas guardadas?",
       "answer": "Cuando detectamos posibles incidencias, te enviaremos una notificación para que puedas planificarte."
+    },
+    "q6": {
+      "question": "¿Qué funciones de accesibilidad puedo utilizar?",
+      "answer": "Puede cambiar el idioma del sitio web, ajustar el tamaño de fuente para facilitar la lectura y elegir un perfil de color para diferentes necesidades de visión del color. Luego puede guardar esta configuración en su cuenta."
     }
   },
   "support": {
@@ -113,7 +126,11 @@
     "closeModal": "Cerrar ventana de rutas",
     "sortBy": "Ordenar por:",
     "sortByAria": "Ordenar rutas por",
-    "sort": { "startTime": "Hora de salida", "fastest": "Más rápida", "fewestChanges": "Menos cambios" },
+    "sort": {
+      "startTime": "Hora de salida",
+      "fastest": "Más rápida",
+      "fewestChanges": "Menos cambios"
+    },
     "download": "Descargar rutas",
     "downloadAria": "Descargar rutas mostradas en PDF",
     "downloadTooltipEnabled": "Descargar todas las opciones de ruta mostradas",
@@ -140,7 +157,12 @@
       "stops": "{from} → {to}"
     }
   },
-  "transport": { "bus": "Autobús", "train": "Tren", "walk": "A pie", "wait": "Espera" },
+  "transport": {
+    "bus": "Autobús",
+    "train": "Tren",
+    "walk": "A pie",
+    "wait": "Espera"
+  },
   "accessibility": {
     "title": "Accesibilidad",
     "close": "Cerrar accesibilidad",
@@ -163,7 +185,11 @@
     },
     "fontSizeTitle": "Tamaño de fuente",
     "fontSizeDescription": "Elige un tamaño de fuente cómodo para la interfaz.",
-    "font": { "small": "Pequeño", "normal": "Normal", "large": "Grande" },
+    "font": {
+      "small": "Pequeño",
+      "normal": "Normal",
+      "large": "Grande"
+    },
     "save": "Guardar en la cuenta",
     "saveAria": "Guardar ajustes de accesibilidad en la cuenta",
     "reset": "Restablecer valores",
@@ -176,7 +202,14 @@
     "cy-GB": "Cymraeg (Y Deyrnas Unedig)",
     "fr-FR": "Français (France)",
     "de-DE": "Deutsch (Deutschland)",
-    "es-ES": "Español (España)"
+    "es-ES": "Español (España)",
+    "zh-CN": "中文（中国）",
+    "hi-IN": "हिन्दी (भारत)",
+    "ar": "العربية",
+    "bn-BD": "বাংলা (বাংলাদেশ)",
+    "pt-BR": "Português (Brasil)",
+    "ru-RU": "Русский (Россия)",
+    "ur-PK": "اردو (پاکستان)"
   },
   "auth": {
     "loginTitle": "Inicio de sesión",
@@ -284,8 +317,16 @@
     "sidebarCollapsed": "Barra lateral contraída.",
     "sidebarExpanded": "Barra lateral expandida."
   },
-  "autocomplete": { "noStops": "No se encontraron paradas en la región", "errorLoadingStops": "Error al cargar paradas" },
-  "common": { "minutesOnly": "{minutes} min", "hoursMinutes": "{hours}h {minutes} min", "hoursOnly": "{hours}h", "close": "Cerrar" },
+  "autocomplete": {
+    "noStops": "No se encontraron paradas en la región",
+    "errorLoadingStops": "Error al cargar paradas"
+  },
+  "common": {
+    "minutesOnly": "{minutes} min",
+    "hoursMinutes": "{hours}h {minutes} min",
+    "hoursOnly": "{hours}h",
+    "close": "Cerrar"
+  },
   "pdf": {
     "completeRoutePlan": "Plan de ruta completo",
     "routePlanContinued": "Plan de ruta (continuación)",
@@ -296,27 +337,93 @@
     "pageXofY": "Página {page} de {total}"
   },
   "locations": {
-    "liverpool": { "name": "Liverpool", "description": "Liverpool - ciudad portuaria histórica y centro cultural en la costa del mar de Irlanda." },
-    "manchester": { "name": "Manchester", "description": "Manchester - gran ciudad industrial y comercial en el corazón del Gran Manchester." },
-    "preston": { "name": "Preston", "description": "Preston - la ciudad más nueva de Inglaterra y centro cultural de Lancashire." },
-    "blackburn": { "name": "Blackburn", "description": "Blackburn - histórica ciudad textil y sede de la catedral." },
-    "lytham_st_annes": { "name": "Lytham-St-Annes", "description": "Lytham-St-Annes - localidad costera en la costa de Fylde." },
-    "kirkham": { "name": "Kirkham", "description": "Kirkham - ciudad de mercado en el corazón de Fylde." },
-    "poulton_le_fylde": { "name": "Poulton-le-Fylde", "description": "Poulton-le-Fylde - ciudad de mercado en el corazón de Fylde." },
-    "fleetwood": { "name": "Fleetwood", "description": "Fleetwood - localidad costera en la desembocadura del río Wyre y puerto pesquero histórico." },
-    "blackpool": { "name": "Blackpool", "description": "Blackpool - emblemático destino costero con la famosa Torre de Blackpool." },
-    "garstang": { "name": "Garstang", "description": "Garstang - histórica ciudad de mercado junto al río Wyre." },
-    "lancaster": { "name": "Lancaster", "description": "Lancaster - ciudad histórica con castillo medieval y universidad." },
-    "morecambe": { "name": "Morecambe", "description": "Morecambe - localidad costera conocida por su paseo marítimo y vistas de la bahía." },
-    "heysham": { "name": "Heysham", "description": "Heysham - pueblo costero con central nuclear y patrimonio marítimo." },
-    "carnforth": { "name": "Carnforth", "description": "Carnforth - localidad conocida por su patrimonio ferroviario." },
-    "kirkby_lonsdale": { "name": "Kirkby-Lonsdale", "description": "Kirkby-Lonsdale - pintoresco pueblo del valle del Lune." },
-    "grange_over_sands": { "name": "Grange-Over-Sands", "description": "Grange-Over-Sands - encantador destino costero en la bahía de Morecambe." },
-    "cartmel": { "name": "Cartmel", "description": "Cartmel - pueblo pintoresco famoso por su priorato y su hipódromo." },
-    "kendal": { "name": "Kendal", "description": "Kendal - puerta de entrada al Distrito de los Lagos y ciudad de mercado histórica." },
-    "windermere": { "name": "Windermere", "description": "Windermere - corazón del Distrito de los Lagos con el lago más grande de Inglaterra." },
-    "ambleside": { "name": "Ambleside", "description": "Ambleside - pintoresca localidad del Distrito de los Lagos a orillas del lago Windermere." },
-    "barrow_in_furness": { "name": "Barrow-in-Furness", "description": "Barrow-in-Furness - ciudad industrial en la costa del mar de Irlanda." },
-    "keswick": { "name": "Keswick", "description": "Keswick - histórica ciudad de mercado en el norte del Distrito de los Lagos." }
+    "liverpool": {
+      "name": "Liverpool",
+      "description": "Liverpool - ciudad portuaria histórica y centro cultural en la costa del mar de Irlanda."
+    },
+    "manchester": {
+      "name": "Manchester",
+      "description": "Manchester - gran ciudad industrial y comercial en el corazón del Gran Manchester."
+    },
+    "preston": {
+      "name": "Preston",
+      "description": "Preston - la ciudad más nueva de Inglaterra y centro cultural de Lancashire."
+    },
+    "blackburn": {
+      "name": "Blackburn",
+      "description": "Blackburn - histórica ciudad textil y sede de la catedral."
+    },
+    "lytham_st_annes": {
+      "name": "Lytham-St-Annes",
+      "description": "Lytham-St-Annes - localidad costera en la costa de Fylde."
+    },
+    "kirkham": {
+      "name": "Kirkham",
+      "description": "Kirkham - ciudad de mercado en el corazón de Fylde."
+    },
+    "poulton_le_fylde": {
+      "name": "Poulton-le-Fylde",
+      "description": "Poulton-le-Fylde - ciudad de mercado en el corazón de Fylde."
+    },
+    "fleetwood": {
+      "name": "Fleetwood",
+      "description": "Fleetwood - localidad costera en la desembocadura del río Wyre y puerto pesquero histórico."
+    },
+    "blackpool": {
+      "name": "Blackpool",
+      "description": "Blackpool - emblemático destino costero con la famosa Torre de Blackpool."
+    },
+    "garstang": {
+      "name": "Garstang",
+      "description": "Garstang - histórica ciudad de mercado junto al río Wyre."
+    },
+    "lancaster": {
+      "name": "Lancaster",
+      "description": "Lancaster - ciudad histórica con castillo medieval y universidad."
+    },
+    "morecambe": {
+      "name": "Morecambe",
+      "description": "Morecambe - localidad costera conocida por su paseo marítimo y vistas de la bahía."
+    },
+    "heysham": {
+      "name": "Heysham",
+      "description": "Heysham - pueblo costero con central nuclear y patrimonio marítimo."
+    },
+    "carnforth": {
+      "name": "Carnforth",
+      "description": "Carnforth - localidad conocida por su patrimonio ferroviario."
+    },
+    "kirkby_lonsdale": {
+      "name": "Kirkby-Lonsdale",
+      "description": "Kirkby-Lonsdale - pintoresco pueblo del valle del Lune."
+    },
+    "grange_over_sands": {
+      "name": "Grange-Over-Sands",
+      "description": "Grange-Over-Sands - encantador destino costero en la bahía de Morecambe."
+    },
+    "cartmel": {
+      "name": "Cartmel",
+      "description": "Cartmel - pueblo pintoresco famoso por su priorato y su hipódromo."
+    },
+    "kendal": {
+      "name": "Kendal",
+      "description": "Kendal - puerta de entrada al Distrito de los Lagos y ciudad de mercado histórica."
+    },
+    "windermere": {
+      "name": "Windermere",
+      "description": "Windermere - corazón del Distrito de los Lagos con el lago más grande de Inglaterra."
+    },
+    "ambleside": {
+      "name": "Ambleside",
+      "description": "Ambleside - pintoresca localidad del Distrito de los Lagos a orillas del lago Windermere."
+    },
+    "barrow_in_furness": {
+      "name": "Barrow-in-Furness",
+      "description": "Barrow-in-Furness - ciudad industrial en la costa del mar de Irlanda."
+    },
+    "keswick": {
+      "name": "Keswick",
+      "description": "Keswick - histórica ciudad de mercado en el norte del Distrito de los Lagos."
+    }
   }
 }

@@ -1,6 +1,11 @@
 {
-  "app": { "title": "Transport Nordwest" },
-  "map": { "ariaLabel": "Interaktive Karte von Nordwestengland", "popupImageAlt": "Foto von {location}" },
+  "app": {
+    "title": "Transport Nordwest"
+  },
+  "map": {
+    "ariaLabel": "Interaktive Karte von Nordwestengland",
+    "popupImageAlt": "Foto von {location}"
+  },
   "navigation": {
     "primarySidebar": "Primäre Seitenleiste",
     "main": "Hauptnavigation",
@@ -57,6 +62,10 @@
       "oneTime": "vor 12 Min.",
       "two": "Schneewarnung in Barrow-in-Furness.",
       "twoTime": "vor 4 Std."
+    },
+    "messages": {
+      "welcome": "Willkommen bei Transport Nordwest. Ihr Konto ist jetzt aktiv.",
+      "routeSaved": "Route gespeichert: {from} → {to}"
     }
   },
   "faq": {
@@ -81,6 +90,10 @@
     "q5": {
       "question": "Was passiert bei Änderungen an meinen gespeicherten Routen?",
       "answer": "Bei möglichen Störungen senden wir Ihnen eine Benachrichtigung, damit Sie besser planen können."
+    },
+    "q6": {
+      "question": "Welche Barrierefreiheitsfunktionen kann ich nutzen?",
+      "answer": "Sie können die Sprache der Website ändern, die Schriftgröße zur besseren Lesbarkeit anpassen und ein Farbprofil für unterschiedliche Farbsehanforderungen auswählen. Anschließend können Sie diese Einstellungen in Ihrem Konto speichern."
     }
   },
   "support": {
@@ -113,7 +126,11 @@
     "closeModal": "Routenfenster schließen",
     "sortBy": "Sortieren nach:",
     "sortByAria": "Routen sortieren nach",
-    "sort": { "startTime": "Startzeit", "fastest": "Schnellste", "fewestChanges": "Wenigste Umstiege" },
+    "sort": {
+      "startTime": "Startzeit",
+      "fastest": "Schnellste",
+      "fewestChanges": "Wenigste Umstiege"
+    },
     "download": "Routen herunterladen",
     "downloadAria": "Angezeigte Routen als PDF herunterladen",
     "downloadTooltipEnabled": "Alle angezeigten Routenoptionen herunterladen",
@@ -140,7 +157,12 @@
       "stops": "{from} → {to}"
     }
   },
-  "transport": { "bus": "Bus", "train": "Zug", "walk": "Zu Fuß", "wait": "Warten" },
+  "transport": {
+    "bus": "Bus",
+    "train": "Zug",
+    "walk": "Zu Fuß",
+    "wait": "Warten"
+  },
   "accessibility": {
     "title": "Barrierefreiheit",
     "close": "Barrierefreiheit schließen",
@@ -163,7 +185,11 @@
     },
     "fontSizeTitle": "Schriftgröße",
     "fontSizeDescription": "Wählen Sie eine angenehme Schriftgröße.",
-    "font": { "small": "Klein", "normal": "Normal", "large": "Groß" },
+    "font": {
+      "small": "Klein",
+      "normal": "Normal",
+      "large": "Groß"
+    },
     "save": "Im Konto speichern",
     "saveAria": "Barrierefreiheitseinstellungen im Konto speichern",
     "reset": "Standard zurücksetzen",
@@ -176,7 +202,14 @@
     "cy-GB": "Cymraeg (Y Deyrnas Unedig)",
     "fr-FR": "Français (France)",
     "de-DE": "Deutsch (Deutschland)",
-    "es-ES": "Español (España)"
+    "es-ES": "Español (España)",
+    "zh-CN": "中文 (中国)",
+    "hi-IN": "हिन्दी (भारत)",
+    "ar": "العربية",
+    "bn-BD": "বাংলা (বাংলাদেশ)",
+    "pt-BR": "Português (Brasilien)",
+    "ru-RU": "Russisch (Russland)",
+    "ur-PK": "اردو (پاکستان)"
   },
   "auth": {
     "loginTitle": "Kontoanmeldung",
@@ -284,8 +317,16 @@
     "sidebarCollapsed": "Seitenleiste reduziert.",
     "sidebarExpanded": "Seitenleiste erweitert."
   },
-  "autocomplete": { "noStops": "Keine Haltestellen in der Region gefunden", "errorLoadingStops": "Fehler beim Laden der Haltestellen" },
-  "common": { "minutesOnly": "{minutes} Min", "hoursMinutes": "{hours}h {minutes} Min", "hoursOnly": "{hours}h", "close": "Schließen" },
+  "autocomplete": {
+    "noStops": "Keine Haltestellen in der Region gefunden",
+    "errorLoadingStops": "Fehler beim Laden der Haltestellen"
+  },
+  "common": {
+    "minutesOnly": "{minutes} Min",
+    "hoursMinutes": "{hours}h {minutes} Min",
+    "hoursOnly": "{hours}h",
+    "close": "Schließen"
+  },
   "pdf": {
     "completeRoutePlan": "Vollständiger Routenplan",
     "routePlanContinued": "Routenplan (Fortsetzung)",
@@ -296,27 +337,93 @@
     "pageXofY": "Seite {page} von {total}"
   },
   "locations": {
-    "liverpool": { "name": "Liverpool", "description": "Liverpool – Historische Hafenstadt und Kulturzentrum an der Küste der Irischen See." },
-    "manchester": { "name": "Manchester", "description": "Manchester – Bedeutende Industrie- und Handelsstadt im Herzen von Greater Manchester." },
-    "preston": { "name": "Preston", "description": "Preston – Englands jüngste Stadt und kulturelles Zentrum von Lancashire." },
-    "blackburn": { "name": "Blackburn", "description": "Blackburn – Historische Textilstadt und Sitz der Kathedrale." },
-    "lytham_st_annes": { "name": "Lytham-St-Annes", "description": "Lytham-St-Annes – Küstenstadt an der Fylde-Küste." },
-    "kirkham": { "name": "Kirkham", "description": "Kirkham – Marktstadt im Herzen der Fylde-Region." },
-    "poulton_le_fylde": { "name": "Poulton-le-Fylde", "description": "Poulton-le-Fylde – Marktstadt im Herzen der Fylde-Region." },
-    "fleetwood": { "name": "Fleetwood", "description": "Fleetwood – Küstenstadt an der Mündung des River Wyre und historischer Fischerhafen." },
-    "blackpool": { "name": "Blackpool", "description": "Blackpool – Ikonischer Badeort mit dem berühmten Blackpool Tower." },
-    "garstang": { "name": "Garstang", "description": "Garstang – Historische Marktstadt am River Wyre." },
-    "lancaster": { "name": "Lancaster", "description": "Lancaster – Historische Stadt mit mittelalterlicher Burg und Universität." },
-    "morecambe": { "name": "Morecambe", "description": "Morecambe – Küstenstadt mit Promenade und Blick über die Bucht." },
-    "heysham": { "name": "Heysham", "description": "Heysham – Küstendorf mit Kernkraftwerk und maritimem Erbe." },
-    "carnforth": { "name": "Carnforth", "description": "Carnforth – Ort, bekannt für sein Eisenbahnerbe." },
-    "kirkby_lonsdale": { "name": "Kirkby-Lonsdale", "description": "Kirkby-Lonsdale – Malerischer Ort im Lune-Tal." },
-    "grange_over_sands": { "name": "Grange-Over-Sands", "description": "Grange-Over-Sands – Charmanter Küstenort an der Morecambe Bay." },
-    "cartmel": { "name": "Cartmel", "description": "Cartmel – Malerischer Ort, bekannt für Priory und Pferderennbahn." },
-    "kendal": { "name": "Kendal", "description": "Kendal – Tor zum Lake District und historische Marktstadt." },
-    "windermere": { "name": "Windermere", "description": "Windermere – Herz des Lake District mit Englands größtem See." },
-    "ambleside": { "name": "Ambleside", "description": "Ambleside – Malerische Lake-District-Stadt am Ufer des Lake Windermere." },
-    "barrow_in_furness": { "name": "Barrow-in-Furness", "description": "Barrow-in-Furness – Industriestadt an der Küste der Irischen See." },
-    "keswick": { "name": "Keswick", "description": "Keswick – Historische Marktstadt im nördlichen Lake District." }
+    "liverpool": {
+      "name": "Liverpool",
+      "description": "Liverpool – Historische Hafenstadt und Kulturzentrum an der Küste der Irischen See."
+    },
+    "manchester": {
+      "name": "Manchester",
+      "description": "Manchester – Bedeutende Industrie- und Handelsstadt im Herzen von Greater Manchester."
+    },
+    "preston": {
+      "name": "Preston",
+      "description": "Preston – Englands jüngste Stadt und kulturelles Zentrum von Lancashire."
+    },
+    "blackburn": {
+      "name": "Blackburn",
+      "description": "Blackburn – Historische Textilstadt und Sitz der Kathedrale."
+    },
+    "lytham_st_annes": {
+      "name": "Lytham-St-Annes",
+      "description": "Lytham-St-Annes – Küstenstadt an der Fylde-Küste."
+    },
+    "kirkham": {
+      "name": "Kirkham",
+      "description": "Kirkham – Marktstadt im Herzen der Fylde-Region."
+    },
+    "poulton_le_fylde": {
+      "name": "Poulton-le-Fylde",
+      "description": "Poulton-le-Fylde – Marktstadt im Herzen der Fylde-Region."
+    },
+    "fleetwood": {
+      "name": "Fleetwood",
+      "description": "Fleetwood – Küstenstadt an der Mündung des River Wyre und historischer Fischerhafen."
+    },
+    "blackpool": {
+      "name": "Blackpool",
+      "description": "Blackpool – Ikonischer Badeort mit dem berühmten Blackpool Tower."
+    },
+    "garstang": {
+      "name": "Garstang",
+      "description": "Garstang – Historische Marktstadt am River Wyre."
+    },
+    "lancaster": {
+      "name": "Lancaster",
+      "description": "Lancaster – Historische Stadt mit mittelalterlicher Burg und Universität."
+    },
+    "morecambe": {
+      "name": "Morecambe",
+      "description": "Morecambe – Küstenstadt mit Promenade und Blick über die Bucht."
+    },
+    "heysham": {
+      "name": "Heysham",
+      "description": "Heysham – Küstendorf mit Kernkraftwerk und maritimem Erbe."
+    },
+    "carnforth": {
+      "name": "Carnforth",
+      "description": "Carnforth – Ort, bekannt für sein Eisenbahnerbe."
+    },
+    "kirkby_lonsdale": {
+      "name": "Kirkby-Lonsdale",
+      "description": "Kirkby-Lonsdale – Malerischer Ort im Lune-Tal."
+    },
+    "grange_over_sands": {
+      "name": "Grange-Over-Sands",
+      "description": "Grange-Over-Sands – Charmanter Küstenort an der Morecambe Bay."
+    },
+    "cartmel": {
+      "name": "Cartmel",
+      "description": "Cartmel – Malerischer Ort, bekannt für Priory und Pferderennbahn."
+    },
+    "kendal": {
+      "name": "Kendal",
+      "description": "Kendal – Tor zum Lake District und historische Marktstadt."
+    },
+    "windermere": {
+      "name": "Windermere",
+      "description": "Windermere – Herz des Lake District mit Englands größtem See."
+    },
+    "ambleside": {
+      "name": "Ambleside",
+      "description": "Ambleside – Malerische Lake-District-Stadt am Ufer des Lake Windermere."
+    },
+    "barrow_in_furness": {
+      "name": "Barrow-in-Furness",
+      "description": "Barrow-in-Furness – Industriestadt an der Küste der Irischen See."
+    },
+    "keswick": {
+      "name": "Keswick",
+      "description": "Keswick – Historische Marktstadt im nördlichen Lake District."
+    }
   }
 }

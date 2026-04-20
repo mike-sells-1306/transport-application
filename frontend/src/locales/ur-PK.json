@@ -1,11 +1,20 @@
 {
-  "app": { "title": "شمال مغربی ٹرانسپورٹ" },
+  "app": {
+    "title": "شمال مغربی ٹرانسپورٹ"
+  },
   "navigation": {
     "account": "اکاؤنٹ",
     "faq": "اکثر پوچھے گئے سوالات",
     "support": "کسٹمر سپورٹ",
     "accessibility": "قابلِ رسائی",
-    "accessibilityActive": "قابلِ رسائی ✓"
+    "accessibilityActive": "قابلِ رسائی ✓",
+    "primarySidebar": "پرائمری سائڈبار",
+    "main": "مین نیویگیشن",
+    "toggleSidebar": "سائڈبار کو ٹوگل کریں۔",
+    "expandSidebar": "سائڈبار کو پھیلائیں۔",
+    "collapseSidebar": "سائڈبار کو سکیڑیں۔",
+    "expandSidebarAria": "سائڈبار نیویگیشن مینو کو پھیلائیں۔",
+    "collapseSidebarAria": "سائڈبار نیویگیشن مینو کو سکیڑیں۔"
   },
   "journey": {
     "prompt": "آپ آج کہاں سفر کرنا چاہتے ہیں؟",
@@ -19,14 +28,69 @@
     "departureRequired": "براہِ کرم تجاویز کی فہرست سے روانگی اسٹیشن منتخب کریں۔",
     "arrivalRequired": "براہِ کرم تجاویز کی فہرست سے آمد اسٹیشن منتخب کریں۔"
   },
+  "weather": {
+    "openPanel": "موسم کی تازہ کاری دیکھیں",
+    "title": "موسم",
+    "searchLabel": "مقام کے مطابق موسم تلاش کریں",
+    "searchPlaceholder": "مقام تلاش کریں…",
+    "loading": "موسم کا ڈیٹا لوڈ ہو رہا ہے…",
+    "unableToLoad": "موسم کا ڈیٹا لوڈ نہیں ہو سکا",
+    "noLocations": "کوئی مقام نہیں ملا",
+    "searchingMore": "مزید مقامات تلاش کیے جا رہے ہیں…",
+    "feelsLike": "محسوس درجہ حرارت {value}°C",
+    "humidity": "نمی {value}%",
+    "wind": "ہوا {value} {unit}",
+    "cloudCover": "بادلوں کی مقدار {value}%",
+    "visibility": "حدِ نگاہ {value} کلومیٹر",
+    "noDetail": "مزید تفصیل دستیاب نہیں",
+    "temperatureUnavailable": "درجہ حرارت دستیاب نہیں",
+    "rowAria": "{location} کے موسم کی تفصیل دیکھیں، {temperature}",
+    "iconAlt": "موسم کا آئیکن"
+  },
+  "notifications": {
+    "openPanel": "سروس اطلاعات دیکھیں",
+    "title": "اطلاعات",
+    "none": "ابھی تک کوئی اطلاع نہیں۔",
+    "announcementPrefix": "اعلان:",
+    "viewMore": "مزید دیکھیں…",
+    "sample": {
+      "one": "بلیک پول جانے والی ٹرین 12 منٹ تاخیر سے ہے۔",
+      "oneTime": "12 منٹ پہلے",
+      "two": "Barrow-in-Furness میں برفباری کی وارننگ۔",
+      "twoTime": "4 گھنٹے پہلے"
+    },
+    "messages": {
+      "welcome": "شمال مغربی ٹرانسپورٹ میں خوش آمدید۔ آپ کا اکاؤنٹ اب فعال ہے۔",
+      "routeSaved": "روٹ محفوظ ہو گیا: {from} → {to}"
+    }
+  },
   "faq": {
     "title": "اکثر پوچھے گئے سوالات",
     "close": "FAQ بند کریں",
-    "q1": { "question": "کسی جگہ کی تفصیل کیسے دیکھیں؟", "answer": "جگہ تلاش کریں یا نقشے پر کلک کریں۔" },
-    "q2": { "question": "نقشہ کون سا علاقہ دکھاتا ہے؟", "answer": "یہ نقشہ Preston اور Lancaster کے ساحلی راہداری پر مرکوز ہے۔" },
-    "q3": { "question": "سفر کا ٹکٹ کیسے خریدیں؟", "answer": "یہ سروس صرف راستہ تلاش کرنے کے لیے ہے، ٹکٹ دوسری سروس سے خریدیں۔" },
-    "q4": { "question": "روٹ کو پسندیدہ میں کیسے محفوظ کریں؟", "answer": "روٹ نتیجے میں “Save Route” دبائیں۔ محفوظ کرنے کے لیے لاگ اِن ضروری ہے۔" },
-    "q5": { "question": "محفوظ شدہ روٹس میں تبدیلی ہو تو کیا ہوگا؟", "answer": "ممکنہ خلل کی صورت میں آپ کو اطلاع بھیجی جائے گی۔" }
+    "q1": {
+      "question": "کسی جگہ کی تفصیل کیسے دیکھیں؟",
+      "answer": "جگہ تلاش کریں یا نقشے پر کلک کریں۔"
+    },
+    "q2": {
+      "question": "نقشہ کون سا علاقہ دکھاتا ہے؟",
+      "answer": "یہ نقشہ Preston اور Lancaster کے ساحلی راہداری پر مرکوز ہے۔"
+    },
+    "q3": {
+      "question": "سفر کا ٹکٹ کیسے خریدیں؟",
+      "answer": "یہ سروس صرف راستہ تلاش کرنے کے لیے ہے، ٹکٹ دوسری سروس سے خریدیں۔"
+    },
+    "q4": {
+      "question": "روٹ کو پسندیدہ میں کیسے محفوظ کریں؟",
+      "answer": "روٹ نتیجے میں “Save Route” دبائیں۔ محفوظ کرنے کے لیے لاگ اِن ضروری ہے۔"
+    },
+    "q5": {
+      "question": "محفوظ شدہ روٹس میں تبدیلی ہو تو کیا ہوگا؟",
+      "answer": "ممکنہ خلل کی صورت میں آپ کو اطلاع بھیجی جائے گی۔"
+    },
+    "q6": {
+      "question": "میں کون سی قابل رسائی خصوصیات استعمال کر سکتا ہوں؟",
+      "answer": "آپ ویب سائٹ کی زبان کو تبدیل کر سکتے ہیں، پڑھنے کے قابل ہونے کے لیے فونٹ کا سائز ایڈجسٹ کر سکتے ہیں، اور مختلف رنگین وژن کی ضروریات کے لیے رنگین پروفائل کا انتخاب کر سکتے ہیں۔ اس کے بعد آپ ان ترتیبات کو اپنے اکاؤنٹ میں محفوظ کر سکتے ہیں۔"
+    }
   },
   "support": {
     "title": "کسٹمر سپورٹ",
@@ -133,10 +197,43 @@
     "promptConfirmDeletePassword": "اکاؤنٹ حذف کرنے کے لیے پاس ورڈ کی تصدیق کریں:"
   },
   "announce": {
-    "languageChanged": "زبان {locale} میں تبدیل کر دی گئی ہے۔"
+    "languageChanged": "زبان {locale} میں تبدیل کر دی گئی ہے۔",
+    "journeySwapped": "روانگی اور آمد کے اسٹیشنوں کی تبدیلی۔",
+    "weatherUpdated": "{count} مقامات کے لیے موسم کو اپ ڈیٹ کیا گیا۔",
+    "weatherLoadFailed": "موسم کا ڈیٹا لوڈ کرنے سے قاصر۔",
+    "weatherNoLocations": "کوئی موسمی مقامات نہیں ملے۔",
+    "weatherShowingResults": "{count} مقامات کے موسم کے نتائج دکھا رہا ہے۔",
+    "weatherPanelOpened": "موسم کا پینل کھل گیا۔ لائیو موسم کی تازہ کارییں دستیاب ہیں۔",
+    "weatherPanelClosed": "موسمی پینل بند ہو گیا۔",
+    "notificationsPanelOpened": "اطلاعاتی پینل کھل گیا۔ سروس کے اعلانات خود بخود پڑھے جائیں گے۔",
+    "notificationsPanelClosed": "اطلاعاتی پینل بند ہو گیا۔",
+    "notificationsLoaded": "{count} اطلاعات لوڈ ہو گئیں۔",
+    "faqOpened": "FAQ پینل کھل گیا۔",
+    "faqClosed": "FAQ پینل بند ہو گیا۔",
+    "supportOpened": "کسٹمر سپورٹ پینل کھل گیا۔",
+    "supportClosed": "کسٹمر سپورٹ پینل بند ہو گیا۔",
+    "accessibilityOpened": "رسائی کی ترتیبات کا پینل کھل گیا۔",
+    "accessibilityClosed": "ایکسیسبیلٹی سیٹنگز پینل بند ہو گیا۔",
+    "authOpened": "اکاؤنٹ لاگ ان ڈائیلاگ کھل گیا۔",
+    "authClosed": "اکاؤنٹ لاگ ان ڈائیلاگ بند ہو گیا۔",
+    "accountOpened": "اکاؤنٹ کی ترتیبات کا ڈائیلاگ کھل گیا۔",
+    "accountClosed": "اکاؤنٹ کی ترتیبات کا ڈائیلاگ بند ہو گیا۔",
+    "noNotifications": "کوئی اطلاعات نہیں ہیں۔",
+    "stopSuggestionsUnavailable": "ابھی اسٹاپ کی تجاویز لوڈ کرنے سے قاصر ہے۔",
+    "selectBothStops": "راستوں کو تلاش کرنے سے پہلے براہ کرم روانگی اور آمد دونوں اسٹیشنوں کا انتخاب کریں۔",
+    "routeFetchError": "راستوں کی بازیافت میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔",
+    "routesShowing": "{from} سے {to} تک {count} راستے کے اختیارات دکھا رہا ہے۔",
+    "routesAvailable": "{count} راستے دستیاب ہیں۔ تفصیلات دیکھنے کے لیے روٹ پر Enter یا Space کا استعمال کریں۔",
+    "routeSaved": "روٹ آپ کے اکاؤنٹ میں محفوظ ہو گیا۔",
+    "routesModalClosed": "روٹس موڈل بند۔",
+    "sidebarCollapsed": "سائڈبار منہدم ہو گیا۔",
+    "sidebarExpanded": "سائڈبار کو پھیلا دیا گیا۔"
   },
   "common": {
-    "close": "بند کریں"
+    "close": "بند کریں",
+    "minutesOnly": "{minutes} منٹ",
+    "hoursMinutes": "{hours}h {minutes} منٹ",
+    "hoursOnly": "{hours}h"
   },
   "locale": {
     "en-GB": "انگریزی (برطانیہ)",
@@ -152,5 +249,181 @@
     "pt-BR": "پرتگالی (برازیل)",
     "ru-RU": "روسی (روس)",
     "ur-PK": "اردو (پاکستان)"
+  },
+  "map": {
+    "ariaLabel": "شمال مغربی انگلینڈ کا انٹرایکٹو نقشہ",
+    "popupImageAlt": "{location} کی تصویر"
+  },
+  "route": {
+    "defaultHeader": "لنکاسٹر سے بلیک پول تک کے راستے",
+    "closeModal": "روٹس موڈل بند کریں۔",
+    "sortBy": "ترتیب دیں:",
+    "sortByAria": "راستوں کو ترتیب دیں۔",
+    "sort": {
+      "startTime": "آغاز کا وقت",
+      "fastest": "تیز ترین",
+      "fewestChanges": "سب سے کم تبدیلیاں"
+    },
+    "download": "روٹس ڈاؤن لوڈ کریں۔",
+    "downloadAria": "دکھائے گئے راستوں کو بطور PDF ڈاؤن لوڈ کریں۔",
+    "downloadTooltipEnabled": "تمام دکھائے گئے راستے کے اختیارات ڈاؤن لوڈ کریں۔",
+    "downloadTooltipDisabled": "روٹ ڈاؤن لوڈ کو فعال کرنے کے لیے راستے تلاش کریں۔",
+    "headerFromTo": "{from} سے {to} تک کے راستے",
+    "noResults": "اس سفر کے لیے کوئی راستہ نہیں ملا۔",
+    "viewDetails": "راستے کی تفصیلات دیکھیں",
+    "rowAria": "راستہ دیکھیں {index}، {startTime} سے {endTime}، دورانیہ {duration}، {changes} تبدیلی{suffix}۔",
+    "changesBadge": "{count} تبدیلی{suffix}",
+    "save": "راستہ محفوظ کریں۔",
+    "saveAria": "راستہ محفوظ کریں {index} کو {startTime} سے {endTime} تک",
+    "saved": "محفوظ کیا گیا۔",
+    "savedAria": "روٹ آپ کے اکاؤنٹ میں محفوظ ہو گیا۔",
+    "walkingRoute": "پیدل چلنے کا راستہ",
+    "genericName": "راستہ",
+    "noLegDetails": "اس راستے کے لیے ٹانگوں کی کوئی تفصیلی معلومات دستیاب نہیں ہے۔",
+    "leg": {
+      "walk": "{from} سے {to} تک پیدل چلیں ({distance}m, {duration}) • {depart}–{arrive}",
+      "wait": "{at} پر تبدیل کریں ({duration} انتظار کریں) • {depart}–{arrive}",
+      "transport": "{service} {from} سے {to} تک ({duration}) • {depart}–{arrive}",
+      "walkSummary": "{distance}m چہل قدمی • {duration}",
+      "waitSummary": "{at} پر تبدیل کریں • {duration} انتظار کریں۔",
+      "transportSummary": "{service} • {duration}",
+      "stops": "{from} → {to}"
+    }
+  },
+  "transport": {
+    "bus": "بس",
+    "train": "ٹرین",
+    "walk": "چلنا",
+    "wait": "انتظار کرو"
+  },
+  "alerts": {
+    "loginToSaveAccessibility": "اپنے اکاؤنٹ میں رسائی کی ترجیحات کو محفوظ کرنے کے لیے براہ کرم لاگ ان کریں۔",
+    "accessibilitySaved": "رسائی کی ترجیحات آپ کے اکاؤنٹ میں محفوظ ہو گئیں۔",
+    "couldNotSavePreferences": "ترجیحات کو ابھی محفوظ نہیں کیا جا سکا۔",
+    "couldNotLoadSavedJourneyRoutes": "اس محفوظ شدہ سفر کے لیے راستے لوڈ نہیں کیے جا سکے۔",
+    "couldNotLoadRoutesTryAgain": "راستوں کو لوڈ نہیں کیا جا سکا۔ براہ کرم اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔",
+    "passwordUpdated": "پاس ورڈ کامیابی کے ساتھ اپ ڈیٹ ہو گیا۔",
+    "accountDeleted": "آپ کا اکاؤنٹ حذف کر دیا گیا ہے۔",
+    "unableToFindRoutes": "اس سفر کے لیے راستے تلاش کرنے سے قاصر۔",
+    "searchRouteBeforePdf": "پی ڈی ایف ڈاؤن لوڈ کرنے کے لیے پہلے راستہ تلاش کریں۔",
+    "pdfUnavailable": "پی ڈی ایف ایکسپورٹ ابھی دستیاب نہیں ہے۔ براہ کرم ایک لمحے میں دوبارہ کوشش کریں۔",
+    "loginToSaveRoutes": "راستوں کو بچانے کے لیے براہ کرم لاگ ان کریں۔",
+    "requestFailedGeneric": "کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔",
+    "networkError": "نیٹ ورک کی خرابی۔ براہ کرم اپنا کنکشن چیک کریں۔",
+    "invalidEmail": "براہ کرم ایک درست ای میل ایڈریس درج کریں۔",
+    "invalidPassword": "براہ کرم اپنا پاس ورڈ چیک کریں اور دوبارہ کوشش کریں۔",
+    "accountAlreadyExists": "ان تفصیلات کے ساتھ ایک اکاؤنٹ پہلے سے موجود ہے۔",
+    "unauthorized": "آپ اس کارروائی کے لیے مجاز نہیں ہیں۔",
+    "forbidden": "اس عمل کی اجازت نہیں ہے۔",
+    "notFound": "مطلوبہ وسیلہ نہیں مل سکا۔",
+    "tooManyRequests": "بہت زیادہ درخواستیں براہ کرم انتظار کریں اور دوبارہ کوشش کریں۔",
+    "loginFailed": "لاگ ان ناکام ہو گیا۔ براہ کرم اپنی تفصیلات چیک کریں اور دوبارہ کوشش کریں۔",
+    "registrationFailed": "رجسٹریشن ناکام ہو گئی۔ براہ کرم اپنی تفصیلات کا جائزہ لیں اور دوبارہ کوشش کریں۔",
+    "passwordUpdateFailed": "ابھی پاس ورڈ اپ ڈیٹ نہیں کیا جا سکا۔",
+    "accountDeletionFailed": "آپ کا اکاؤنٹ ابھی حذف نہیں کیا جا سکا۔",
+    "saveRouteFailed": "اس راستے کو ابھی محفوظ نہیں کیا جا سکا۔"
+  },
+  "autocomplete": {
+    "noStops": "علاقے میں کوئی اسٹاپ نہیں ملا",
+    "errorLoadingStops": "لوڈ کرنے میں خرابی رک جاتی ہے۔"
+  },
+  "pdf": {
+    "completeRoutePlan": "مکمل روٹ پلان",
+    "routePlanContinued": "روٹ پلان جاری",
+    "summaryMeta": "برآمد کیا گیا {exportedAt} • {count} راستے کا اختیار{suffix} • ترتیب دیا گیا بذریعہ {sortLabel}",
+    "routeMeta": "اوقات: {startTime} سے {endTime} • دورانیہ: {duration} • تبدیلیاں: {changes}",
+    "routeTitle": "راستہ {index}: {summary}",
+    "intermediateStop": "انٹرمیڈیٹ اسٹاپ: {stop}",
+    "pageXofY": "صفحہ {page} از {total}"
+  },
+  "locations": {
+    "liverpool": {
+      "name": "لیورپول",
+      "description": "لیورپول - آئرش سمندر کے ساحل پر تاریخی بندرگاہی شہر اور ثقافتی مرکز۔"
+    },
+    "manchester": {
+      "name": "مانچسٹر",
+      "description": "مانچسٹر - گریٹر مانچسٹر کے مرکز میں بڑا صنعتی اور تجارتی شہر۔"
+    },
+    "preston": {
+      "name": "پریسٹن",
+      "description": "پریسٹن - انگلینڈ کا سب سے نیا شہر، لنکاشائر کا ثقافتی مرکز۔"
+    },
+    "blackburn": {
+      "name": "بلیک برن",
+      "description": "بلیک برن - تاریخی ٹیکسٹائل ٹاؤن، کیتھیڈرل کا گھر۔"
+    },
+    "lytham_st_annes": {
+      "name": "لیتھم سینٹ اینس",
+      "description": "Lytham-St-Annes - Fylde ساحل پر سمندر کنارے شہر۔"
+    },
+    "kirkham": {
+      "name": "کرخم",
+      "description": "کرخم - فیلڈ کے قلب میں واقع مارکیٹ ٹاؤن۔"
+    },
+    "poulton_le_fylde": {
+      "name": "پولٹن-لی-فیلڈ",
+      "description": "پولٹن-لی-فیلڈ - فیلڈ کے قلب میں واقع مارکیٹ ٹاؤن۔"
+    },
+    "fleetwood": {
+      "name": "فلیٹ ووڈ",
+      "description": "فلیٹ ووڈ - دریائے وائر کے منہ پر ساحلی شہر اور ماہی گیری کی تاریخی بندرگاہ۔"
+    },
+    "blackpool": {
+      "name": "بلیک پول",
+      "description": "بلیک پول - مشہور بلیک پول ٹاور کے ساتھ مشہور سمندر کنارے ریزورٹ۔"
+    },
+    "garstang": {
+      "name": "گارسٹانگ",
+      "description": "گارسٹانگ - دریائے وائر پر واقع تاریخی بازار کا شہر۔"
+    },
+    "lancaster": {
+      "name": "لنکاسٹر",
+      "description": "لنکاسٹر - قرون وسطی کے قلعے اور یونیورسٹی کے ساتھ تاریخی شہر۔"
+    },
+    "morecambe": {
+      "name": "Morecambe",
+      "description": "مورکیمبے - سمندر کے کنارے شہر جو اپنے سفر اور خلیج کے نظاروں کے لیے جانا جاتا ہے۔"
+    },
+    "heysham": {
+      "name": "ہیشام",
+      "description": "ہیشام - جوہری پاور اسٹیشن اور سمندری ورثے کے ساتھ ساحلی گاؤں۔"
+    },
+    "carnforth": {
+      "name": "کارنفورتھ",
+      "description": "کارنفورتھ - گاؤں اپنے ریلوے ورثے کے لیے جانا جاتا ہے۔"
+    },
+    "kirkby_lonsdale": {
+      "name": "کرکبی-لونسڈیل",
+      "description": "کرکبی-لونسڈیل - وادی لون میں ایک دلکش گاؤں۔"
+    },
+    "grange_over_sands": {
+      "name": "گرینج اوور سینڈز",
+      "description": "Grange-over-Sands - Morecambe Bay پر دلکش ساحلی ریزورٹ۔"
+    },
+    "cartmel": {
+      "name": "کارٹمیل",
+      "description": "کارٹمیل - پرکشش گاؤں جو اپنے پروری اور اسٹیپل چیس ریسکورس کے لیے مشہور ہے۔"
+    },
+    "kendal": {
+      "name": "کینڈل",
+      "description": "کینڈل - ضلع جھیل کا گیٹ وے، تاریخی بازار کا شہر۔"
+    },
+    "windermere": {
+      "name": "ونڈرمیر",
+      "description": "ونڈرمیر - انگلینڈ کی سب سے بڑی جھیل کے ساتھ لیک ڈسٹرکٹ کا دل۔"
+    },
+    "ambleside": {
+      "name": "Ambleside",
+      "description": "ایمبل سائیڈ - ونڈرمیر جھیل کے ساحل پر ایک دلکش لیک ڈسٹرکٹ ٹاؤن۔"
+    },
+    "barrow_in_furness": {
+      "name": "بیرو ان فرنس",
+      "description": "Barrow-in-Furness - آئرش سمندر کے ساحل پر صنعتی شہر۔"
+    },
+    "keswick": {
+      "name": "کیسوک",
+      "description": "Keswick - شمالی ضلع جھیل میں تاریخی بازار کا شہر۔"
+    }
   }
 }
