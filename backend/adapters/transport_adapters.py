@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import gzip
 import importlib.util
+import logging
 
 
 def _load_connection_index_store_class():
@@ -23,6 +24,7 @@ def _load_connection_index_store_class():
 ConnectionIndexStore = _load_connection_index_store_class()
 
 BASE_URL = "http://transport.scc.lancs.ac.uk"
+logger = logging.getLogger(__name__)
 
 class NPTGAdapter:
     def fetch_nptg(self):
@@ -696,6 +698,25 @@ class RoutePlannerAdapter:
             Path(index_db)
         )
         self._connection_index_ready = False
+        self._last_processing_metrics = {
+            'bus_stops_processed': 0,
+            'train_stations_processed': 0,
+            'planner_stage': 'init',
+        }
+
+    def _record_processing_metrics(self, bus_stops_processed, train_stations_processed, planner_stage):
+        bus_count = max(0, int(bus_stops_processed))
+        train_count = max(0, int(train_stations_processed))
+        self._last_processing_metrics = {
+            'bus_stops_processed': bus_count,
+            'train_stations_processed': train_count,
+            'planner_stage': planner_stage,
+        }
+        logger.info("Bus stops processed: %s", bus_count)
+        logger.info("Train stations processed: %s", train_count)
+
+    def get_last_processing_metrics(self):
+        return dict(self._last_processing_metrics)
 
     def _local_cached_datasets_index(self):
         """Build a minimal dataset index from local timetable cache files."""
@@ -1178,6 +1199,12 @@ class RoutePlannerAdapter:
         each containing *start_time*, *end_time*, *duration_mins*,
         *transport*, *changes*, and *legs*.
         """
+        self._record_processing_metrics(
+            bus_stops_processed=0,
+            train_stations_processed=0,
+            planner_stage='route-planning-start',
+        )
+
         if from_lat is None or to_lat is None:
             return []
 
@@ -2593,6 +2620,12 @@ class RoutePlannerAdapter:
                 'kind': 'rail',
             }
 
+        self._record_processing_metrics(
+            bus_stops_processed=len(bus_meta),
+            train_stations_processed=len(self.STATIONS),
+            planner_stage='csa',
+        )
+
         for crs in rail_targets:
             if crs not in self.STATIONS:
                 continue
@@ -3063,6 +3096,12 @@ class RoutePlannerAdapter:
         station_nodes = {}
         for crs, info in self.STATIONS.items():
             station_nodes[crs] = add_node(f"{info['name']} Railway Station", info['lat'], info['lon'], 'rail')
+
+        self._record_processing_metrics(
+            bus_stops_processed=sum(1 for node in nodes.values() if node.get('kind') == 'bus'),
+            train_stations_processed=len(station_nodes),
+            planner_stage='network',
+        )
 
         for crs in rail_targets:
             if crs not in self.STATIONS:

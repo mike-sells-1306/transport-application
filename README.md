@@ -103,6 +103,35 @@ Environment flags:
 - `AUTO_REFRESH_STATIC_ON_STARTUP=false` (default): do not auto-refresh static data on backend startup.
 - `LIVE_POLL_MIN_SECONDS=5` (default minimum): caps live API polling cadence (bus/rail/weather).
 
+## Viewing Backend Stop/Station Metrics
+
+The backend now tracks route-planning processing counts for:
+
+- total **bus stops processed**
+- total **train stations processed**
+
+### How to trigger metric calculation
+
+Run a route search through the backend route planner (for example `POST /api/routes/search` from the frontend journey planner UI).
+
+### Where to view the metrics
+
+1. **Backend logs** during route planning:
+   - `Bus stops processed: X`
+   - `Train stations processed: Y`
+2. **Debug API endpoint**:
+   - `GET /api/routes/metrics`
+
+### Example output
+
+```json
+{
+  "bus_stops_processed": 284,
+  "train_stations_processed": 30,
+  "planner_stage": "csa"
+}
+```
+
 ## Automated Accessibility Testing
 
 The frontend now includes Playwright + axe-core accessibility smoke tests.

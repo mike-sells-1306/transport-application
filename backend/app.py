@@ -1245,6 +1245,10 @@ def search_routes():
             sort_by=sort_by,
         )
         routes = routes_data.get('routes', [])
+        metrics = routes_data.get('metrics', {})
+
+        app.logger.info(f"Bus stops processed: {int(metrics.get('bus_stops_processed', 0))}")
+        app.logger.info(f"Train stations processed: {int(metrics.get('train_stations_processed', 0))}")
 
         if not routes:
             return jsonify({
@@ -1263,6 +1267,16 @@ def search_routes():
 
     except Exception as e:
         app.logger.error(f"Route search error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/routes/metrics', methods=['GET'])
+def route_processing_metrics():
+    """Return latest backend route-planning stop/station processing metrics."""
+    try:
+        return jsonify(transport_service.get_route_processing_metrics())
+    except Exception as e:
+        app.logger.error(f"Route metrics error: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/bus/timetable/<bus_code>')
