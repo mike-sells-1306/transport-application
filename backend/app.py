@@ -1277,7 +1277,7 @@ def route_processing_metrics():
         return jsonify(transport_service.get_route_processing_metrics())
     except Exception as e:
         app.logger.error(f"Route metrics error: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Unable to fetch route processing metrics"}), 500
 
 @app.route('/api/bus/timetable/<bus_code>')
 def bus_timetable(bus_code):

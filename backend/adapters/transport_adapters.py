@@ -436,6 +436,9 @@ class RoutePlannerAdapter:
     WALK_FACTOR = 1.35
     DATASET_CACHE_FORMAT_VERSION = 12
     UK_TZ = ZoneInfo('Europe/London')
+    METRIC_BUS_STOPS_KEY = 'bus_stops_processed'
+    METRIC_TRAIN_STATIONS_KEY = 'train_stations_processed'
+    METRIC_PLANNER_STAGE_KEY = 'planner_stage'
 
     # ------------------------------------------------------------------
     # Railway station database  (CRS → name, lat, lon)
@@ -699,18 +702,18 @@ class RoutePlannerAdapter:
         )
         self._connection_index_ready = False
         self._last_processing_metrics = {
-            'bus_stops_processed': 0,
-            'train_stations_processed': 0,
-            'planner_stage': 'init',
+            self.METRIC_BUS_STOPS_KEY: 0,
+            self.METRIC_TRAIN_STATIONS_KEY: 0,
+            self.METRIC_PLANNER_STAGE_KEY: 'init',
         }
 
     def _record_processing_metrics(self, bus_stops_processed, train_stations_processed, planner_stage):
         bus_count = max(0, int(bus_stops_processed))
         train_count = max(0, int(train_stations_processed))
         self._last_processing_metrics = {
-            'bus_stops_processed': bus_count,
-            'train_stations_processed': train_count,
-            'planner_stage': planner_stage,
+            self.METRIC_BUS_STOPS_KEY: bus_count,
+            self.METRIC_TRAIN_STATIONS_KEY: train_count,
+            self.METRIC_PLANNER_STAGE_KEY: planner_stage,
         }
         logger.info("Bus stops processed: %s", bus_count)
         logger.info("Train stations processed: %s", train_count)
@@ -1199,13 +1202,12 @@ class RoutePlannerAdapter:
         each containing *start_time*, *end_time*, *duration_mins*,
         *transport*, *changes*, and *legs*.
         """
-        self._record_processing_metrics(
-            bus_stops_processed=0,
-            train_stations_processed=0,
-            planner_stage='route-planning-start',
-        )
-
         if from_lat is None or to_lat is None:
+            self._record_processing_metrics(
+                bus_stops_processed=0,
+                train_stations_processed=0,
+                planner_stage='invalid-route-input',
+            )
             return []
 
         # Primary planner: CSA over indexed timetable/departure connections.
@@ -3007,10 +3009,12 @@ class RoutePlannerAdapter:
         nodes = {}
         adjacency = defaultdict(list)  # transit edges only
         walk_neighbors = defaultdict(list)
+        bus_nodes_processed = 0
 
         bus_ref_nodes = defaultdict(list)
 
         def add_node(name, lat, lon, kind, ref=None):
+            nonlocal bus_nodes_processed
             key = (name.strip().lower(), round(float(lat), 4), round(float(lon), 4), kind, (ref or ''))
             if key not in nodes:
                 nodes[key] = {
@@ -3021,8 +3025,10 @@ class RoutePlannerAdapter:
                     'kind': kind,
                     'ref': ref or '',
                 }
-                if kind == 'bus' and ref:
-                    bus_ref_nodes[ref].append(key)
+                if kind == 'bus':
+                    bus_nodes_processed += 1
+                    if ref:
+                        bus_ref_nodes[ref].append(key)
             return key
 
         # ---- Build bus network trips from SCC timetable datasets ----
@@ -3098,7 +3104,7 @@ class RoutePlannerAdapter:
             station_nodes[crs] = add_node(f"{info['name']} Railway Station", info['lat'], info['lon'], 'rail')
 
         self._record_processing_metrics(
-            bus_stops_processed=sum(1 for node in nodes.values() if node.get('kind') == 'bus'),
+            bus_stops_processed=bus_nodes_processed,
             train_stations_processed=len(station_nodes),
             planner_stage='network',
         )
