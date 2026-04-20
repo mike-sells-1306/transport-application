@@ -38,6 +38,9 @@ app.config["STATIC_DATA_ONLY"] = os.getenv("STATIC_DATA_ONLY", "true").strip().l
 app.config["AUTO_REFRESH_STATIC_ON_STARTUP"] = (
     os.getenv("AUTO_REFRESH_STATIC_ON_STARTUP", "false").strip().lower() == "true"
 )
+app.config["ENABLE_INTERMODAL_TIMELINE_V2"] = (
+    os.getenv("ENABLE_INTERMODAL_TIMELINE_V2", "true").strip().lower() == "true"
+)
 
 # Configure SQLAlchemy engine options depending on the database backend.
 # SQLite accepts a 'timeout' connect arg; MySQL (pymysql) uses 'connect_timeout'.
@@ -1298,6 +1301,100 @@ def search_routes():
 
     except Exception as e:
         app.logger.error(f"Route search error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/routes/search-v2', methods=['POST'])
+def search_routes_v2():
+    """Search routes via provider-agnostic RouteAggregator with timeline metadata."""
+    if not app.config.get("ENABLE_INTERMODAL_TIMELINE_V2", True):
+        return jsonify({"error": "Route timeline v2 is disabled"}), 404
+    try:
+        data = request.get_json(silent=True) or {}
+        from_stop = data.get('from', {})
+        to_stop = data.get('to', {})
+        if not from_stop or not to_stop:
+            return jsonify({"error": "Both 'from' and 'to' stops are required"}), 400
+
+        from_name = from_stop.get('name', '').strip()
+        to_name = to_stop.get('name', '').strip()
+        if not from_name or not to_name:
+            return jsonify({"error": "Stop names are required"}), 400
+
+        from_stop_code = (from_stop.get('atcoCode') or from_stop.get('ATCOCode') or '').strip()
+        to_stop_code = (to_stop.get('atcoCode') or to_stop.get('ATCOCode') or '').strip()
+
+        sort_by = (data.get('sort_by') or 'soonest_arrival').strip().lower()
+        if sort_by not in {'soonest_arrival', 'fewest_changes'}:
+            return jsonify({"error": "Invalid sort_by. Use 'soonest_arrival' or 'fewest_changes'."}), 400
+        depart_time = (data.get('departTime') or data.get('depart_time') or '').strip() or None
+
+        from_lat = from_stop.get('lat') or from_stop.get('latitude')
+        from_lon = from_stop.get('lon') or from_stop.get('longitude')
+        to_lat = to_stop.get('lat') or to_stop.get('latitude')
+        to_lon = to_stop.get('lon') or to_stop.get('longitude')
+
+        exact_from = _resolve_stop_by_atco(from_stop_code) if from_stop_code else None
+        exact_to = _resolve_stop_by_atco(to_stop_code) if to_stop_code else None
+        if from_stop_code and exact_from is None:
+            return jsonify({
+                "error": "Selected origin stop code could not be resolved. Please re-select origin."
+            }), 422
+        if to_stop_code and exact_to is None:
+            return jsonify({
+                "error": "Selected destination stop code could not be resolved. Please re-select destination."
+            }), 422
+
+        if exact_from:
+            from_lat, from_lon = exact_from['lat'], exact_from['lon']
+            from_name = exact_from['name']
+        if exact_to:
+            to_lat, to_lon = exact_to['lat'], exact_to['lon']
+            to_name = exact_to['name']
+
+        try:
+            from_lat = float(from_lat) if from_lat is not None else None
+            from_lon = float(from_lon) if from_lon is not None else None
+            to_lat = float(to_lat) if to_lat is not None else None
+            to_lon = float(to_lon) if to_lon is not None else None
+        except (ValueError, TypeError):
+            from_lat = from_lon = to_lat = to_lon = None
+
+        if from_lat is None or from_lon is None:
+            from_lat, from_lon = _resolve_stop_coordinates(from_name)
+        if to_lat is None or to_lon is None:
+            to_lat, to_lon = _resolve_stop_coordinates(to_name)
+
+        if from_lat is None or from_lon is None or to_lat is None or to_lon is None:
+            return jsonify({
+                "error": "Could not resolve stop coordinates. Please select both stops from autocomplete suggestions."
+            }), 422
+
+        modes = data.get("modes") or []
+        if not isinstance(modes, list):
+            modes = []
+        prefer_reliability = bool(data.get("prefer_reliability") or False)
+        max_walk_meters = data.get("max_walk_meters")
+        try:
+            max_walk_meters = int(max_walk_meters) if max_walk_meters is not None else None
+        except (ValueError, TypeError):
+            max_walk_meters = None
+
+        payload = transport_service.get_routes_v2(
+            from_name, to_name,
+            from_lat=from_lat, from_lon=from_lon,
+            to_lat=to_lat, to_lon=to_lon,
+            from_stop_code=from_stop_code or None,
+            to_stop_code=to_stop_code or None,
+            depart_time=depart_time,
+            sort_by=sort_by,
+            modes=modes,
+            prefer_reliability=prefer_reliability,
+            max_walk_meters=max_walk_meters,
+        )
+        return jsonify(payload), 200
+    except Exception as e:
+        app.logger.error(f"Route search v2 error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
