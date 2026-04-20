@@ -1002,6 +1002,8 @@ let weatherCache = null;
 let weatherCacheTimestamp = 0;
 const WEATHER_CACHE_DURATION_MS = 60 * 1000; // 1 minute cache TTL
 const WEATHER_REFRESH_INTERVAL_MS = 30 * 1000; // 30 second UI refresh cadence
+const WEATHER_FETCH_RETRY_DELAY_MS = 250;
+const WEATHER_FETCH_MAX_ATTEMPTS = 2;
 
 // Auto-refresh interval ID (runs while panel is open)
 let weatherRefreshInterval = null;
@@ -1011,6 +1013,81 @@ let weatherSearchTimer = null;
 let weatherRenderInFlight = false;
 let queuedWeatherRenderOptions = null;
 const weatherExpandedRowState = new Map();
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fetchWeatherForLocation(loc) {
+  for (let attempt = 1; attempt <= WEATHER_FETCH_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      const res = await fetch(`/api/weather?lat=${loc.lat}&lon=${loc.lon}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return { key: loc.id, name: loc.name, weather: normalizeWeatherPayload(data) };
+    } catch (err) {
+      if (attempt === WEATHER_FETCH_MAX_ATTEMPTS) {
+        console.warn(`Weather fetch failed for ${loc.name}:`, err);
+        return { key: loc.id, name: loc.name, weather: null };
+      }
+      await delay(WEATHER_FETCH_RETRY_DELAY_MS);
+    }
+  }
+}
+
+function normalizeWeatherPayload(payload) {
+  if (!payload || payload.error) return payload;
+  if (payload.temperature?.current != null || payload.temperature?.feels_like != null) {
+    return payload;
+  }
+
+  const source = payload.weather && typeof payload.weather === 'object' ? payload.weather : payload;
+  const main = source.main || {};
+  const wind = source.wind || {};
+  const clouds = source.clouds || {};
+  const coord = source.coord || {};
+  const firstCondition = Array.isArray(source.weather) ? source.weather[0] || {} : {};
+  const iconCode = firstCondition.icon;
+
+  return {
+    location: {
+      latitude: coord.lat ?? null,
+      longitude: coord.lon ?? null,
+    },
+    temperature: {
+      current: main.temp ?? null,
+      feels_like: main.feels_like ?? null,
+      unit: 'Celsius',
+    },
+    atmospheric_conditions: {
+      humidity: main.humidity ?? null,
+      humidity_unit: '%',
+      pressure: main.pressure ?? null,
+      pressure_unit: 'hPa',
+    },
+    wind: {
+      speed: wind.speed ?? null,
+      speed_unit: 'm/s',
+      direction_degrees: wind.deg ?? null,
+    },
+    visibility: {
+      distance: source.visibility ?? null,
+      distance_unit: 'meters',
+    },
+    cloud_coverage: {
+      percentage: clouds.all ?? null,
+    },
+    conditions: {
+      code: firstCondition.main ?? null,
+      description: firstCondition.description ?? null,
+    },
+    icon: {
+      code: iconCode ?? null,
+      icon_url: iconCode ? `/api/weather/icon/${iconCode}` : null,
+    },
+    timestamp: source.dt ?? null,
+  };
+}
 
 /**
  * Fetch weather data for all default locations from the backend API.
@@ -1025,25 +1102,13 @@ async function fetchWeatherForAllLocations(options = {}) {
     return weatherCache;
   }
 
-  const results = await Promise.allSettled(
-    getWeatherLocations().map(async (loc) => {
-      try {
-        const res = await fetch(`/api/weather?lat=${loc.lat}&lon=${loc.lon}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        return { key: loc.id, name: loc.name, weather: data };
-      } catch (err) {
-        console.warn(`Weather fetch failed for ${loc.name}:`, err);
-        return { key: loc.id, name: loc.name, weather: null };
-      }
-    })
-  );
-
-  const weatherData = results.map((r, index) => (
-    r.status === 'fulfilled'
-      ? r.value
+  const results = await Promise.allSettled(getWeatherLocations().map(fetchWeatherForLocation));
+  const weatherData = results.map((result, index) => (
+    result.status === 'fulfilled'
+      ? result.value
       : { key: `fallback-${index}`, name: 'Unknown location', weather: null }
   ));
+
   weatherCache = weatherData;
   weatherCacheTimestamp = now;
   return weatherData;
@@ -1088,7 +1153,7 @@ async function searchWeatherLocations(query) {
     const res = await fetch(`/api/weather/search?q=${encodeURIComponent(query)}&limit=15`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    return (data.results || []).map(r => ({ name: r.name, weather: r.weather }));
+    return (data.results || []).map(r => ({ name: r.name, weather: normalizeWeatherPayload(r.weather) }));
   } catch (err) {
     console.error('Weather search failed:', err);
     return [];
