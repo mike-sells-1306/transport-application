@@ -1018,6 +1018,24 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+async function fetchWeatherForLocation(loc) {
+  for (let attempt = 1; attempt <= WEATHER_FETCH_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      const res = await fetch(`/api/weather?lat=${loc.lat}&lon=${loc.lon}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return { key: loc.id, name: loc.name, weather: normalizeWeatherPayload(data) };
+    } catch (err) {
+      if (attempt === WEATHER_FETCH_MAX_ATTEMPTS) {
+        console.warn(`Weather fetch failed for ${loc.name}:`, err);
+        return { key: loc.id, name: loc.name, weather: null };
+      }
+      await delay(WEATHER_FETCH_RETRY_DELAY_MS);
+    }
+  }
+  return { key: loc.id, name: loc.name, weather: null };
+}
+
 function normalizeWeatherPayload(payload) {
   if (!payload || payload.error) return payload;
   if (payload.temperature?.current != null || payload.temperature?.feels_like != null) {
@@ -1088,23 +1106,7 @@ async function fetchWeatherForAllLocations(options = {}) {
   const weatherData = [];
   const locations = getWeatherLocations();
   for (const loc of locations) {
-    let locationResult = { key: loc.id, name: loc.name, weather: null };
-    for (let attempt = 0; attempt < WEATHER_FETCH_MAX_ATTEMPTS; attempt += 1) {
-      try {
-        const res = await fetch(`/api/weather?lat=${loc.lat}&lon=${loc.lon}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        locationResult = { key: loc.id, name: loc.name, weather: normalizeWeatherPayload(data) };
-        break;
-      } catch (err) {
-        if (attempt === WEATHER_FETCH_MAX_ATTEMPTS - 1) {
-          console.warn(`Weather fetch failed for ${loc.name}:`, err);
-        } else {
-          await delay(WEATHER_FETCH_RETRY_DELAY_MS);
-        }
-      }
-    }
-    weatherData.push(locationResult);
+    weatherData.push(await fetchWeatherForLocation(loc));
   }
 
   weatherCache = weatherData;
