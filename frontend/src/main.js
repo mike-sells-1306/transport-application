@@ -1033,7 +1033,6 @@ async function fetchWeatherForLocation(loc) {
       await delay(WEATHER_FETCH_RETRY_DELAY_MS);
     }
   }
-  return { key: loc.id, name: loc.name, weather: null };
 }
 
 function normalizeWeatherPayload(payload) {
@@ -1103,11 +1102,12 @@ async function fetchWeatherForAllLocations(options = {}) {
     return weatherCache;
   }
 
-  const weatherData = [];
-  const locations = getWeatherLocations();
-  for (const loc of locations) {
-    weatherData.push(await fetchWeatherForLocation(loc));
-  }
+  const results = await Promise.allSettled(getWeatherLocations().map(fetchWeatherForLocation));
+  const weatherData = results.map((result, index) => (
+    result.status === 'fulfilled'
+      ? result.value
+      : { key: `fallback-${index}`, name: 'Unknown location', weather: null }
+  ));
 
   weatherCache = weatherData;
   weatherCacheTimestamp = now;
