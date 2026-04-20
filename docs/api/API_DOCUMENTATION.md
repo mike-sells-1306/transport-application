@@ -1,122 +1,267 @@
-# Transport Application Backend API Documentation
+# Backend API Documentation
 
-## Overview
-This backend provides unified API endpoints for regional transport datasets and feeds, including account management and route saving. All endpoints return JSON.
+This document reflects the endpoints currently implemented in `backend/app.py`.
 
----
+## Base URL
 
-## Endpoints
+- Local backend: `http://localhost:5000`
 
-### Health
-- `GET /health`
-  - Returns API status.
+## Authentication
 
-### Hello
-- `GET /api/hello`
-  - Returns a welcome message.
+Authenticated endpoints require:
 
-### Gazetteer (NPTG)
-- `GET /api/gazetteer`
-  - Returns gazetteer data (National Public Transport Gazetteer).
+```http
+Authorization: Bearer <token>
+```
 
-### NaPTAN
-- `GET /api/naptan?full=true|false`
-  - Returns NaPTAN stop data. `full=true` for UK-wide, `false` for Lancashire only.
+Tokens are issued by login/register endpoints.
 
-### Bus Timetable
-- `GET /api/bus/timetable/<bus_code>`
-  - Returns timetable for specified bus service.
+## Response conventions
 
-### Bus Live
-- `GET /api/bus/live/<bus_code>`
-  - Returns live bus data for specified service.
-
-### Route Search
-- `POST /api/routes/search`
-  - Input:
-    ```json
-    {
-      "from": {"name": "Lancaster Bus Station", "atcoCode": "2400LAC30001", "lat": 54.0488, "lon": -2.8013},
-      "to": {"name": "Preston Bus Station", "atcoCode": "2400LAA10001", "lat": 53.7593, "lon": -2.6993},
-      "sort_by": "soonest_arrival"
-    }
-    ```
-  - `atcoCode`/`ATCOCode` (or `CRS:<code>` for rail station suggestions) is preferred for exact stop matching.
-  - Name + coordinate payloads are also accepted for compatibility.
-  - Output: `{from, to, sort_by, routes, timestamp}` or an error (422/404).
-
-### Rail Corpus
-- `GET /api/rail/corpus`
-  - Returns rail movement/event corpus.
-
-### Translate Train Event
-- `POST /api/translate/train_event`
-  - Input: JSON train event object
-  - Output: Translated event with human-readable fields (uses appendix mappings).
-
-### Weather
-- `GET /api/weather?lat=<latitude>&lon=<longitude>`
-  - Returns current weather data for the specified coordinates
-  - Parameters: latitude (float), longitude (float)
-  - Output: Weather object with temperature, humidity, pressure, wind, visibility, cloud coverage, conditions, and icon code
-  - Example: `/api/weather?lat=54.05&lon=-2.80`
-  - Note: Data updated every few minutes, locations binned into areas due to API rate limits
-
-- `POST /api/weather/route` (Requires Auth Token)
-  - Get weather for all waypoints along a multi-modal route
-  - Input: 
-    ```json
-    {
-      "route_points": [
-        {"latitude": 54.05, "longitude": -2.80, "name": "Lancaster Station"},
-        {"latitude": 53.48, "longitude": -2.24, "name": "Manchester Piccadilly"}
-      ]
-    }
-    ```
-  - Output: Array of weather objects for each route point with location names
-
-- `GET /api/weather/icon/<icon_code>`
-  - Returns weather icon image in PNG format
-  - Parameters: icon_code (e.g., '04n', '01d')
-  - Output: PNG image file
-
-### Account Management
-- `POST /api/account/create`
-  - Input: `{email, password, name}`
-  - Output: Account creation result
-- `POST /api/account/delete`
-  - Input: `{email, password}`
-  - Output: Account deletion result
-- `POST /api/account/update`
-  - Input: `{email, password, new_password}`
-  - Output: Password update result
-- `POST /api/account/save_route`
-  - Input: `{email, route}`
-  - Output: Route saved for user
-- `GET /api/account/routes?email=<email>`
-  - Output: List of saved routes for user
+- Success responses are JSON unless explicitly returning binary (weather icon PNG).
+- Error responses follow a JSON shape with an `error` message and appropriate HTTP status.
 
 ---
 
-## Data Translation
-- All codes and fields are mapped to human-readable values using the appendix from the HTML design report.
+## Health and diagnostics
+
+### `GET /health`
+Simple service liveness check.
+
+### `GET /api/health`
+Extended diagnostics including static-data and route-index readiness.
+
+### `GET /api/hello`
+Basic backend identity message.
 
 ---
 
-## Error Handling
-- All endpoints return error messages and HTTP status codes for invalid input, missing data, or server errors.
+## Authentication and account
+
+### `POST /api/auth/register`
+Create account.
+
+Request body:
+
+```json
+{
+  "email": "user@example.com",
+  "userName": "exampleUser",
+  "password": "minimum-8-chars"
+}
+```
+
+Returns `201` with `{ token, user }` on success.
+
+### `POST /api/auth/login`
+Authenticate user.
+
+Request body:
+
+```json
+{
+  "email": "user@example.com",
+  "password": "your-password"
+}
+```
+
+Returns `{ token, user }`.
+
+### `POST /api/auth/logout`
+Stateless logout acknowledgement.
+
+### `GET /api/account/me` *(auth required)*
+Get current account profile.
+
+### `PATCH /api/account/profile` *(auth required)*
+Update profile fields.
+
+Supported body fields:
+
+- `userName`
+- `colorblindmode` (boolean)
+- `accessibilitymode` (`none`, `deuteranopia`, `protanopia`, `tritanopia`, `achromatopsia`)
+- `accessibilityfontsize` (`small`, `normal`, `large`)
+- `accessibilityzoom` (float between `0.85` and `1.4`)
+
+### `PATCH /api/account/password` *(auth required)*
+Update password.
+
+Body:
+
+```json
+{
+  "currentPassword": "old-password",
+  "newPassword": "new-password"
+}
+```
+
+### `DELETE /api/account` *(auth required)*
+Delete account.
+
+Body:
+
+```json
+{
+  "password": "current-password"
+}
+```
+
+### `GET /api/account/saved-routes` *(auth required)*
+List user saved routes.
+
+### `POST /api/account/saved-routes` *(auth required)*
+Save a route.
+
+Body fields:
+
+- `routeName` *(required)*
+- `routeStart` *(required)*
+- `routeEnd` *(required)*
+- `startTime` *(optional ISO datetime)*
+- `endTime` *(optional ISO datetime)*
+- `disruption` *(optional text)*
+
+Returns `201` with `{ message, routeID }`.
+
+### `DELETE /api/account/saved-routes/<route_id>` *(auth required)*
+Remove saved route.
+
+### `GET /api/account/notifications` *(auth required)*
+Get latest notifications (up to 30).
+
+### `PATCH /api/account/notifications/<notification_id>/read` *(auth required)*
+Mark a notification as read.
+
+### `GET /api/account/weather-locations` *(auth required)*
+List tracked weather locations.
+
+### `POST /api/account/weather-locations` *(auth required)*
+Track a location.
+
+Body:
+
+```json
+{
+  "location": "Lancaster"
+}
+```
+
+### `DELETE /api/account/weather-locations/<location>` *(auth required)*
+Remove tracked location.
 
 ---
 
-## Example Usage
-- See README.md for example API calls and expected responses.
+## Stops and route planning
+
+### `GET /api/gazetteer`
+Return NPTG gazetteer data.
+
+### `GET /api/naptan`
+Return NaPTAN stop data.
+
+Query parameters:
+
+- `full=true|false` (default `false`)
+- `dataset=<name>` (default `lancashire`; supports north west aliases)
+
+### `GET /api/stops/search`
+Autocomplete stop search from local stop cache.
+
+Query parameters:
+
+- `q` *(required, min length 2)*
+- `limit` *(optional, max 50)*
+
+### `POST /api/routes/search`
+Search journey options between origin and destination.
+
+Request body:
+
+```json
+{
+  "from": { "name": "Lancaster", "atcoCode": "2400LAC30001", "lat": 54.0488, "lon": -2.8013 },
+  "to": { "name": "Preston", "atcoCode": "2400LAA10001", "lat": 53.7593, "lon": -2.6993 },
+  "sort_by": "soonest_arrival",
+  "depart_time": "09:00"
+}
+```
+
+Notes:
+
+- `sort_by` accepts `soonest_arrival` or `fewest_changes`.
+- `atcoCode` / `ATCOCode` is preferred when available.
+- Returns 422 if stop resolution fails.
+- Returns fallback mock routes when live route planning yields none.
+
+### `GET /api/routes/metrics`
+Return latest route-processing metrics.
 
 ---
 
-## References
-- [Transport Application Overview.html](../design/software-design-doc-source/Transport%20Application%20Overview.html)
-- [main.tex](../design/software-design-doc-source/main.tex)
+## Bus and rail
+
+### `GET /api/bus/timetable/<bus_code>`
+Bus timetable data.
+
+### `GET /api/bus/live/<bus_code>`
+Live bus data.
+
+### `GET /api/rail/corpus`
+Rail corpus data.
+
+### `GET /api/rail/departures/<crs_code>`
+Rail departure board for station CRS code.
+
+### `POST /api/translate/train_event`
+Translate train event payload into human-readable values.
 
 ---
 
-For further details, see the design report and appendix.
+## Weather
+
+### `GET /api/weather/search`
+Location search with weather previews.
+
+Query parameters:
+
+- `q` *(required, min length 2)*
+- `limit` *(optional, max 20)*
+
+### `GET /api/weather`
+Weather by coordinates.
+
+Query parameters:
+
+- `lat` *(required float)*
+- `lon` *(required float)*
+
+### `POST /api/weather/route` *(auth required)*
+Weather along route points.
+
+Request body:
+
+```json
+{
+  "route_points": [
+    { "latitude": 54.05, "longitude": -2.80, "name": "Lancaster" },
+    { "latitude": 53.48, "longitude": -2.24, "name": "Manchester" }
+  ]
+}
+```
+
+### `GET /api/weather/icon/<icon_code>`
+Returns weather icon PNG.
+
+---
+
+## Frontend fallback routes (non-API)
+
+- `GET /` serves frontend `index.html`
+- `GET /<path>` serves frontend static assets and SPA fallback (excluding `/api/*`)
+
+---
+
+## Source of truth
+
+If this document and runtime behavior diverge, treat `backend/app.py` and backend tests in `backend/tests/` as source of truth and update this file.
