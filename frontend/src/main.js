@@ -217,7 +217,7 @@ async function setLocale(locale, options = {}) {
   }
 
   if (!document.getElementById('weather-panel')?.classList.contains('hidden')) {
-    renderWeatherPanel();
+    renderWeatherPanel({ announce: false });
   }
 
   if (announce) {
@@ -997,13 +997,17 @@ function getWeatherLocations() {
 // Cache for weather data to avoid repeated API calls
 let weatherCache = null;
 let weatherCacheTimestamp = 0;
-const WEATHER_CACHE_DURATION_MS = 5 * 1000; // 5 seconds
+const WEATHER_CACHE_DURATION_MS = 60 * 1000; // 1 minute cache TTL
+const WEATHER_REFRESH_INTERVAL_MS = 30 * 1000; // 30 second UI refresh cadence
 
 // Auto-refresh interval ID (runs while panel is open)
 let weatherRefreshInterval = null;
 
 // Debounce timer for weather search
 let weatherSearchTimer = null;
+let weatherRenderInFlight = false;
+let queuedWeatherRenderOptions = null;
+const weatherExpandedRowState = new Map();
 
 /**
  * Fetch weather data for all default locations from the backend API.
@@ -1011,9 +1015,10 @@ let weatherSearchTimer = null;
  * Results are cached for 1 minute to reduce API load.
  * @returns {Promise<Array>} Array of { name, weather } objects
  */
-async function fetchWeatherForAllLocations() {
+async function fetchWeatherForAllLocations(options = {}) {
+  const { forceRefresh = false } = options;
   const now = Date.now();
-  if (weatherCache && (now - weatherCacheTimestamp) < WEATHER_CACHE_DURATION_MS) {
+  if (!forceRefresh && weatherCache && (now - weatherCacheTimestamp) < WEATHER_CACHE_DURATION_MS) {
     return weatherCache;
   }
 
@@ -1023,18 +1028,51 @@ async function fetchWeatherForAllLocations() {
         const res = await fetch(`/api/weather?lat=${loc.lat}&lon=${loc.lon}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        return { name: loc.name, weather: data };
+        return { key: loc.id, name: loc.name, weather: data };
       } catch (err) {
         console.warn(`Weather fetch failed for ${loc.name}:`, err);
-        return { name: loc.name, weather: null };
+        return { key: loc.id, name: loc.name, weather: null };
       }
     })
   );
 
-  const weatherData = results.map(r => r.status === 'fulfilled' ? r.value : r.reason);
+  const weatherData = results.map((r, index) => (
+    r.status === 'fulfilled'
+      ? r.value
+      : { key: `fallback-${index}`, name: 'Unknown location', weather: null }
+  ));
   weatherCache = weatherData;
   weatherCacheTimestamp = now;
   return weatherData;
+}
+
+function generateWeatherItemKey(entry) {
+  const keyPart = entry?.key ? `id-${entry.key}` : `name-${entry?.name || 'unknown'}`;
+  return keyPart.toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+}
+
+function weatherRenderSignature(name, weather) {
+  return JSON.stringify({
+    locale: i18nState.locale,
+    name,
+    error: !!weather?.error,
+    temp: weather?.temperature?.current ?? null,
+    feelsLike: weather?.temperature?.feels_like ?? null,
+    humidity: weather?.atmospheric_conditions?.humidity ?? null,
+    windSpeed: weather?.wind?.speed ?? null,
+    windUnit: weather?.wind?.speed_unit ?? null,
+    cloudCoverage: weather?.cloud_coverage?.percentage ?? null,
+    visibility: weather?.visibility?.distance ?? null,
+    description: weather?.conditions?.description ?? null,
+    icon: weather?.icon?.code ?? null,
+  });
+}
+
+function isWeatherItemInitiallyOpen(itemKey, existingItem) {
+  if (weatherExpandedRowState.has(itemKey)) {
+    return !!weatherExpandedRowState.get(itemKey);
+  }
+  return !!existingItem?.classList.contains('weather-item-open');
 }
 
 /**
@@ -1060,10 +1098,14 @@ async function searchWeatherLocations(query) {
  * @param {object|null} weather - Parsed weather data from API
  * @returns {HTMLLIElement}
  */
-function buildWeatherListItem(name, weather) {
+function buildWeatherListItem(name, weather, options = {}) {
+  const { itemKey = generateWeatherItemKey({ name }), signature = weatherRenderSignature(name, weather), initiallyOpen = false } = options;
   const li = document.createElement('li');
   li.className = 'weather-item';
-  const detailId = `weather-detail-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+  li.dataset.weatherKey = itemKey;
+  li.dataset.weatherSignature = signature;
+  li.dataset.weatherName = name;
+  const detailId = `weather-detail-${itemKey}`;
 
   // --- Top row (always visible): name + icon + temp ---
   const row = document.createElement('div');
@@ -1167,6 +1209,7 @@ function buildWeatherListItem(name, weather) {
   row.addEventListener('click', () => {
     const isOpen = li.classList.toggle('weather-item-open');
     row.setAttribute('aria-expanded', String(isOpen));
+    weatherExpandedRowState.set(itemKey, isOpen);
   });
   row.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -1175,7 +1218,61 @@ function buildWeatherListItem(name, weather) {
     }
   });
 
+  if (initiallyOpen) {
+    li.classList.add('weather-item-open');
+    row.setAttribute('aria-expanded', 'true');
+    weatherExpandedRowState.set(itemKey, true);
+  }
+
   return li;
+}
+
+function reconcileWeatherPanelList(weatherList, weatherData) {
+  Array.from(weatherList.querySelectorAll('.weather-loading')).forEach(node => node.remove());
+
+  const existingByKey = new Map(
+    Array.from(weatherList.querySelectorAll('.weather-item')).map(item => [item.dataset.weatherKey, item])
+  );
+  const nextNodes = [];
+  const nextKeys = new Set();
+
+  weatherData.forEach((entry, index) => {
+    const name = entry?.name || 'Unknown location';
+    const weather = entry?.weather ?? null;
+    const keyedEntry = entry?.key ? entry : { ...entry, key: `row-${index}-${name}` };
+    const itemKey = generateWeatherItemKey(keyedEntry);
+    if (nextKeys.has(itemKey)) return;
+    nextKeys.add(itemKey);
+    const signature = weatherRenderSignature(name, weather);
+    const existing = existingByKey.get(itemKey);
+    const initiallyOpen = isWeatherItemInitiallyOpen(itemKey, existing);
+
+    if (existing && existing.dataset.weatherSignature === signature) {
+      nextNodes.push(existing);
+    } else {
+      nextNodes.push(buildWeatherListItem(name, weather, { itemKey, signature, initiallyOpen }));
+    }
+
+    weatherExpandedRowState.set(itemKey, initiallyOpen);
+    existingByKey.delete(itemKey);
+  });
+
+  existingByKey.forEach((_node, key) => weatherExpandedRowState.delete(key));
+
+  let cursor = weatherList.firstElementChild;
+  nextNodes.forEach(node => {
+    if (node === cursor) {
+      cursor = cursor?.nextElementSibling || null;
+      return;
+    }
+    weatherList.insertBefore(node, cursor);
+  });
+
+  while (cursor) {
+    const next = cursor.nextElementSibling;
+    cursor.remove();
+    cursor = next;
+  }
 }
 
 /**
@@ -1183,24 +1280,46 @@ function buildWeatherListItem(name, weather) {
  * Each item displays: location name, weather icon, temperature,
  * and an expandable detail section with a brief description.
  */
-async function renderWeatherPanel() {
+async function renderWeatherPanel(options = {}) {
+  const { forceRefresh = false, announce = true } = options;
   const weatherList = document.getElementById('weather-list');
   if (!weatherList) return;
 
-  // Show loading state
-  weatherList.innerHTML = `<li class="weather-loading">${t('weather.loading')}</li>`;
+  const hasExistingRows = weatherList.querySelector('.weather-item');
+  if (!hasExistingRows && !weatherList.querySelector('.weather-loading')) {
+    weatherList.innerHTML = `<li class="weather-loading">${t('weather.loading')}</li>`;
+  }
+
+  if (weatherRenderInFlight) {
+    queuedWeatherRenderOptions = {
+      forceRefresh: !!(options.forceRefresh || queuedWeatherRenderOptions?.forceRefresh),
+      announce: !!(options.announce || queuedWeatherRenderOptions?.announce),
+    };
+    return;
+  }
+  weatherRenderInFlight = true;
+  weatherList.setAttribute('aria-busy', 'true');
 
   try {
-    const weatherData = await fetchWeatherForAllLocations();
-    weatherList.innerHTML = '';
-    weatherData.forEach(({ name, weather }) => {
-      weatherList.appendChild(buildWeatherListItem(name, weather));
-    });
-    announceToScreenReader(t('announce.weatherUpdated', { count: weatherData.length }));
+    const weatherData = await fetchWeatherForAllLocations({ forceRefresh });
+    reconcileWeatherPanelList(weatherList, weatherData);
+    if (announce) {
+      announceToScreenReader(t('announce.weatherUpdated', { count: weatherData.length }));
+    }
   } catch (err) {
     console.error('Failed to load weather data:', err);
-    weatherList.innerHTML = `<li class="weather-loading">${t('weather.unableToLoad')}</li>`;
+    if (!weatherList.querySelector('.weather-item')) {
+      weatherList.innerHTML = `<li class="weather-loading">${t('weather.unableToLoad')}</li>`;
+    }
     announceToScreenReader(t('announce.weatherLoadFailed'), 'assertive');
+  } finally {
+    weatherRenderInFlight = false;
+    weatherList.setAttribute('aria-busy', 'false');
+    if (queuedWeatherRenderOptions) {
+      const nextOptions = queuedWeatherRenderOptions;
+      queuedWeatherRenderOptions = null;
+      renderWeatherPanel(nextOptions);
+    }
   }
 }
 
@@ -1340,19 +1459,16 @@ function toggleWeatherPanel() {
     const searchInput = document.getElementById('weather-search-input');
     if (searchInput) searchInput.value = '';
     // Fetch and render live weather data when panel is opened
-    renderWeatherPanel();
-    // Start auto-refresh every 5 seconds while panel is open
+    renderWeatherPanel({ forceRefresh: true });
+    // Start background auto-refresh while panel is open
     clearInterval(weatherRefreshInterval);
     weatherRefreshInterval = setInterval(() => {
-      // Invalidate cache so next render fetches fresh data
-      weatherCache = null;
-      weatherCacheTimestamp = 0;
       // Only re-render if search bar is empty (don't overwrite active search)
       const si = document.getElementById('weather-search-input');
       if (!si || si.value.trim() === '') {
-        renderWeatherPanel();
+        renderWeatherPanel({ forceRefresh: true, announce: false });
       }
-    }, WEATHER_CACHE_DURATION_MS);
+    }, WEATHER_REFRESH_INTERVAL_MS);
     announceToScreenReader(t('announce.weatherPanelOpened'));
   } else {
     // Panel is closing — stop auto-refresh
