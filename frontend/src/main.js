@@ -428,7 +428,7 @@ const LOCATION_CATALOG = [
     id: 'keswick',
     lat: 54.6010,
     lng: -3.1376,
-    image: 'https://www.armathwaite-hall.com/2024/06/what-to-do-in-keswick/',
+    image: 'https://www.armathwaite-hall.com/wp-content/uploads/2019/08/Keswick.jpg',
   },
 ];
 
