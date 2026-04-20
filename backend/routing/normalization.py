@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 from routing.models import InternalLeg, InternalRoute, ReliabilityMetadata, TransferWindow
@@ -65,6 +65,8 @@ def compute_transfer_windows(route: InternalRoute) -> List[TransferWindow]:
         arr = _hhmm_to_mins(a.arrive)
         dep = _hhmm_to_mins(b.depart)
         buffer_mins = dep - arr
+        # We represent leg times as HH:MM clock times and only support
+        # overnight rollover within a 24-hour planning window.
         if buffer_mins < 0:
             buffer_mins += 24 * 60
         min_required = minimum_transfer_mins(a.mode, b.mode)
@@ -96,12 +98,12 @@ def minimum_transfer_mins(from_mode: str, to_mode: str) -> int:
 
 
 def route_similarity_signature(route: InternalRoute) -> str:
-    # coarse signature for deduplication
+    # Signature spans all legs to avoid accidental collisions on long routes.
     transport = ",".join(route.transport)
     legs = []
     for leg in route.legs:
         legs.append(f"{leg.mode}:{leg.from_stop}->{leg.to_stop}:{leg.depart}-{leg.arrive}")
-    body = "|".join(legs[:4])
+    body = "|".join(legs)
     return f"{route.start_time}|{route.end_time}|{transport}|{route.changes}|{body}"
 
 
@@ -126,4 +128,4 @@ def score_route(route: InternalRoute, prefer_reliability: bool = False) -> float
 
 
 def iso_utc_now() -> str:
-    return datetime.utcnow().isoformat()
+    return datetime.now(timezone.utc).isoformat()

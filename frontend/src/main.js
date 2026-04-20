@@ -2671,6 +2671,7 @@ async function searchRoutes() {
       body: JSON.stringify(body),
     });
     if (!response.ok && useTimelineView) {
+      console.warn('Timeline search v2 unavailable; falling back to legacy route search without v2-only filters.');
       response = await fetch('/api/routes/search', {
         method: 'POST',
         headers: {
@@ -3448,6 +3449,7 @@ function getSelectedRouteModes() {
 
 function routeModeAllowed(mode, selectedModes) {
   const normalized = String(mode || '').toLowerCase();
+  // Legacy `/api/routes/search` can still emit `train` while v2 emits `rail`.
   if (normalized === 'train') {
     return selectedModes.has('rail') || selectedModes.has('train');
   }
@@ -3503,8 +3505,12 @@ function renderTimelineRoutes(routeList, routes) {
       if (tw) {
         const buffer = document.createElement('div');
         buffer.className = 'route-transfer-buffer';
-        const status = tw.feasible ? '✓' : '⚠';
-        buffer.textContent = `${status} Transfer buffer at ${tw.at_stop}: ${tw.buffer_mins}m (min ${tw.minimum_required_mins}m)`;
+        const feasibleLabel = t('route.transferFeasibleLabel');
+        const riskyLabel = t('route.transferRiskyLabel');
+        const status = tw.feasible
+          ? (feasibleLabel === 'route.transferFeasibleLabel' ? 'Feasible transfer' : feasibleLabel)
+          : (riskyLabel === 'route.transferRiskyLabel' ? 'Risky transfer' : riskyLabel);
+        buffer.textContent = `${status} at ${tw.at_stop}: ${tw.buffer_mins}m (min ${tw.minimum_required_mins}m)`;
         detail.appendChild(buffer);
       }
     });

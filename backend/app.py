@@ -1393,9 +1393,9 @@ def search_routes_v2():
             max_walk_meters=max_walk_meters,
         )
         return jsonify(payload), 200
-    except Exception as e:
-        app.logger.error(f"Route search v2 error: {e}")
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        app.logger.exception("Route search v2 error")
+        return jsonify({"error": "Unable to complete route search right now."}), 500
 
 
 @app.route('/api/routes/metrics', methods=['GET'])
