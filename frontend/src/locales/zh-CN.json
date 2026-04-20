@@ -58,6 +58,10 @@
       "oneTime": "12 分钟前",
       "two": "Barrow-in-Furness 发布降雪预警。",
       "twoTime": "4 小时前"
+    },
+    "messages": {
+      "welcome": "欢迎使用西北交通。您的账户现已激活。",
+      "routeSaved": "路线已保存：{from} → {to}"
     }
   },
   "faq": {
