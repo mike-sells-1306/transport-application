@@ -76,7 +76,13 @@ class TransportService:
             depart_time=depart_time,
             sort_by=sort_by,
         )
-        return {"routes": routes}
+        return {
+            "routes": routes,
+            "metrics": self.route_planner.get_last_processing_metrics(),
+        }
+
+    def get_route_processing_metrics(self):
+        return self.route_planner.get_last_processing_metrics()
 
     def get_weather(self, latitude: float, longitude: float):
         raw_data = self.weather.fetch_weather(latitude, longitude)
