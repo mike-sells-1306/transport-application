@@ -12,3 +12,4 @@ dist/
 *.db
 transport.db
 backend/.venv/
+frontend/test-results/
