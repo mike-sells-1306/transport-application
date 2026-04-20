@@ -203,5 +203,3 @@ See [docs/features/account-management.md](docs/features/account-management.md) f
 See [docs/design/software-design-doc-source/main.tex](docs/design/software-design-doc-source/main.tex) for the software design document.
 
 See [docs/README.md](docs/README.md) for a full documentation index.
-# transport-application
-todo
