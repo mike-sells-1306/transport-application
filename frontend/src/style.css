@@ -474,6 +474,136 @@ body.sidebar-minimized {
   background: var(--white);
 }
 
+/* Dark mode adjustments for map popups and the floating info card when a
+   dark base map is active. The `map-style-dark` class is toggled on the
+   document body by the map UI code so we can switch these components to
+   a dark appearance without changing the page-wide theme. */
+.map-style-dark .leaflet-map .leaflet-popup-content-wrapper {
+  background: #111214;
+  color: #e6e6e6;
+  box-shadow: 0 6px 22px rgba(0,0,0,0.6);
+}
+.map-style-dark .leaflet-map .leaflet-popup-tip {
+  background: #111214;
+}
+.map-style-dark .leaflet-map .leaflet-popup-content-wrapper .popup-title {
+  color: var(--red-light);
+}
+.map-style-dark .leaflet-map .leaflet-popup-content-wrapper .popup-description {
+  color: #d7d7d7;
+}
+
+/* Also style the separate info-card overlay used elsewhere in the UI */
+.map-style-dark .info-card {
+  background: #0f1113;
+  color: #e9e9e9;
+  box-shadow: 0 8px 36px rgba(0,0,0,0.65);
+}
+.map-style-dark .info-card h2 {
+  color: var(--red-light);
+}
+.map-style-dark .info-card p {
+  color: #dcdcdc;
+}
+
+/* Broader UI adjustments when a dark base map is active */
+.map-style-dark body {
+  background: #0b0c0d;
+  color: #e6e6e6;
+}
+.map-style-dark .sidebar {
+  /* Keep sidebar appearance unchanged in dark map mode */
+  background: linear-gradient(to bottom, var(--red-main) 0 120px, var(--red-panel) 120px 100%);
+  color: var(--white);
+  border-right-color: var(--sidebar-border);
+}
+.map-style-dark .sidebar .sidebar-header {
+  background: var(--red-main);
+}
+.map-style-dark .sidebar-links a {
+  color: var(--white);
+}
+.map-style-dark .sidebar-search input[type="text"],
+.map-style-dark .journey-box input[type="text"],
+.map-style-dark .autocomplete-suggestions {
+  background: #222;
+  color: var(--white);
+  border-color: #444;
+}
+.map-style-dark .autocomplete-suggestion-item,
+.map-style-dark .autocomplete-no-results {
+  color: var(--white);
+}
+.map-style-dark .top-right-icons .icon-btn,
+.map-style-dark .top-right-icons .map-style-select {
+  background: #131516;
+  color: #e6e6e6;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.04);
+}
+.map-style-dark .leaflet-map .leaflet-control {
+  background: rgba(18,18,18,0.9);
+  color: #efefef;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+}
+.map-style-dark .route-modal {
+  background: #131416;
+  color: #ececec;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.7);
+}
+.map-style-dark .route-modal-header {
+  background: #0f1011;
+}
+.map-style-dark .route-row,
+.map-style-dark .route-row.alt {
+  background: rgba(255,255,255,0.02);
+}
+.map-style-dark .route-download-btn,
+.map-style-dark .route-save-btn {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.08);
+  color: #fff;
+}
+.map-style-dark .weather-panel,
+.map-style-dark .notif-panel,
+.map-style-dark .faq-panel,
+.map-style-dark .accessibility-panel,
+.map-style-dark .support-panel {
+  background: #0f1112;
+  color: #e8e8e8;
+  box-shadow: 0 10px 36px rgba(0,0,0,0.65);
+}
+.map-style-dark .panel-header {
+  background: #0b0c0d;
+  color: #fff;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.map-style-dark .panel-header + .weather-search-wrapper input,
+.map-style-dark .weather-search-input,
+.map-style-dark .faq-content,
+.map-style-dark .notif-list {
+  color: #e6e6e6;
+}
+
+/* Accessibility panel: some internal controls use white backgrounds
+   so override their text colour to remain dark for legibility. */
+.map-style-dark .accessibility-panel .accessibility-select,
+.map-style-dark .accessibility-panel .accessibility-fieldset label,
+.map-style-dark .accessibility-panel .accessibility-actions .action-btn,
+.map-style-dark .accessibility-panel .accessibility-actions .secondary-btn,
+.map-style-dark .accessibility-panel .accessibility-item p {
+  color: #222 !important;
+}
+.map-style-dark .accessibility-panel .accessibility-fieldset label {
+  background: rgba(0,0,0,0.04);
+}
+
+/* Ensure focus and outline remain visible in dark mode */
+.map-style-dark :focus {
+  outline: 3px solid rgba(34, 122, 255, 0.18);
+  outline-offset: 2px;
+}
+
 /* Leaflet circle marker hover styling */
 .leaflet-map .leaflet-circle-marker:hover {
   filter: drop-shadow(0 0 10px rgba(139, 28, 28, 0.8));
@@ -526,6 +656,42 @@ body.sidebar-minimized {
   font-weight: 700;
   color: #2d2d2d;
   white-space: nowrap;
+}
+
+.top-right-icons .map-style-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  min-width: 88px;
+  border-radius: 999px;
+  padding: 6px 40px 6px 14px; /* space for caret */
+  margin-left: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #222;
+  background: var(--white);
+  border: 1px solid rgba(0,0,0,0.04);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  cursor: pointer;
+  transition: box-shadow 160ms ease, transform 120ms ease;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 12px) center;
+}
+.top-right-icons .map-style-select:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+.top-right-icons .map-style-select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(34, 122, 255, 0.12), 0 8px 24px rgba(20,20,30,0.08);
+}
+.top-right-icons .map-style-select option {
+  font-weight: 600;
+  padding: 8px 12px;
 }
 
 .top-right-icons .map-style-btn:focus-visible {

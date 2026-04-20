@@ -695,6 +695,10 @@ function initializeMap() {
     return applyMapStyleByIndex(index);
   };
 
+  map.getAvailableMapStyles = function() {
+    return mapStylePresets;
+  };
+
   const locations = LOCATION_CATALOG;
 
   // Add markers for each location with popups and toggle functionality
@@ -953,13 +957,37 @@ function updateMapMarkerColors() {
 function updateMapStyleButtonUI(style) {
   if (!style) return;
 
-  const mapStyleBtn = document.getElementById('map-style-btn');
-  if (!mapStyleBtn) return;
-
   const compactLabel = style.shortLabel || style.label;
-  mapStyleBtn.textContent = `Map Style: ${compactLabel}`;
-  mapStyleBtn.title = style.title;
-  mapStyleBtn.setAttribute('aria-label', style.title);
+
+  const mapStyleBtn = document.getElementById('map-style-btn');
+  if (mapStyleBtn) {
+    mapStyleBtn.textContent = `Map Style: ${compactLabel}`;
+    mapStyleBtn.title = style.title;
+    mapStyleBtn.setAttribute('aria-label', style.title);
+  }
+
+  const mapStyleSelect = document.getElementById('map-style-select');
+  if (mapStyleSelect) {
+    // If options not yet populated, try to populate from the map if available
+    if (!mapStyleSelect.options || mapStyleSelect.options.length === 0) {
+      if (window.appMap && typeof window.appMap.getAvailableMapStyles === 'function') {
+        const presets = window.appMap.getAvailableMapStyles();
+        mapStyleSelect.innerHTML = presets.map(p => `<option value="${p.id}" title="${p.title}">${p.shortLabel || p.label}</option>`).join('');
+      }
+    }
+    mapStyleSelect.value = style.id;
+    mapStyleSelect.title = style.title;
+    mapStyleSelect.setAttribute('aria-label', style.title);
+  }
+
+  // Toggle a body-level class so CSS can adapt UI elements (popups/info cards)
+  try {
+    const id = String(style.id || '');
+    const isDark = /dark|night|black/i.test(id);
+    document.body.classList.toggle('map-style-dark', Boolean(isDark));
+  } catch (e) {
+    // ignore in non-browser environments
+  }
 }
 
 /**
@@ -3168,19 +3196,31 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Set up panel toggle event listeners
   const weatherBtn = document.getElementById('weather-btn');
   const notifBtn = document.getElementById('notif-btn');
-  const mapStyleBtn = document.getElementById('map-style-btn');
+  const mapStyleSelect = document.getElementById('map-style-select');
 
-  if (mapStyleBtn && window.appMap && typeof window.appMap.getCurrentMapStyle === 'function') {
-    updateMapStyleButtonUI(window.appMap.getCurrentMapStyle());
-
-    mapStyleBtn.addEventListener('click', () => {
-      if (typeof window.appMap.cycleMapStyle !== 'function') {
-        return;
+  if (mapStyleSelect && window.appMap && typeof window.appMap.getAvailableMapStyles === 'function') {
+    const presets = window.appMap.getAvailableMapStyles();
+    mapStyleSelect.innerHTML = presets.map(p => `<option value="${p.id}" title="${p.title}">${p.shortLabel || p.label}</option>`).join('');
+    const current = window.appMap.getCurrentMapStyle();
+    if (current) {
+      mapStyleSelect.value = current.id;
+      mapStyleSelect.title = current.title;
+      mapStyleSelect.setAttribute('aria-label', `Map style (current: ${current.label})`);
+      // Ensure UI reflects the currently active map style on initial load
+      try {
+        updateMapStyleButtonUI(current);
+      } catch (e) {
+        // ignore in non-browser environments
       }
+    }
 
-      const nextStyle = window.appMap.cycleMapStyle();
-      updateMapStyleButtonUI(nextStyle);
-      announceToScreenReader(`Map style changed to ${nextStyle.label}`);
+    mapStyleSelect.addEventListener('change', function() {
+      if (typeof window.appMap.setMapStyleById !== 'function') return;
+      const applied = window.appMap.setMapStyleById(this.value);
+      if (applied) {
+        updateMapStyleButtonUI(applied);
+        announceToScreenReader(`Map style changed to ${applied.label}`);
+      }
     });
   }
   

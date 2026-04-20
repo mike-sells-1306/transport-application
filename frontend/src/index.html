@@ -80,9 +80,9 @@
 
     <!-- Top-right icon buttons -->
     <div class="top-right-icons">
-      <button class="icon-btn map-style-btn" id="map-style-btn" type="button" title="Switch map style (current: OSM Standard)" aria-label="Switch map style (current: OSM Standard)">
-        Map Style: OSM
-      </button>
+      <label for="map-style-select" class="visually-hidden">Map Style</label>
+      <select class="icon-btn map-style-select" id="map-style-select" aria-label="Map style selector" title="Map style">
+      </select>
       <button class="icon-btn" id="weather-btn" type="button" title="View weather updates" aria-label="View weather updates" data-i18n-title="weather.openPanel" data-i18n-aria-label="weather.openPanel" aria-expanded="false" aria-controls="weather-panel">
         <span class="icon-cloud" aria-hidden="true"></span>
       </button>
