@@ -1003,6 +1003,7 @@ let weatherCacheTimestamp = 0;
 const WEATHER_CACHE_DURATION_MS = 60 * 1000; // 1 minute cache TTL
 const WEATHER_REFRESH_INTERVAL_MS = 30 * 1000; // 30 second UI refresh cadence
 const WEATHER_FETCH_RETRY_DELAY_MS = 250;
+const WEATHER_FETCH_MAX_ATTEMPTS = 2;
 
 // Auto-refresh interval ID (runs while panel is open)
 let weatherRefreshInterval = null;
@@ -1087,23 +1088,23 @@ async function fetchWeatherForAllLocations(options = {}) {
   const weatherData = [];
   const locations = getWeatherLocations();
   for (const loc of locations) {
-    let entry = { key: loc.id, name: loc.name, weather: null };
-    for (let attempt = 0; attempt < 2; attempt += 1) {
+    let locationResult = { key: loc.id, name: loc.name, weather: null };
+    for (let attempt = 0; attempt < WEATHER_FETCH_MAX_ATTEMPTS; attempt += 1) {
       try {
         const res = await fetch(`/api/weather?lat=${loc.lat}&lon=${loc.lon}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        entry = { key: loc.id, name: loc.name, weather: normalizeWeatherPayload(data) };
+        locationResult = { key: loc.id, name: loc.name, weather: normalizeWeatherPayload(data) };
         break;
       } catch (err) {
-        if (attempt === 1) {
+        if (attempt === WEATHER_FETCH_MAX_ATTEMPTS - 1) {
           console.warn(`Weather fetch failed for ${loc.name}:`, err);
         } else {
           await delay(WEATHER_FETCH_RETRY_DELAY_MS);
         }
       }
     }
-    weatherData.push(entry);
+    weatherData.push(locationResult);
   }
 
   weatherCache = weatherData;
