@@ -651,7 +651,8 @@ function initializeMap() {
   ];
 
   // Create Leaflet map instance
-  const map = L.map('map').setView(mapCenter, initialZoom);
+  const map = L.map('map', { zoomControl: false }).setView(mapCenter, initialZoom);
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
 
   // Add default tile layer and expose a cycle helper for quick in-app style testing.
   let currentMapStyleIndex = 0;
