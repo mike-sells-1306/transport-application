@@ -1939,6 +1939,15 @@ body.colorblind-mode {
   --red-panel:   #004A99;
   --grey-dark:   #222;
   --blue-map:    #E3F2FD;
+  --cb-account-modal-bg: #E3F2FD;
+  --cb-account-header-bg: #0057B7;
+  --cb-account-border: #003D80;
+  --cb-account-card-bg: #F4F9FF;
+  --cb-account-heading-bg: #D7E9FF;
+  --cb-account-text: #0A2A4A;
+  --cb-account-hover-bg: rgba(0, 87, 183, 0.08);
+  --cb-account-button-bg: #FFFFFF;
+  --cb-account-button-hover-bg: #EAF3FF;
   /* stronger sidebar border to contrast with blue theme */
   --sidebar-border: rgba(255,255,255,0.18);
 }
@@ -1955,6 +1964,15 @@ body.accessibility-mode-protanopia {
   --red-main: #0E5A8A;
   --red-light: #2A78B0;
   --red-panel: #0A466C;
+  --cb-account-modal-bg: #E6F4FF;
+  --cb-account-header-bg: #0E5A8A;
+  --cb-account-border: #0A466C;
+  --cb-account-card-bg: #F2FAFF;
+  --cb-account-heading-bg: #D8ECFB;
+  --cb-account-text: #08314A;
+  --cb-account-hover-bg: rgba(14, 90, 138, 0.1);
+  --cb-account-button-bg: #FFFFFF;
+  --cb-account-button-hover-bg: #E8F4FC;
   --sidebar-border: rgba(255,255,255,0.2);
 }
 
@@ -1962,6 +1980,15 @@ body.accessibility-mode-tritanopia {
   --red-main: #5E2A84;
   --red-light: #7B44A6;
   --red-panel: #4A1F67;
+  --cb-account-modal-bg: #F2EAFA;
+  --cb-account-header-bg: #5E2A84;
+  --cb-account-border: #4A1F67;
+  --cb-account-card-bg: #FAF5FF;
+  --cb-account-heading-bg: #E8DAF6;
+  --cb-account-text: #2F1643;
+  --cb-account-hover-bg: rgba(94, 42, 132, 0.11);
+  --cb-account-button-bg: #FFFFFF;
+  --cb-account-button-hover-bg: #F1E8FB;
   --sidebar-border: rgba(255,255,255,0.2);
 }
 
@@ -1971,6 +1998,15 @@ body.accessibility-mode-achromatopsia {
   --red-panel: #1F1F1F;
   --grey-dark: #222;
   --blue-map: #ECECEC;
+  --cb-account-modal-bg: #ECECEC;
+  --cb-account-header-bg: #2D2D2D;
+  --cb-account-border: #4A4A4A;
+  --cb-account-card-bg: #F7F7F7;
+  --cb-account-heading-bg: #DDDDDD;
+  --cb-account-text: #1F1F1F;
+  --cb-account-hover-bg: rgba(31, 31, 31, 0.12);
+  --cb-account-button-bg: #FFFFFF;
+  --cb-account-button-hover-bg: #EAEAEA;
   --sidebar-border: rgba(255,255,255,0.24);
 }
 
@@ -2005,11 +2041,11 @@ body.colorblind-mode .popup-description {
 
 /* Redesigned account modal in colourblind mode */
 body.colorblind-mode .account-modal {
-  background: #E3F2FD;
+  background: var(--cb-account-modal-bg);
 }
 
 body.colorblind-mode .account-modal-header {
-  background: #0057B7;
+  background: var(--cb-account-header-bg);
   color: #fff;
 }
 
@@ -2019,54 +2055,54 @@ body.colorblind-mode .saved-routes-panel h3,
 body.colorblind-mode .saved-routes-more,
 body.colorblind-mode .account-action-btn,
 body.colorblind-mode .account-close-btn {
-  border-color: #003D80;
+  border-color: var(--cb-account-border);
 }
 
 body.colorblind-mode .account-profile-card,
 body.colorblind-mode .saved-routes-panel {
-  background: #F4F9FF;
+  background: var(--cb-account-card-bg);
 }
 
 body.colorblind-mode .saved-routes-panel h3 {
-  background: #D7E9FF;
-  color: #0A2A4A;
+  background: var(--cb-account-heading-bg);
+  color: var(--cb-account-text);
 }
 
 body.colorblind-mode .saved-route-icon {
-  color: #0057B7;
+  color: var(--cb-account-header-bg);
 }
 
 body.colorblind-mode .account-username,
 body.colorblind-mode .saved-route-item,
 body.colorblind-mode .saved-route-label {
-  color: #0A2A4A;
+  color: var(--cb-account-text);
 }
 
 body.colorblind-mode .saved-route-item.clickable:hover,
 body.colorblind-mode .saved-route-item.clickable:focus-visible {
-  background: rgba(0, 87, 183, 0.08);
+  background: var(--cb-account-hover-bg);
 }
 
 body.colorblind-mode .saved-route-item.clickable:hover .saved-route-chevron,
 body.colorblind-mode .saved-route-item.clickable:focus-visible .saved-route-chevron {
-  color: #0057B7;
+  color: var(--cb-account-header-bg);
 }
 
 body.colorblind-mode .account-action-btn,
 body.colorblind-mode .account-close-btn,
 body.colorblind-mode .saved-routes-more {
-  background: #FFFFFF;
-  color: #0A2A4A;
+  background: var(--cb-account-button-bg);
+  color: var(--cb-account-text);
 }
 
 body.colorblind-mode .account-action-btn:hover,
 body.colorblind-mode .account-close-btn:hover {
-  background: #EAF3FF;
+  background: var(--cb-account-button-hover-bg);
 }
 
 body.colorblind-mode .account-action-btn.danger {
-  background: #FFFFFF;
-  color: #0A2A4A;
+  background: var(--cb-account-button-bg);
+  color: var(--cb-account-text);
 }
 
 /* Journey dots — colour override for CB mode (WCAG 1.4.1) */

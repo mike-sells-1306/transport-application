@@ -18,13 +18,6 @@ const ACCESSIBILITY_MODES = new Set(['none', 'deuteranopia', 'protanopia', 'trit
 
 const ACCESSIBILITY_FONT_SIZES = new Set(['small', 'normal', 'large']);
 
-const ACCESSIBILITY_MODE_DEFAULT_MAP_STYLE = {
-  deuteranopia: 'carto-positron',
-  protanopia: 'carto-voyager',
-  tritanopia: 'esri-street',
-  achromatopsia: 'carto-positron',
-};
-
 const accessibilityState = {
   ...ACCESSIBILITY_DEFAULTS,
 };
@@ -843,7 +836,6 @@ function syncAccessibilityControls() {
 function applyAccessibilitySettings(settings, options = {}) {
   const { persistLocal = true, syncControls = true } = options;
   const normalized = normalizeAccessibilitySettings(settings);
-  const previousColorMode = accessibilityState.colorMode;
 
   accessibilityState.zoomLevel = normalized.zoomLevel;
   accessibilityState.colorMode = normalized.colorMode;
@@ -879,21 +871,6 @@ function applyAccessibilitySettings(settings, options = {}) {
 
   if (syncControls) {
     syncAccessibilityControls();
-  }
-
-  if (
-    normalized.colorMode !== previousColorMode
-    && normalized.colorMode !== 'none'
-    && window.appMap
-    && typeof window.appMap.setMapStyleById === 'function'
-  ) {
-    const preferredStyleId = ACCESSIBILITY_MODE_DEFAULT_MAP_STYLE[normalized.colorMode];
-    if (preferredStyleId) {
-      const appliedStyle = window.appMap.setMapStyleById(preferredStyleId);
-      if (appliedStyle) {
-        updateMapStyleButtonUI(appliedStyle);
-      }
-    }
   }
 
   updateAccessibilityLinkState(!document.getElementById('accessibility-panel')?.classList.contains('hidden'));
