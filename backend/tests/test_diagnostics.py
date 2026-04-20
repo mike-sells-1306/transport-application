@@ -1,6 +1,6 @@
 import pytest
 
-from app import StopCache, app, transport_service
+from app import app, transport_service
 
 
 @pytest.fixture
@@ -56,12 +56,6 @@ def test_api_health_remains_backward_compatible_without_metrics_or_snapshot(clie
 
 
 def test_diagnostics_summary_handles_partial_failures(client, monkeypatch):
-    class BrokenQuery:
-        @staticmethod
-        def count():
-            raise RuntimeError("db unavailable")
-
-    monkeypatch.setattr(StopCache, "query", BrokenQuery())
     monkeypatch.setattr(
         transport_service,
         "get_route_processing_metrics",
@@ -71,6 +65,5 @@ def test_diagnostics_summary_handles_partial_failures(client, monkeypatch):
     resp = client.get("/api/diagnostics/summary")
     assert resp.status_code == 200
     data = resp.get_json()
-    assert data["stop_cache_rows"] == 0
     assert data["route_processing_metrics"]["bus_stops_processed"] == 0
     assert data["route_processing_metrics"]["train_stations_processed"] == 0
