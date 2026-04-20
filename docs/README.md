@@ -51,6 +51,7 @@ Detailed documentation for individual application features.
 | Document | Description |
 |----------|-------------|
 | [Static Transport Data Refresh](features/static-data-refresh.md) | Terminal workflow for refreshing local stop/timetable/route-index data, including API-back-online update commands |
+| [Maintainability + Diagnostics Architecture](features/MAINTAINABILITY_AND_DIAGNOSTICS_ARCHITECTURE.md) | Staged refactor scope, acceptance criteria, diagnostics contract, and troubleshooting |
 
 ---
 

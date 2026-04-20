@@ -1400,6 +1400,49 @@ body.sidebar-minimized {
   margin-top: 6px;
 }
 
+/* Diagnostics panel */
+.diagnostics-panel {
+  width: min(720px, 94vw);
+  z-index: 59;
+}
+
+.diagnostics-content {
+  gap: 12px;
+}
+
+.diagnostics-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.diagnostics-last-updated {
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.diagnostics-status-line {
+  color: #5a1a1a;
+  font-size: 0.95rem;
+}
+
+.diagnostics-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.diagnostics-item h3 {
+  margin: 0 0 8px;
+  color: var(--red-main);
+}
+
+.diagnostics-item p {
+  margin: 6px 0;
+  color: #4d4d4d;
+}
+
 /* Accessibility panel */
 .accessibility-panel {
   width: min(640px, 92vw);

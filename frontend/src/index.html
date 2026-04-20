@@ -57,6 +57,7 @@
       <a href="#account" id="account-link" data-i18n="navigation.account">Account</a>
       <a href="#faq" data-i18n="navigation.faq">FAQ</a>
       <a href="#support" id="support-link" data-i18n="navigation.support">Customer Support</a>
+      <a href="#diagnostics" id="diagnostics-link" role="button" aria-expanded="false" aria-controls="diagnostics-panel" data-i18n="navigation.diagnostics">Diagnostics</a>
       <a href="#accessibility" id="accessibility-link" role="button" aria-expanded="false" aria-controls="accessibility-panel" data-i18n="navigation.accessibility">Accessibility</a>
     </nav>
   </aside>
@@ -242,6 +243,42 @@
     </section>
 
     <!-- Accessibility Panel (hidden by default) -->
+    <section class="faq-panel diagnostics-panel hidden" id="diagnostics-panel" role="region" aria-labelledby="diagnostics-panel-title" aria-hidden="true">
+      <div class="faq-header diagnostics-header">
+        <h2 id="diagnostics-panel-title" data-i18n="diagnostics.title">Backend Diagnostics</h2>
+        <button class="faq-close" id="diagnostics-close" type="button" aria-label="Close diagnostics" data-i18n-aria-label="diagnostics.close">×</button>
+      </div>
+      <div class="faq-content diagnostics-content">
+        <p class="auth-help" data-i18n="diagnostics.description">Live operational snapshot from the backend service.</p>
+        <div class="diagnostics-actions">
+          <button id="diagnostics-refresh-btn" class="action-btn" type="button" data-i18n="diagnostics.refresh">Refresh</button>
+          <span id="diagnostics-last-updated" class="diagnostics-last-updated" aria-live="polite"></span>
+        </div>
+        <div id="diagnostics-status-line" class="diagnostics-status-line" aria-live="polite"></div>
+        <div class="diagnostics-grid">
+          <article class="faq-item diagnostics-item">
+            <h3 data-i18n="diagnostics.backendHealth">Backend health</h3>
+            <p><strong data-i18n="diagnostics.status">Status</strong>: <span id="diag-status">—</span></p>
+            <p><strong data-i18n="diagnostics.staticDataOnly">Static-data only</strong>: <span id="diag-static-data-only">—</span></p>
+          </article>
+          <article class="faq-item diagnostics-item">
+            <h3 data-i18n="diagnostics.dataCache">Static cache/index</h3>
+            <p><strong data-i18n="diagnostics.stopCacheReady">Stop cache ready</strong>: <span id="diag-stop-cache-ready">—</span></p>
+            <p><strong data-i18n="diagnostics.stopCacheRows">Stop cache rows</strong>: <span id="diag-stop-cache-rows">—</span></p>
+            <p><strong data-i18n="diagnostics.routeIndexReady">Route index ready</strong>: <span id="diag-route-index-ready">—</span></p>
+            <p><strong data-i18n="diagnostics.routeIndexDb">Route index DB</strong>: <span id="diag-route-index-db">—</span></p>
+          </article>
+          <article class="faq-item diagnostics-item">
+            <h3 data-i18n="diagnostics.routeMetrics">Route processing metrics</h3>
+            <p><strong data-i18n="diagnostics.busStopsProcessed">Bus stops processed</strong>: <span id="diag-bus-stops">—</span></p>
+            <p><strong data-i18n="diagnostics.trainStationsProcessed">Train stations processed</strong>: <span id="diag-train-stations">—</span></p>
+            <p><strong data-i18n="diagnostics.plannerStage">Planner stage</strong>: <span id="diag-planner-stage">—</span></p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Accessibility Panel (hidden by default) -->
     <section class="faq-panel accessibility-panel hidden" id="accessibility-panel" role="region" aria-labelledby="accessibility-panel-title" aria-hidden="true">
       <div class="faq-header accessibility-header">
         <h2 id="accessibility-panel-title" data-i18n="accessibility.title">Accessibility</h2>
@@ -392,6 +429,7 @@
   <!-- Leaflet JS library for interactive mapping -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="diagnostics-client.js"></script>
   <!-- Main application script -->
   <script src="main.js"></script>
 </body>

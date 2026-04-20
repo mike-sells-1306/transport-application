@@ -133,6 +133,22 @@ Run a route search through the backend route planner (for example `POST /api/rou
 }
 ```
 
+## Backend Diagnostic Page
+
+The frontend now includes a **Diagnostics** panel in the sidebar that reads backend operational data from:
+
+- `GET /api/diagnostics/summary`
+
+The panel shows:
+
+- backend status
+- static-data mode and stop-cache readiness
+- route index readiness and safe DB reference
+- route-processing metrics
+- last-updated timestamp and manual refresh action
+
+If the backend is unavailable, the panel shows a graceful unavailable message without breaking the rest of the UI.
+
 ## Automated Accessibility Testing
 
 The frontend now includes Playwright + axe-core accessibility smoke tests.

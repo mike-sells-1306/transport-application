@@ -209,6 +209,7 @@ async function setLocale(locale, options = {}) {
   updateRouteModalHeader();
   syncAccessibilityControls();
   updateAccessibilityLinkState(!document.getElementById('accessibility-panel')?.classList.contains('hidden'));
+  updateDiagnosticsLinkState(!document.getElementById('diagnostics-panel')?.classList.contains('hidden'));
   updateRouteDownloadButtonState();
 
   if (currentRoutesData && !document.getElementById('route-modal')?.classList.contains('hidden')) {
@@ -467,6 +468,7 @@ let currentRoutesData = null;
 const activeRouteSearchControllers = new Set();
 const ROUTE_SEARCH_TIMEOUT_MS = 30000;
 let latestNotifications = [];
+let diagnosticsLastSnapshot = null;
 
 // Swap button functionality
 function setupSwapButton() {
@@ -807,6 +809,14 @@ function updateAccessibilityLinkState(isOpen = false) {
   const hasCustomPreference = accessibilityState.colorMode !== 'none' || Math.abs(accessibilityState.zoomLevel - 1) > 0.001;
   sidebarLink.textContent = hasCustomPreference ? t('navigation.accessibilityActive') : t('navigation.accessibility');
   sidebarLink.setAttribute('aria-expanded', String(isOpen));
+}
+
+function updateDiagnosticsLinkState(isOpen = false) {
+  const diagnosticsLink = document.getElementById('diagnostics-link');
+  if (!diagnosticsLink) {
+    return;
+  }
+  diagnosticsLink.setAttribute('aria-expanded', String(isOpen));
 }
 
 function syncAccessibilityControls() {
@@ -1430,114 +1440,127 @@ function initWeatherSearch() {
 // END LIVE WEATHER FUNCTIONALITY
 // ============================================================================
 
+function closeOverlaySurfaces({ except = [] } = {}) {
+  const keep = new Set(except);
+  const weatherPanel = document.querySelector('.weather-panel');
+  const notifPanel = document.querySelector('.notif-panel');
+  const faqPanel = document.getElementById('faq-panel');
+  const supportPanel = document.getElementById('support-panel');
+  const accessibilityPanel = document.getElementById('accessibility-panel');
+  const diagnosticsPanel = document.getElementById('diagnostics-panel');
+  const authModal = document.getElementById('auth-modal');
+  const accountModal = document.getElementById('account-modal');
+
+  if (!keep.has('weather') && weatherPanel && !weatherPanel.classList.contains('hidden')) {
+    weatherPanel.classList.add('hidden');
+    clearInterval(weatherRefreshInterval);
+    weatherRefreshInterval = null;
+  }
+  if (!keep.has('notifications') && notifPanel) {
+    notifPanel.classList.add('hidden');
+  }
+  if (!keep.has('faq') && faqPanel) {
+    faqPanel.classList.add('hidden');
+    faqPanel.setAttribute('aria-hidden', 'true');
+  }
+  if (!keep.has('support') && supportPanel) {
+    supportPanel.classList.add('hidden');
+    supportPanel.setAttribute('aria-hidden', 'true');
+  }
+  if (!keep.has('accessibility') && accessibilityPanel) {
+    accessibilityPanel.classList.add('hidden');
+    accessibilityPanel.setAttribute('aria-hidden', 'true');
+  }
+  if (!keep.has('diagnostics') && diagnosticsPanel) {
+    diagnosticsPanel.classList.add('hidden');
+    diagnosticsPanel.setAttribute('aria-hidden', 'true');
+  }
+  if (!keep.has('auth') && authModal) {
+    authModal.classList.add('hidden');
+  }
+  if (!keep.has('account') && accountModal) {
+    accountModal.classList.add('hidden');
+  }
+
+  const weatherBtn = document.getElementById('weather-btn');
+  const notifBtn = document.getElementById('notif-btn');
+  if (weatherBtn) {
+    weatherBtn.setAttribute('aria-expanded', String(weatherPanel && !weatherPanel.classList.contains('hidden')));
+  }
+  if (notifBtn) {
+    notifBtn.setAttribute('aria-expanded', String(notifPanel && !notifPanel.classList.contains('hidden')));
+  }
+  updateAccessibilityLinkState(Boolean(accessibilityPanel && !accessibilityPanel.classList.contains('hidden')));
+  updateDiagnosticsLinkState(Boolean(diagnosticsPanel && !diagnosticsPanel.classList.contains('hidden')));
+}
+
 // Toggle weather panel visibility
 function toggleWeatherPanel() {
   const weatherPanel = document.querySelector('.weather-panel');
-  const notifPanel = document.querySelector('.notif-panel');
-  const accessibilityPanel = document.getElementById('accessibility-panel');
-  const faqPanel = document.getElementById('faq-panel');
-  const supportPanel = document.getElementById('support-panel');
-  const authModal = document.getElementById('auth-modal');
-  const accountModal = document.getElementById('account-modal');
-  
-  weatherPanel.classList.toggle('hidden');
-  notifPanel.classList.add('hidden');
-
-  // Update aria-expanded states for screen readers
-  const weatherBtn = document.getElementById('weather-btn');
-  const notifBtn = document.getElementById('notif-btn');
-  if (weatherBtn) weatherBtn.setAttribute('aria-expanded', String(!weatherPanel.classList.contains('hidden')));
-  if (notifBtn) notifBtn.setAttribute('aria-expanded', 'false');
-
-  // Close other panels when weather is opened
-  if (!weatherPanel.classList.contains('hidden')) {
-    faqPanel?.classList.add('hidden');
-    supportPanel?.classList.add('hidden');
-    accessibilityPanel?.classList.add('hidden');
-    accessibilityPanel?.setAttribute('aria-hidden', 'true');
-    authModal?.classList.add('hidden');
-    accountModal?.classList.add('hidden');
-    updateAccessibilityLinkState(false);
-    // Clear search input when opening the panel
-    const searchInput = document.getElementById('weather-search-input');
-    if (searchInput) searchInput.value = '';
-    // Fetch and render live weather data when panel is opened
-    renderWeatherPanel({ forceRefresh: true });
-    // Start background auto-refresh while panel is open
-    clearInterval(weatherRefreshInterval);
-    weatherRefreshInterval = setInterval(() => {
-      // Only re-render if search bar is empty (don't overwrite active search)
-      const si = document.getElementById('weather-search-input');
-      if (!si || si.value.trim() === '') {
-        renderWeatherPanel({ forceRefresh: true, announce: false });
-      }
-    }, WEATHER_REFRESH_INTERVAL_MS);
-    announceToScreenReader(t('announce.weatherPanelOpened'));
-  } else {
-    // Panel is closing — stop auto-refresh
-    clearInterval(weatherRefreshInterval);
-    weatherRefreshInterval = null;
-    announceToScreenReader(t('announce.weatherPanelClosed'));
+  if (!weatherPanel) {
+    return;
   }
+
+  const opening = weatherPanel.classList.contains('hidden');
+  if (!opening) {
+    closeOverlaySurfaces();
+    announceToScreenReader(t('announce.weatherPanelClosed'));
+    return;
+  }
+
+  closeOverlaySurfaces({ except: ['weather'] });
+  weatherPanel.classList.remove('hidden');
+
+  const weatherBtn = document.getElementById('weather-btn');
+  if (weatherBtn) {
+    weatherBtn.setAttribute('aria-expanded', 'true');
+  }
+
+  const searchInput = document.getElementById('weather-search-input');
+  if (searchInput) {
+    searchInput.value = '';
+  }
+
+  renderWeatherPanel({ forceRefresh: true });
+  clearInterval(weatherRefreshInterval);
+  weatherRefreshInterval = setInterval(() => {
+    const si = document.getElementById('weather-search-input');
+    if (!si || si.value.trim() === '') {
+      renderWeatherPanel({ forceRefresh: true, announce: false });
+    }
+  }, WEATHER_REFRESH_INTERVAL_MS);
+  announceToScreenReader(t('announce.weatherPanelOpened'));
 }
 
 // Toggle notifications panel visibility
 function toggleNotificationsPanel() {
-  const weatherPanel = document.querySelector('.weather-panel');
   const notifPanel = document.querySelector('.notif-panel');
-  const accessibilityPanel = document.getElementById('accessibility-panel');
-  const faqPanel = document.getElementById('faq-panel');
-  const supportPanel = document.getElementById('support-panel');
-  const authModal = document.getElementById('auth-modal');
-  const accountModal = document.getElementById('account-modal');
-  
-  notifPanel.classList.toggle('hidden');
-  weatherPanel.classList.add('hidden');
-
-  // Update aria-expanded states for screen readers
-  const weatherBtn = document.getElementById('weather-btn');
-  const notifBtn = document.getElementById('notif-btn');
-  if (notifBtn) notifBtn.setAttribute('aria-expanded', String(!notifPanel.classList.contains('hidden')));
-  if (weatherBtn) weatherBtn.setAttribute('aria-expanded', 'false');
-
-  // Close other panels when notifications is opened
-  if (!notifPanel.classList.contains('hidden')) {
-    faqPanel?.classList.add('hidden');
-    supportPanel?.classList.add('hidden');
-    accessibilityPanel?.classList.add('hidden');
-    accessibilityPanel?.setAttribute('aria-hidden', 'true');
-    authModal?.classList.add('hidden');
-    accountModal?.classList.add('hidden');
-    updateAccessibilityLinkState(false);
-    announceToScreenReader(t('announce.notificationsPanelOpened'), 'assertive');
-  } else {
-    announceToScreenReader(t('announce.notificationsPanelClosed'));
+  if (!notifPanel) {
+    return;
   }
+
+  const opening = notifPanel.classList.contains('hidden');
+  if (!opening) {
+    closeOverlaySurfaces();
+    announceToScreenReader(t('announce.notificationsPanelClosed'));
+    return;
+  }
+
+  closeOverlaySurfaces({ except: ['notifications'] });
+  notifPanel.classList.remove('hidden');
+  const notifBtn = document.getElementById('notif-btn');
+  if (notifBtn) {
+    notifBtn.setAttribute('aria-expanded', 'true');
+  }
+  announceToScreenReader(t('announce.notificationsPanelOpened'), 'assertive');
 }
 
 function openFaqPanel() {
   const faqPanel = document.getElementById('faq-panel');
-  const supportPanel = document.getElementById('support-panel');
-  const accessibilityPanel = document.getElementById('accessibility-panel');
-  const weatherPanel = document.querySelector('.weather-panel');
-  const notifPanel = document.querySelector('.notif-panel');
-  const authModal = document.getElementById('auth-modal');
-  const accountModal = document.getElementById('account-modal');
-  
   if (faqPanel) {
+    closeOverlaySurfaces({ except: ['faq'] });
     faqPanel.classList.remove('hidden');
     faqPanel.setAttribute('aria-hidden', 'false');
-    
-    // Close other panels when FAQ is opened
-    supportPanel?.classList.add('hidden');
-    supportPanel?.setAttribute('aria-hidden', 'true');
-    accessibilityPanel?.classList.add('hidden');
-    accessibilityPanel?.setAttribute('aria-hidden', 'true');
-    weatherPanel?.classList.add('hidden');
-    notifPanel?.classList.add('hidden');
-    authModal?.classList.add('hidden');
-    accountModal?.classList.add('hidden');
-    updateAccessibilityLinkState(false);
     announceToScreenReader(t('announce.faqOpened'));
   }
 }
@@ -1599,27 +1622,10 @@ function attachFaqEventHandlers() {
 
 function openSupportPanel() {
   const supportPanel = document.getElementById('support-panel');
-  const faqPanel = document.getElementById('faq-panel');
-  const accessibilityPanel = document.getElementById('accessibility-panel');
-  const weatherPanel = document.querySelector('.weather-panel');
-  const notifPanel = document.querySelector('.notif-panel');
-  const authModal = document.getElementById('auth-modal');
-  const accountModal = document.getElementById('account-modal');
-
   if (supportPanel) {
+    closeOverlaySurfaces({ except: ['support'] });
     supportPanel.classList.remove('hidden');
     supportPanel.setAttribute('aria-hidden', 'false');
-
-    // Close other panels when support is opened
-    faqPanel?.classList.add('hidden');
-    faqPanel?.setAttribute('aria-hidden', 'true');
-    accessibilityPanel?.classList.add('hidden');
-    accessibilityPanel?.setAttribute('aria-hidden', 'true');
-    weatherPanel?.classList.add('hidden');
-    notifPanel?.classList.add('hidden');
-    authModal?.classList.add('hidden');
-    accountModal?.classList.add('hidden');
-    updateAccessibilityLinkState(false);
     announceToScreenReader(t('announce.supportOpened'));
   }
 }
@@ -1645,25 +1651,13 @@ function attachSupportEventHandlers() {
 
 function openAccessibilityPanel() {
   const panel = document.getElementById('accessibility-panel');
-  const faqPanel = document.getElementById('faq-panel');
-  const supportPanel = document.getElementById('support-panel');
-  const weatherPanel = document.querySelector('.weather-panel');
-  const notifPanel = document.querySelector('.notif-panel');
-  const authModal = document.getElementById('auth-modal');
-  const accountModal = document.getElementById('account-modal');
-
   if (!panel) {
     return;
   }
 
+  closeOverlaySurfaces({ except: ['accessibility'] });
   panel.classList.remove('hidden');
   panel.setAttribute('aria-hidden', 'false');
-  faqPanel?.classList.add('hidden');
-  supportPanel?.classList.add('hidden');
-  weatherPanel?.classList.add('hidden');
-  notifPanel?.classList.add('hidden');
-  authModal?.classList.add('hidden');
-  accountModal?.classList.add('hidden');
 
   syncAccessibilityControls();
   updateAccessibilityLinkState(true);
@@ -1694,6 +1688,133 @@ function toggleAccessibilityPanel() {
   }
 
   closeAccessibilityPanel();
+}
+
+function diagnosticsClient() {
+  return window.TransportDiagnosticsClient;
+}
+
+function diagnosticsText(value, fallback = '—') {
+  if (value === null || value === undefined || value === '') {
+    return fallback;
+  }
+  return String(value);
+}
+
+function diagnosticsBooleanLabel(value) {
+  return value ? t('diagnostics.yes') : t('diagnostics.no');
+}
+
+function renderDiagnosticsData(data) {
+  diagnosticsLastSnapshot = data || null;
+  const metrics = data?.route_processing_metrics || {};
+  const statusLine = document.getElementById('diagnostics-status-line');
+  const lastUpdated = document.getElementById('diagnostics-last-updated');
+
+  const assignments = [
+    ['diag-status', diagnosticsText(data?.status)],
+    ['diag-static-data-only', diagnosticsBooleanLabel(Boolean(data?.static_data_only))],
+    ['diag-stop-cache-ready', diagnosticsBooleanLabel(Boolean(data?.stop_cache_ready))],
+    ['diag-stop-cache-rows', diagnosticsText(data?.stop_cache_rows, '0')],
+    ['diag-route-index-ready', diagnosticsBooleanLabel(Boolean(data?.route_index_has_connections))],
+    ['diag-route-index-db', diagnosticsText(data?.route_index_db)],
+    ['diag-bus-stops', diagnosticsText(metrics.bus_stops_processed, '0')],
+    ['diag-train-stations', diagnosticsText(metrics.train_stations_processed, '0')],
+    ['diag-planner-stage', diagnosticsText(metrics.planner_stage, 'unknown')],
+  ];
+
+  assignments.forEach(([id, value]) => {
+    const node = document.getElementById(id);
+    if (node) {
+      node.textContent = value;
+    }
+  });
+
+  if (statusLine) {
+    statusLine.textContent = t('diagnostics.loaded');
+  }
+  if (lastUpdated) {
+    const when = data?.snapshot_utc ? formatLocalizedDateTime(data.snapshot_utc) : formatLocalizedDateTime(new Date());
+    lastUpdated.textContent = t('diagnostics.lastUpdated', { timestamp: when });
+  }
+}
+
+function renderDiagnosticsError(errorMessage) {
+  const statusLine = document.getElementById('diagnostics-status-line');
+  if (statusLine) {
+    statusLine.textContent = t('diagnostics.unavailable', { message: diagnosticsText(errorMessage, t('alerts.requestFailedGeneric')) });
+  }
+}
+
+async function refreshDiagnosticsPanel({ announce = true } = {}) {
+  const client = diagnosticsClient();
+  if (!client || typeof client.fetchDiagnosticsSummary !== 'function') {
+    renderDiagnosticsError('Diagnostics client unavailable');
+    return;
+  }
+
+  const statusLine = document.getElementById('diagnostics-status-line');
+  if (statusLine) {
+    statusLine.textContent = t('diagnostics.loading');
+  }
+
+  try {
+    const data = await client.fetchDiagnosticsSummary();
+    renderDiagnosticsData(data);
+    if (announce) {
+      announceToScreenReader(t('announce.diagnosticsLoaded'));
+    }
+  } catch (error) {
+    renderDiagnosticsError(error?.message || '');
+    if (announce) {
+      announceToScreenReader(t('announce.diagnosticsLoadFailed'), 'assertive');
+    }
+  }
+}
+
+function openDiagnosticsPanel() {
+  const panel = document.getElementById('diagnostics-panel');
+  if (!panel) {
+    return;
+  }
+  closeOverlaySurfaces({ except: ['diagnostics'] });
+  panel.classList.remove('hidden');
+  panel.setAttribute('aria-hidden', 'false');
+  updateDiagnosticsLinkState(true);
+  refreshDiagnosticsPanel();
+  announceToScreenReader(t('announce.diagnosticsOpened'));
+}
+
+function closeDiagnosticsPanel() {
+  const panel = document.getElementById('diagnostics-panel');
+  if (!panel) {
+    return;
+  }
+  panel.classList.add('hidden');
+  panel.setAttribute('aria-hidden', 'true');
+  updateDiagnosticsLinkState(false);
+  announceToScreenReader(t('announce.diagnosticsClosed'));
+}
+
+function toggleDiagnosticsPanel() {
+  const panel = document.getElementById('diagnostics-panel');
+  if (!panel) {
+    return;
+  }
+  if (panel.classList.contains('hidden')) {
+    openDiagnosticsPanel();
+    return;
+  }
+  closeDiagnosticsPanel();
+}
+
+function attachDiagnosticsEventHandlers() {
+  document.getElementById('diagnostics-link')?.addEventListener('click', event => {
+    event.preventDefault();
+    toggleDiagnosticsPanel();
+  });
+  document.getElementById('diagnostics-close')?.addEventListener('click', closeDiagnosticsPanel);
+  document.getElementById('diagnostics-refresh-btn')?.addEventListener('click', () => refreshDiagnosticsPanel());
 }
 
 async function saveAccessibilityToAccount() {
@@ -1760,24 +1881,11 @@ async function apiRequest(path, options = {}) {
 }
 
 function openAuthModal() {
-  const weatherPanel = document.querySelector('.weather-panel');
-  const notifPanel = document.querySelector('.notif-panel');
-  const accessibilityPanel = document.getElementById('accessibility-panel');
-  const faqPanel = document.getElementById('faq-panel');
-  const supportPanel = document.getElementById('support-panel');
-  
-  document.getElementById('auth-modal')?.classList.remove('hidden');
+  closeOverlaySurfaces({ except: ['auth'] });
+  const authModal = document.getElementById('auth-modal');
+  authModal?.classList.remove('hidden');
   document.getElementById('account-modal')?.classList.add('hidden');
   showLoginAuthView();
-  
-  // Close other panels when auth modal is opened
-  weatherPanel?.classList.add('hidden');
-  notifPanel?.classList.add('hidden');
-  accessibilityPanel?.classList.add('hidden');
-  accessibilityPanel?.setAttribute('aria-hidden', 'true');
-  faqPanel?.classList.add('hidden');
-  supportPanel?.classList.add('hidden');
-  updateAccessibilityLinkState(false);
   announceToScreenReader(t('announce.authOpened'));
 }
 
@@ -1806,23 +1914,9 @@ function showRegisterAuthView() {
 }
 
 function openAccountModal() {
-  const weatherPanel = document.querySelector('.weather-panel');
-  const notifPanel = document.querySelector('.notif-panel');
-  const accessibilityPanel = document.getElementById('accessibility-panel');
-  const faqPanel = document.getElementById('faq-panel');
-  const supportPanel = document.getElementById('support-panel');
-  
+  closeOverlaySurfaces({ except: ['account'] });
   document.getElementById('account-modal')?.classList.remove('hidden');
   document.getElementById('auth-modal')?.classList.add('hidden');
-  
-  // Close other panels when account modal is opened
-  weatherPanel?.classList.add('hidden');
-  notifPanel?.classList.add('hidden');
-  accessibilityPanel?.classList.add('hidden');
-  accessibilityPanel?.setAttribute('aria-hidden', 'true');
-  faqPanel?.classList.add('hidden');
-  supportPanel?.classList.add('hidden');
-  updateAccessibilityLinkState(false);
   announceToScreenReader(t('announce.accountOpened'));
 }
 
@@ -3502,6 +3596,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   attachFaqEventHandlers();
   attachSupportEventHandlers();
+  attachDiagnosticsEventHandlers();
   attachAccountEventHandlers();
   initWeatherSearch();
   setupSidebarToggle();

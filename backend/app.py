@@ -8,6 +8,7 @@ from flask import Flask, g, jsonify, request, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from services.data_translator import DataTranslator
+from services.diagnostics_service import build_diagnostics_snapshot
 from services.transport_service import TransportService
 from sqlalchemy import UniqueConstraint, event, text
 from sqlalchemy import or_
@@ -696,28 +697,30 @@ def health():
 
 @app.route("/api/health")
 def api_health():
-    diagnostics = {
-        "status": "ok",
-        "static_data_only": bool(app.config.get("STATIC_DATA_ONLY")),
-    }
-    try:
-        diagnostics["stop_cache_ready"] = bool(_stop_cache_ready)
-        diagnostics["stop_cache_rows"] = int(StopCache.query.count())
-    except Exception:
-        diagnostics["stop_cache_ready"] = False
-        diagnostics["stop_cache_rows"] = 0
-
-    try:
-        planner = transport_service.route_planner
-        diagnostics["route_index_db"] = str(getattr(planner._connection_index_store, "db_path", ""))
-        diagnostics["route_index_has_connections"] = bool(
-            planner._connection_index_store and planner._connection_index_store.has_connections()
-        )
-    except Exception:
-        diagnostics["route_index_db"] = ""
-        diagnostics["route_index_has_connections"] = False
-
+    diagnostics = build_diagnostics_snapshot(
+        app=app,
+        stop_cache_ready=lambda: _stop_cache_ready,
+        stop_cache_model=StopCache,
+        transport_service=transport_service,
+        include_sensitive=True,
+    )
+    # Backward-compatible payload shape for existing probes.
+    diagnostics.pop("route_processing_metrics", None)
+    diagnostics.pop("snapshot_utc", None)
     return jsonify(diagnostics)
+
+
+@app.route("/api/diagnostics/summary", methods=["GET"])
+def diagnostics_summary():
+    """Diagnostic contract endpoint for backend operational visibility."""
+    diagnostics = build_diagnostics_snapshot(
+        app=app,
+        stop_cache_ready=lambda: _stop_cache_ready,
+        stop_cache_model=StopCache,
+        transport_service=transport_service,
+        include_sensitive=False,
+    )
+    return jsonify(diagnostics), 200
 
 
 @app.route("/api/hello")

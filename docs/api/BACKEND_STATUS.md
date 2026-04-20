@@ -93,6 +93,7 @@ The backend has been significantly enhanced with proper database integration, au
 ### Health
 - `GET /health` - Health check
 - `GET /api/health` - API health check
+- `GET /api/diagnostics/summary` - Operational diagnostics snapshot for UI/ops visibility
 - `GET /api/hello` - Welcome message
 
 ---

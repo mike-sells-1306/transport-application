@@ -10,6 +10,24 @@ This backend provides unified API endpoints for regional transport datasets and 
 ### Health
 - `GET /health`
   - Returns API status.
+- `GET /api/health`
+  - Backward-compatible API health probe with static cache/index readiness fields.
+
+### Diagnostics
+- `GET /api/diagnostics/summary`
+  - Returns diagnostics snapshot for backend operational status and route-processing telemetry.
+  - Output fields include:
+    - `status`
+    - `snapshot_utc`
+    - `static_data_only`
+    - `stop_cache_ready`
+    - `stop_cache_rows`
+    - `route_index_has_connections`
+    - `route_index_db` (redacted/safe reference)
+    - `route_processing_metrics`:
+      - `bus_stops_processed`
+      - `train_stations_processed`
+      - `planner_stage`
 
 ### Hello
 - `GET /api/hello`
