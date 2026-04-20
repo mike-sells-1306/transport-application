@@ -996,7 +996,7 @@ function getWeatherLocations() {
 // Cache for weather data to avoid repeated API calls
 let weatherCache = null;
 let weatherCacheTimestamp = 0;
-const WEATHER_CACHE_DURATION_MS = 60 * 1000; // 1 minute
+const WEATHER_CACHE_DURATION_MS = 5 * 1000; // 5 seconds
 
 // Auto-refresh interval ID (runs while panel is open)
 let weatherRefreshInterval = null;
@@ -1340,7 +1340,7 @@ function toggleWeatherPanel() {
     if (searchInput) searchInput.value = '';
     // Fetch and render live weather data when panel is opened
     renderWeatherPanel();
-    // Start auto-refresh every 60 seconds while panel is open
+    // Start auto-refresh every 5 seconds while panel is open
     clearInterval(weatherRefreshInterval);
     weatherRefreshInterval = setInterval(() => {
       // Invalidate cache so next render fetches fresh data

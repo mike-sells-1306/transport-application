@@ -46,6 +46,12 @@ Detailed documentation for individual application features.
 | [Autocomplete Implementation Summary](features/AUTOCOMPLETE_IMPLEMENTATION_SUMMARY.md) | Concise summary of what was built and where |
 | [Autocomplete Quick Reference](features/AUTOCOMPLETE_QUICK_REFERENCE.md) | Cheat-sheet for the autocomplete API and JS helpers |
 
+### Static Data / Offline Routing
+
+| Document | Description |
+|----------|-------------|
+| [Static Transport Data Refresh](features/static-data-refresh.md) | Terminal workflow for refreshing local stop/timetable/route-index data, including API-back-online update commands |
+
 ---
 
 ## 📊 Reports

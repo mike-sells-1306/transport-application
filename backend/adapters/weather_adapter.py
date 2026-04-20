@@ -1,10 +1,20 @@
 import requests
+import os
+from datetime import datetime, timedelta
 
 BASE_URL = "https://transport.scc.lancs.ac.uk"
 
 
 class WeatherAdapter:
     """Adapter for fetching weather data from the transport API."""
+
+    def __init__(self):
+        self._poll_min_seconds = max(5, int(os.getenv("LIVE_POLL_MIN_SECONDS", "5")))
+        self._weather_cache = {}
+
+    def _cache_key(self, latitude: float, longitude: float) -> tuple:
+        # Round to reduce duplicate requests for visually identical map points.
+        return (round(float(latitude), 4), round(float(longitude), 4))
 
     def fetch_weather(self, latitude: float, longitude: float) -> dict:
         """
@@ -18,12 +28,23 @@ class WeatherAdapter:
             Dictionary containing weather data
         """
         url = f"{BASE_URL}/weather?lat={latitude}&lon={longitude}"
+        key = self._cache_key(latitude, longitude)
+        now = datetime.utcnow()
+        cached = self._weather_cache.get(key)
+        if cached:
+            ts, payload = cached
+            if (now - ts) < timedelta(seconds=self._poll_min_seconds):
+                return payload
         try:
             response = requests.get(url, timeout=10)
             response.raise_for_status()
-            return response.json()
+            payload = response.json()
+            self._weather_cache[key] = (now, payload)
+            return payload
         except requests.exceptions.RequestException as e:
-            return {"error": str(e), "latitude": latitude, "longitude": longitude}
+            payload = {"error": str(e), "latitude": latitude, "longitude": longitude}
+            self._weather_cache[key] = (now, payload)
+            return payload
 
     def get_weather_icon(self, icon_code: str) -> bytes:
         """

@@ -34,6 +34,10 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["AUTH_TOKEN_MAX_AGE_SECONDS"] = int(os.getenv("AUTH_TOKEN_MAX_AGE_SECONDS", "86400"))
+app.config["STATIC_DATA_ONLY"] = os.getenv("STATIC_DATA_ONLY", "true").strip().lower() == "true"
+app.config["AUTO_REFRESH_STATIC_ON_STARTUP"] = (
+    os.getenv("AUTO_REFRESH_STATIC_ON_STARTUP", "false").strip().lower() == "true"
+)
 
 # Configure SQLAlchemy engine options depending on the database backend.
 # SQLite accepts a 'timeout' connect arg; MySQL (pymysql) uses 'connect_timeout'.
@@ -1016,6 +1020,24 @@ def gazetteer():
 @app.route('/api/naptan')
 def naptan():
     try:
+        if app.config.get("STATIC_DATA_ONLY"):
+            stops = StopCache.query.all()
+            return jsonify({
+                "stops": [
+                    {
+                        "ATCOCode": s.atco_code,
+                        "NaptanCode": s.naptan_code,
+                        "CommonName": s.common_name,
+                        "Indicator": s.indicator,
+                        "LocalityName": s.locality_name,
+                        "Latitude": s.latitude,
+                        "Longitude": s.longitude,
+                        "StopType": s.stop_type,
+                    }
+                    for s in stops
+                ]
+            })
+
         full = request.args.get('full', 'false').lower() == 'true'
         dataset = (request.args.get('dataset', 'lancashire') or 'lancashire').strip().lower()
         if dataset in {'nw', 'northwest', 'north-west', 'north_west'}:
@@ -1030,8 +1052,7 @@ def naptan():
 @app.route('/api/stops/search')
 def search_stops():
     """Search for bus and train stops within map bounds with autocomplete support.
-    Uses the local StopCache database when available, falling back to the live
-    NaPTAN API if the cache has not finished loading yet.
+    Uses the local StopCache database only (no live NaPTAN fallback).
     Matching is word-order-independent: every word in the query must appear
     somewhere in the stop name or locality, but not necessarily in order.
     For example, 'Lancaster Under' will match 'underpass (by) Lancaster'."""
@@ -1049,172 +1070,68 @@ def search_stops():
         # Split query into individual words for order-independent matching
         query_words = query.split()
 
-        # ---------- Try the database cache first ----------
-        global _stop_cache_ready
-        if _stop_cache_ready:
-            app.logger.info(f"Searching stop cache DB for: {query}")
-            try:
-                # Build SQLAlchemy filter: every word must appear in search_text
-                filters = [
-                    StopCache.latitude >= MIN_LAT,
-                    StopCache.latitude <= MAX_LAT,
-                    StopCache.longitude >= MIN_LON,
-                    StopCache.longitude <= MAX_LON,
-                ]
+        app.logger.info(f"Searching stop cache DB for: {query}")
 
-                # Candidate prefilter: at least one query word present.
-                if query_words:
-                    filters.append(or_(*[StopCache.search_text.contains(word) for word in query_words]))
+        # Build SQLAlchemy filter: every word must appear in search_text
+        filters = [
+            StopCache.latitude >= MIN_LAT,
+            StopCache.latitude <= MAX_LAT,
+            StopCache.longitude >= MIN_LON,
+            StopCache.longitude <= MAX_LON,
+        ]
 
-                candidates = (
-                    StopCache.query
-                    .filter(*filters)
-                    .limit(500)
-                    .all()
-                )
+        # Candidate prefilter: at least one query word present.
+        if query_words:
+            filters.append(or_(*[StopCache.search_text.contains(word) for word in query_words]))
 
-                min_coverage = len(query_words)
-                if len(query_words) >= 3 and not (_wants_bus(query_words) or _wants_rail(query_words)):
-                    min_coverage = len(query_words) - 1
+        candidates = (
+            StopCache.query
+            .filter(*filters)
+            .limit(500)
+            .all()
+        )
 
-                scored = []
-                require_bus = _wants_bus(query_words)
-                require_rail = _wants_rail(query_words)
-                for s in candidates:
-                    if require_bus and s.stop_type != 'bus':
-                        continue
-                    if require_rail and not require_bus and s.stop_type != 'rail':
-                        continue
-                    search_text = (s.search_text or '').lower()
-                    coverage = sum(1 for w in query_words if w in search_text)
-                    if coverage < min_coverage:
-                        continue
-                    score = _score_stop_match(
-                        query,
-                        query_words,
-                        s.common_name,
-                        s.locality_name,
-                        s.stop_type,
-                    ) + (coverage * 25)
-                    scored.append((score, s))
+        min_coverage = len(query_words)
+        if len(query_words) >= 3 and not (_wants_bus(query_words) or _wants_rail(query_words)):
+            min_coverage = len(query_words) - 1
 
-                ranked = [s for _, s in sorted(scored, key=lambda x: x[0], reverse=True)]
-                results = ranked[:limit]
-
-                matching_stops = []
-                for stop in results:
-                    display_name = stop.common_name
-                    if stop.indicator:
-                        display_name += f" ({stop.indicator})"
-                    if stop.locality_name and stop.locality_name not in display_name:
-                        display_name += f", {stop.locality_name}"
-                    matching_stops.append({
-                        'name': display_name,
-                        'atcoCode': stop.atco_code,
-                        'lat': stop.latitude,
-                        'lon': stop.longitude,
-                        'stopType': stop.stop_type,
-                    })
-
-                # Inject high-confidence virtual rail stations to avoid
-                # ambiguous bus-stop variants around station areas.
-                virtual = _virtual_rail_station_candidates(query, query_words)
-                if virtual:
-                    dedup = set(s.get('atcoCode') for s in matching_stops)
-                    merged = []
-                    for v in virtual:
-                        code = v.get('atcoCode')
-                        if code in dedup:
-                            continue
-                        vv = dict(v)
-                        vv.pop('_score', None)
-                        merged.append(vv)
-                    matching_stops = (merged + matching_stops)[:limit]
-
-                app.logger.info(f"Returning {len(matching_stops)} stops from DB cache for '{query}'")
-                return jsonify({"stops": matching_stops})
-            except Exception as db_err:
-                app.logger.warning(f"StopCache query failed, falling back to API: {db_err}")
-
-        # ---------- Fallback: live API fetch from SCC NaPTAN datasets ----------
-        app.logger.info(f"Cache not ready, fetching NaPTAN data for query: {query}")
-        merged_stops = []
-        seen_codes = set()
-        for dataset in ('north_west_rail', 'lancashire'):
-            naptan_data = transport_service.get_naptan(dataset=dataset)
-            stops_list = naptan_data.get('stops', []) if isinstance(naptan_data, dict) else naptan_data
-            for stop in (stops_list or []):
-                code = stop.get('ATCOCode', '')
-                if code and code in seen_codes:
-                    continue
-                if code:
-                    seen_codes.add(code)
-                merged_stops.append(stop)
-
-        candidates = []
+        scored = []
         require_bus = _wants_bus(query_words)
         require_rail = _wants_rail(query_words)
-        if merged_stops:
-            for stop in merged_stops:
-                lat = stop.get('Latitude')
-                lon = stop.get('Longitude')
-                if lat is None or lon is None:
-                    continue
-                try:
-                    lat = float(lat)
-                    lon = float(lon)
-                except (ValueError, TypeError):
-                    continue
-                if not (MIN_LAT <= lat <= MAX_LAT and MIN_LON <= lon <= MAX_LON):
-                    continue
+        for s in candidates:
+            if require_bus and s.stop_type != 'bus':
+                continue
+            if require_rail and not require_bus and s.stop_type != 'rail':
+                continue
+            search_text = (s.search_text or '').lower()
+            coverage = sum(1 for w in query_words if w in search_text)
+            if coverage < min_coverage:
+                continue
+            score = _score_stop_match(
+                query,
+                query_words,
+                s.common_name,
+                s.locality_name,
+                s.stop_type,
+            ) + (coverage * 25)
+            scored.append((score, s))
 
-                stop_name = stop.get('CommonName', '').lower()
-                stop_locality = stop.get('LocalityName', '').lower()
-                combined = f"{stop_name} {stop_locality}"
-                stop_type_val = stop.get('StopType', 'bus')
+        ranked = [s for _, s in sorted(scored, key=lambda x: x[0], reverse=True)]
+        results = ranked[:limit]
 
-                if require_bus and stop_type_val != 'bus':
-                    continue
-                if require_rail and not require_bus and stop_type_val != 'rail':
-                    continue
-
-                # Word-order-independent matching with relaxed N-1 coverage
-                # for longer queries (e.g. "lancaster university underpass").
-                coverage = sum(1 for w in query_words if w in combined)
-                min_coverage = len(query_words)
-                if len(query_words) >= 3 and not (_wants_bus(query_words) or _wants_rail(query_words)):
-                    min_coverage = len(query_words) - 1
-                if coverage >= min_coverage:
-                    candidates.append({
-                        'raw': stop,
-                        'lat': lat,
-                        'lon': lon,
-                        'score': _score_stop_match(
-                            query,
-                            query_words,
-                            stop.get('CommonName', ''),
-                            stop.get('LocalityName', ''),
-                                stop_type_val,
-                        ),
-                    })
-
-        candidates.sort(key=lambda c: c['score'], reverse=True)
         matching_stops = []
-        for c in candidates[:limit]:
-            stop = c['raw']
-            display_name = stop.get('CommonName', '')
-            stop_indicator = stop.get('Indicator', '')
-            stop_locality_raw = stop.get('LocalityName', '')
-            if stop_indicator:
-                display_name += f" ({stop_indicator})"
-            if stop_locality_raw and stop_locality_raw not in display_name:
-                display_name += f", {stop_locality_raw}"
+        for stop in results:
+            display_name = stop.common_name
+            if stop.indicator:
+                display_name += f" ({stop.indicator})"
+            if stop.locality_name and stop.locality_name not in display_name:
+                display_name += f", {stop.locality_name}"
             matching_stops.append({
                 'name': display_name,
-                'atcoCode': stop.get('ATCOCode', ''),
-                'lat': c['lat'],
-                'lon': c['lon'],
-                'stopType': stop.get('StopType', 'bus'),
+                'atcoCode': stop.atco_code,
+                'lat': stop.latitude,
+                'lon': stop.longitude,
+                'stopType': stop.stop_type,
             })
 
         virtual = _virtual_rail_station_candidates(query, query_words)
@@ -1230,7 +1147,7 @@ def search_stops():
                 merged.append(vv)
             matching_stops = (merged + matching_stops)[:limit]
 
-        app.logger.info(f"Returning {len(matching_stops)} stops (API fallback) for '{query}'")
+        app.logger.info(f"Returning {len(matching_stops)} stops from DB cache for '{query}'")
         return jsonify({"stops": matching_stops})
 
     except Exception as e:
@@ -1632,12 +1549,14 @@ with app.app_context():
 # ---------------------------------------------------------------------------
 def _load_stop_cache():
     """Fetch NaPTAN stops from SCC datasets and insert them into StopCache.
-    Runs once in a background thread so the first request is not blocked
-    by the potentially slow XML download.
+    Intended for explicit/manual refresh flows.
     """
     global _stop_cache_ready
     with app.app_context():
         try:
+            with _stop_cache_lock:
+                _stop_cache_ready = False
+
             # Map bounds (matches frontend maxBounds)
             MIN_LAT, MAX_LAT = 53.0, 55.2
             MIN_LON, MAX_LON = -3.7, -1.9
@@ -1679,6 +1598,23 @@ def _load_stop_cache():
                     app.logger.info(f"StopCache: after 'full' dataset unique stops = {len(all_stops)}")
                 except Exception as api_err:
                     app.logger.warning(f"StopCache: dataset 'full' fetch failed – {api_err}")
+
+            # Always merge packaged supplemental stops so local DB still has
+            # a useful baseline even when upstream API feeds are unavailable.
+            try:
+                supplemental = transport_service.naptan._get_supplemental_stops()
+                for stop in supplemental:
+                    code = stop.get("ATCOCode", "")
+                    if code and code in seen_codes:
+                        continue
+                    if code:
+                        seen_codes.add(code)
+                    all_stops.append(stop)
+                app.logger.info(
+                    f"StopCache: after supplemental merge unique stops = {len(all_stops)}"
+                )
+            except Exception as supp_err:
+                app.logger.warning(f"StopCache: supplemental stop merge failed – {supp_err}")
 
             app.logger.info(f"StopCache: {len(all_stops)} unique stops after merge")
 
@@ -1726,9 +1662,13 @@ def _load_stop_cache():
                 _stop_cache_ready = True
 
             app.logger.info(f"StopCache: Successfully loaded {inserted} stops into database")
+            return {"inserted": inserted, "ready": True}
         except Exception as exc:
             app.logger.error(f"StopCache: Background load failed – {exc}")
             db.session.rollback()
+            with _stop_cache_lock:
+                _stop_cache_ready = False
+            return {"inserted": 0, "ready": False, "error": str(exc)}
 
 
 def _warm_route_planner_cache():
@@ -1757,18 +1697,44 @@ def _warm_route_planner_cache():
         app.logger.warning(f"RoutePlanner: cache warm-up skipped ({exc})")
 
 
-# Kick off the background loader (daemon thread so it won't prevent shutdown)
-_stop_loader_thread = None
-if app.config.get("SQLALCHEMY_DATABASE_URI") == "sqlite://":
-    app.logger.info("StopCache: skipping background load for in-memory SQLite")
+def _set_stop_cache_ready_from_db():
+    """Set in-memory cache-ready flag from current DB table contents."""
+    global _stop_cache_ready
+    with app.app_context():
+        try:
+            count = StopCache.query.count()
+        except Exception:
+            count = 0
     with _stop_cache_lock:
-        _stop_cache_ready = True
-else:
+        _stop_cache_ready = count > 0
+    app.logger.info(f"StopCache: ready={_stop_cache_ready} rows={count}")
+
+
+def refresh_static_data(force_rebuild_index=False, warm_route_cache=False):
+    """Refresh static transport datasets (stops + timetable index) on demand."""
+    stop_result = _load_stop_cache()
+    index_result = transport_service.route_planner.build_connection_index(
+        force_rebuild=force_rebuild_index
+    )
+    if warm_route_cache:
+        _warm_route_planner_cache()
+    return {
+        "stops": stop_result,
+        "index": index_result,
+    }
+
+
+# Static data is command-driven by default. Startup auto-refresh is optional.
+_set_stop_cache_ready_from_db()
+if app.config.get("AUTO_REFRESH_STATIC_ON_STARTUP"):
     _stop_loader_thread = threading.Thread(target=_load_stop_cache, daemon=True)
     _stop_loader_thread.start()
-
-_route_warm_thread = threading.Thread(target=_warm_route_planner_cache, daemon=True)
-_route_warm_thread.start()
+    _route_warm_thread = threading.Thread(target=_warm_route_planner_cache, daemon=True)
+    _route_warm_thread.start()
+else:
+    app.logger.info(
+        "Static transport data auto-refresh disabled on startup; use terminal refresh commands."
+    )
 
 
 if __name__ == "__main__":

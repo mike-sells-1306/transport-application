@@ -45,7 +45,7 @@ class TransportService:
         return parsed_data
 
     def get_bus_timetable(self, bus_code):
-        return self.bus.fetch_bus_timetable(bus_code)
+        return self.route_planner.get_bus_timetable(bus_code)
 
     def get_bus_live(self, bus_code):
         return self.bus.fetch_bus_live(bus_code)

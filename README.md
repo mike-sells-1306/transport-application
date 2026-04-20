@@ -69,6 +69,40 @@ make test          # Linux/macOS
 make test-win      # Windows
 ```
 
+## Static transport data refresh (manual)
+
+Stops and scheduled timetable/index data are now intended to be refreshed on demand from the terminal.
+
+Run these commands from the repository root (`transport-application/`).
+
+```bash
+# Refresh static stops + timetable connection index
+make refresh-static
+
+# Force a full rebuild of the timetable connection index
+make refresh-static-force
+```
+
+### Updating static data when the API comes back up
+
+Use `STATIC_DATA_ONLY=false` so the refresh job can pull the latest stop/timetable metadata from the API before rebuilding local static storage.
+
+```bash
+# Recommended: full refresh + forced index rebuild
+STATIC_DATA_ONLY=false make refresh-static-force
+
+# Optional: incremental refresh
+STATIC_DATA_ONLY=false make refresh-static
+```
+
+The command output prints inserted stop count and indexed connection totals so you can verify the refresh succeeded.
+
+Environment flags:
+
+- `STATIC_DATA_ONLY=true` (default): static endpoints read from local DB/cache, not live API.
+- `AUTO_REFRESH_STATIC_ON_STARTUP=false` (default): do not auto-refresh static data on backend startup.
+- `LIVE_POLL_MIN_SECONDS=5` (default minimum): caps live API polling cadence (bus/rail/weather).
+
 ## Automated Accessibility Testing
 
 The frontend now includes Playwright + axe-core accessibility smoke tests.

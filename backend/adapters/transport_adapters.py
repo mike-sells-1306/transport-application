@@ -675,6 +675,8 @@ class RoutePlannerAdapter:
 
     def __init__(self):
         self.rail = RailDeparturesAdapter()
+        self._static_data_only = os.getenv('STATIC_DATA_ONLY', 'true').strip().lower() == 'true'
+        self._live_poll_min_seconds = max(5, int(os.getenv('LIVE_POLL_MIN_SECONDS', '5')))
         self._live_bus_cache = None
         self._live_bus_cache_ts = None
         self._rail_departures_cache = {}
@@ -695,11 +697,39 @@ class RoutePlannerAdapter:
         )
         self._connection_index_ready = False
 
+    def _local_cached_datasets_index(self):
+        """Build a minimal dataset index from local timetable cache files."""
+        out = []
+        try:
+            self._dataset_cache_dir.mkdir(parents=True, exist_ok=True)
+            for path in sorted(self._dataset_cache_dir.glob('*.json.gz')):
+                try:
+                    with gzip.open(path, 'rt', encoding='utf-8') as fh:
+                        payload = json.load(fh)
+                    ds_id = payload.get('dataset_id') or path.stem
+                    stamp = payload.get('stamp', '')
+                    out.append({
+                        'id': ds_id,
+                        'status': 'published',
+                        'url': '',
+                        'operatorName': 'Local cache',
+                        'localities': [],
+                        'adminAreas': [],
+                        'lines': [],
+                        'lastModifiedDateTime': stamp,
+                        'lastEndDate': stamp,
+                    })
+                except Exception:
+                    continue
+        except Exception:
+            return []
+        return out
+
     def _fetch_rail_departures_cached(self, crs_code):
         now = _dt.utcnow()
         ts = self._rail_departures_cache_ts.get(crs_code)
         if ts is not None:
-            if (now - ts).total_seconds() < 60:
+            if (now - ts).total_seconds() < self._live_poll_min_seconds:
                 return self._rail_departures_cache.get(crs_code, {"services": []})
 
         data = self.rail.fetch_departures(crs_code)
@@ -788,12 +818,12 @@ class RoutePlannerAdapter:
         """Fetch and parse SCC SIRI live bus feed.
 
         Returns list of dicts with keys: line, origin_dep, dest_arr.
-        Caches results for 60 seconds to avoid repeated API calls.
+        Caches results for LIVE_POLL_MIN_SECONDS to avoid repeated API calls.
         """
         now = _dt.utcnow()
         if self._live_bus_cache is not None and self._live_bus_cache_ts is not None:
             age = (now - self._live_bus_cache_ts).total_seconds()
-            if age < 60:
+            if age < self._live_poll_min_seconds:
                 return self._live_bus_cache
 
         url = f"{BASE_URL}/bus/live"
@@ -1159,6 +1189,45 @@ class RoutePlannerAdapter:
             from_stop_code=from_stop_code,
             to_stop_code=to_stop_code,
             depart_time=depart_time,
+            sort_by=sort_by,
+        )
+        if routes:
+            return routes
+
+        # Fallback 1 (offline-friendly): retry CSA without exact-code pinning
+        # so nearby valid stops can still be used when exact stands/bays are
+        # too restrictive at the requested time.
+        routes = self._plan_routes_csa(
+            from_name, to_name,
+            from_lat, from_lon,
+            to_lat, to_lon,
+            from_stop_code=None,
+            to_stop_code=None,
+            depart_time=depart_time,
+            sort_by=sort_by,
+        )
+        if routes:
+            return routes
+
+        # Fallback 2: use legacy graph-network search with exact pins.
+        routes = self._plan_routes_network(
+            from_name, to_name,
+            from_lat, from_lon,
+            to_lat, to_lon,
+            from_stop_code=from_stop_code,
+            to_stop_code=to_stop_code,
+            sort_by=sort_by,
+        )
+        if routes:
+            return routes
+
+        # Fallback 3: legacy graph-network search with relaxed pins.
+        routes = self._plan_routes_network(
+            from_name, to_name,
+            from_lat, from_lon,
+            to_lat, to_lon,
+            from_stop_code=None,
+            to_stop_code=None,
             sort_by=sort_by,
         )
         return routes
@@ -1564,6 +1633,12 @@ class RoutePlannerAdapter:
             if (now - self._bus_times_index_ts).total_seconds() < 21600:
                 return self._bus_times_index_cache
 
+        if self._static_data_only:
+            local_results = self._local_cached_datasets_index()
+            self._bus_times_index_cache = local_results
+            self._bus_times_index_ts = now
+            return local_results
+
         try:
             r = requests.get(f"{BASE_URL}/bus/times", timeout=10, allow_redirects=True)
             r.raise_for_status()
@@ -1573,7 +1648,10 @@ class RoutePlannerAdapter:
             # Keep existing cache on transient API issues.
             if self._bus_times_index_cache is not None:
                 return self._bus_times_index_cache
-            results = []
+            results = self._local_cached_datasets_index()
+
+        if not results:
+            results = self._local_cached_datasets_index()
 
         self._bus_times_index_cache = results
         self._bus_times_index_ts = now
@@ -1723,12 +1801,12 @@ class RoutePlannerAdapter:
             if (now - self._naptan_lookup_ts).total_seconds() < 3600:
                 return self._naptan_lookup_cache
 
-        # Fast path: use persisted cache when fresh enough.
+        # Fast path: use persisted cache (any age in static mode).
         cache_path = self._naptan_lookup_cache_file
         try:
             if cache_path.exists():
                 age = now.timestamp() - cache_path.stat().st_mtime
-                if age < 24 * 3600:
+                if self._static_data_only or age < 24 * 3600:
                     with cache_path.open('r', encoding='utf-8') as fh:
                         persisted = json.load(fh)
                     lookup = {}
@@ -1748,6 +1826,11 @@ class RoutePlannerAdapter:
                         return lookup
         except Exception:
             pass
+
+        if self._static_data_only:
+            self._naptan_lookup_cache = {}
+            self._naptan_lookup_ts = now
+            return {}
 
         lookup = {}
         # Primary lookup keeps latency practical by loading SCC-local feeds.
@@ -2196,6 +2279,59 @@ class RoutePlannerAdapter:
         }
         return connections, stop_meta
 
+    def _builtin_service_connections(self):
+        """Generate static timetable-like connections from built-in bus services.
+
+        This provides offline baseline coverage for key NW routes when remote
+        timetable datasets are unavailable or incomplete.
+        """
+        stop_meta = {}
+        connections = []
+        service_start = int(os.getenv('BUILTIN_SERVICE_START_MINS', '300'))   # 05:00
+        service_end = int(os.getenv('BUILTIN_SERVICE_END_MINS', '1380'))      # 23:00
+
+        for svc in self.BUS_SERVICES:
+            service_name = svc.get('service', 'Bus')
+            freq = max(5, int(svc.get('frequency_mins', 30)))
+            stops = svc.get('stops', [])
+            if len(stops) < 2:
+                continue
+            seg_mins = self._estimate_segment_mins(svc)
+
+            stop_refs = []
+            for s in stops:
+                ref = f"BIS:{re.sub(r'[^A-Za-z0-9]+', '_', service_name).upper()}:{re.sub(r'[^A-Za-z0-9]+', '_', s.get('name', 'STOP')).upper()}"
+                stop_refs.append(ref)
+                stop_meta[ref] = {
+                    'name': s.get('name', ref),
+                    'lat': float(s.get('lat', 0.0)),
+                    'lon': float(s.get('lon', 0.0)),
+                    'kind': 'bus',
+                }
+
+            dep = service_start
+            while dep <= service_end:
+                trip_id = f"builtin:{service_name}:{dep}"
+                running = dep
+                for i in range(len(stop_refs) - 1):
+                    frm = stop_refs[i]
+                    to = stop_refs[i + 1]
+                    depart_abs = running
+                    arrive_abs = running + max(1, int(seg_mins[i]))
+                    connections.append({
+                        'from_ref': frm,
+                        'to_ref': to,
+                        'dep_raw': depart_abs % (24 * 60),
+                        'arr_raw': arrive_abs % (24 * 60),
+                        'trip_id': trip_id,
+                        'service': service_name,
+                        'mode': 'bus',
+                    })
+                    running = arrive_abs
+                dep += freq
+
+        return connections, stop_meta
+
     def build_connection_index(self, force_rebuild=False):
         """Build persistent offline timetable connection/footpath index."""
         if self._connection_index_store is None:
@@ -2256,12 +2392,81 @@ class RoutePlannerAdapter:
             count_ds += 1
             total_conn += len(conns)
 
+        # Ensure baseline offline bus coverage from built-in static routes.
+        try:
+            builtin_conns, builtin_meta = self._builtin_service_connections()
+            if builtin_conns:
+                builtin_id = '__builtin_bus_services__'
+                self._connection_index_store.upsert_dataset(
+                    builtin_id,
+                    '',
+                    'Built-in static services',
+                )
+                self._connection_index_store.replace_dataset_connections(
+                    builtin_id,
+                    builtin_meta,
+                    builtin_conns,
+                )
+                count_ds += 1
+                total_conn += len(builtin_conns)
+        except Exception:
+            pass
+
         self._connection_index_store.rebuild_footpaths(
             max_walk_km=0.6,
             walk_speed_m_per_min=self.WALK_SPEED,
             walk_factor=self.WALK_FACTOR,
         )
         return {'indexed_datasets': count_ds, 'connections': total_conn}
+
+    def get_bus_timetable(self, bus_code, max_results=250):
+        """Return scheduled trips for a bus line from local static timetable data."""
+        query = re.sub(r'[^A-Za-z0-9]+', '', str(bus_code or '').upper())
+        if not query:
+            return {'bus_code': bus_code, 'trips': [], 'count': 0, 'source': 'static-cache'}
+
+        index = self._fetch_bus_times_index()
+        if not index:
+            return {'bus_code': bus_code, 'trips': [], 'count': 0, 'source': 'static-cache'}
+
+        trips_out = []
+        max_scan = int(os.getenv('BUS_TIMETABLE_SCAN_DATASETS', '30'))
+        for ds in index[:max_scan]:
+            ds_id = str(ds.get('id') or '')
+            trips = self._parse_timetable_dataset(ds)
+            for trip in trips:
+                line = str(trip.get('line') or '').upper().strip()
+                line_norm = re.sub(r'[^A-Za-z0-9]+', '', line)
+                service_label = str(trip.get('service') or '').strip()
+                service_norm = re.sub(r'[^A-Za-z0-9]+', '', service_label.upper())
+                if query not in {line_norm, service_norm, self._line_code(service_label)}:
+                    continue
+                trips_out.append({
+                    'dataset_id': ds_id,
+                    'service': service_label,
+                    'line': line,
+                    'operator': trip.get('operator', ''),
+                    'trip_id': trip.get('trip_id', ''),
+                    'days': trip.get('days', []),
+                    'times': trip.get('times', []),
+                    'stops': trip.get('stops', []),
+                })
+                if len(trips_out) >= max_results:
+                    return {
+                        'bus_code': bus_code,
+                        'trips': trips_out,
+                        'count': len(trips_out),
+                        'source': 'static-cache',
+                        'truncated': True,
+                    }
+
+        return {
+            'bus_code': bus_code,
+            'trips': trips_out,
+            'count': len(trips_out),
+            'source': 'static-cache',
+            'truncated': False,
+        }
 
     def _plan_routes_csa(self, from_name, to_name,
                          from_lat, from_lon,
@@ -2272,7 +2477,7 @@ class RoutePlannerAdapter:
         """CSA-style journey planning over indexed timetable connections."""
         now = self._coerce_departure_dt(depart_time)
         now_abs = now.hour * 60 + now.minute
-        horizon_abs = now_abs + 6 * 60
+        horizon_abs = now_abs + (24 * 60 if self._static_data_only else 6 * 60)
         dist_km = self._haversine(from_lat, from_lon, to_lat, to_lon)
 
         datasets = self._select_bus_timetable_datasets(from_name, to_name, now)
@@ -2319,6 +2524,7 @@ class RoutePlannerAdapter:
         bus_conns = []
         bus_meta = {}
         ds_ids = [str(ds.get('id')) for ds in datasets if ds.get('id')]
+        ds_ids.append('__builtin_bus_services__')
         try:
             if self._connection_index_store is not None and ds_ids and self._connection_index_store.has_connections():
                 bus_conns, bus_meta = self._connection_index_store.get_dataset_connections_and_stops(ds_ids)
@@ -2367,14 +2573,17 @@ class RoutePlannerAdapter:
                     continue
             indexed_connections.append(c)
 
-        # Add rail connections from live departure boards as timetable-like
-        rail_targets = set(self._crs_for_locality(from_name) + self._crs_for_locality(to_name))
-        for crs, _, _ in self._find_nearest_stations(from_lat, from_lon, max_km=20, max_results=4):
-            rail_targets.add(crs)
-        for crs, _, _ in self._find_nearest_stations(to_lat, to_lon, max_km=20, max_results=4):
-            rail_targets.add(crs)
-        if dist_km >= 20:
-            rail_targets.update({'LAN', 'PRE', 'MAN', 'WGN', 'OXN'})
+        # Add rail connections from live departure boards as timetable-like.
+        # In static-data-only mode, skip this to stay fully API-independent.
+        rail_targets = set()
+        if not self._static_data_only:
+            rail_targets = set(self._crs_for_locality(from_name) + self._crs_for_locality(to_name))
+            for crs, _, _ in self._find_nearest_stations(from_lat, from_lon, max_km=20, max_results=4):
+                rail_targets.add(crs)
+            for crs, _, _ in self._find_nearest_stations(to_lat, to_lon, max_km=20, max_results=4):
+                rail_targets.add(crs)
+            if dist_km >= 20:
+                rail_targets.update({'LAN', 'PRE', 'MAN', 'WGN', 'OXN'})
 
         for crs, info in self.STATIONS.items():
             stop_meta[f'CRS:{crs}'] = {
@@ -2744,7 +2953,7 @@ class RoutePlannerAdapter:
                              sort_by='soonest_arrival'):
         now = _dt.now()
         now_abs = now.hour * 60 + now.minute
-        horizon_abs = now_abs + 6 * 60
+        horizon_abs = now_abs + (24 * 60 if self._static_data_only else 6 * 60)
         dist_km = self._haversine(from_lat, from_lon, to_lat, to_lon)
         from_l = (from_name or '').lower()
         to_l = (to_name or '').lower()
@@ -2839,16 +3048,17 @@ class RoutePlannerAdapter:
 
         # ---- Build rail network trips from SCC departure boards ----
         rail_targets = set()
-        origin_station_limit = 3 if dist_km < 20 else 5
-        dest_station_limit = 3 if dist_km < 20 else 5
-        for crs, _, _ in self._find_nearest_stations(from_lat, from_lon, max_km=20, max_results=origin_station_limit):
-            rail_targets.add(crs)
-        for crs, _, _ in self._find_nearest_stations(to_lat, to_lon, max_km=20, max_results=dest_station_limit):
-            rail_targets.add(crs)
-        if dist_km >= 20:
-            rail_targets.update({'LAN', 'PRE', 'MAN', 'WGN', 'OXN'})
-        rail_targets.update(self._crs_for_locality(from_name))
-        rail_targets.update(self._crs_for_locality(to_name))
+        if not self._static_data_only:
+            origin_station_limit = 3 if dist_km < 20 else 5
+            dest_station_limit = 3 if dist_km < 20 else 5
+            for crs, _, _ in self._find_nearest_stations(from_lat, from_lon, max_km=20, max_results=origin_station_limit):
+                rail_targets.add(crs)
+            for crs, _, _ in self._find_nearest_stations(to_lat, to_lon, max_km=20, max_results=dest_station_limit):
+                rail_targets.add(crs)
+            if dist_km >= 20:
+                rail_targets.update({'LAN', 'PRE', 'MAN', 'WGN', 'OXN'})
+            rail_targets.update(self._crs_for_locality(from_name))
+            rail_targets.update(self._crs_for_locality(to_name))
 
         station_nodes = {}
         for crs, info in self.STATIONS.items():
