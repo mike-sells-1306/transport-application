@@ -34,6 +34,10 @@ A search is triggered in two scenarios:
 }
 ```
 
+Notes:
+- `atcoCode`/`ATCOCode` (or `CRS:<code>` for rail stations) is preferred and used as an exact stop pin when available.
+- For compatibility, requests that include stop names and coordinates can still be routed without explicit stop codes.
+
 **Response:**
 
 ```json
