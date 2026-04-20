@@ -459,6 +459,14 @@ body.sidebar-minimized {
   line-height: 36px;
 }
 
+.leaflet-map .leaflet-right .leaflet-control {
+  margin-right: 16px;
+}
+
+.leaflet-map .leaflet-bottom .leaflet-control {
+  margin-bottom: 16px;
+}
+
 .leaflet-map .leaflet-marker-icon {
   border-radius: 50%;
 }

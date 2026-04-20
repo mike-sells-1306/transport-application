@@ -1,6 +1,11 @@
 {
-  "app": { "title": "Transport du Nord-Ouest" },
-  "map": { "ariaLabel": "Carte interactive du nord-ouest de l'Angleterre", "popupImageAlt": "Photo de {location}" },
+  "app": {
+    "title": "Transport du Nord-Ouest"
+  },
+  "map": {
+    "ariaLabel": "Carte interactive du nord-ouest de l'Angleterre",
+    "popupImageAlt": "Photo de {location}"
+  },
   "navigation": {
     "primarySidebar": "Barre latérale principale",
     "main": "Navigation principale",
@@ -57,6 +62,10 @@
       "oneTime": "il y a 12 min",
       "two": "Alerte neige à Barrow-in-Furness.",
       "twoTime": "il y a 4 h"
+    },
+    "messages": {
+      "welcome": "Bienvenue sur Transport du Nord-Ouest. Votre compte est maintenant actif.",
+      "routeSaved": "Itinéraire enregistré : {from} → {to}"
     }
   },
   "faq": {
@@ -81,6 +90,10 @@
     "q5": {
       "question": "Que se passe-t-il si mes itinéraires enregistrés changent ?",
       "answer": "En cas de perturbation potentielle, nous vous envoyons une notification pour vous aider à anticiper."
+    },
+    "q6": {
+      "question": "Quelles fonctionnalités d’accessibilité puis-je utiliser ?",
+      "answer": "Vous pouvez modifier la langue du site Web, ajuster la taille de la police pour plus de lisibilité et choisir un profil de couleur pour différents besoins en matière de vision des couleurs. Vous pouvez ensuite enregistrer ces paramètres sur votre compte."
     }
   },
   "support": {
@@ -324,27 +337,93 @@
     "pageXofY": "Page {page} sur {total}"
   },
   "locations": {
-    "liverpool": { "name": "Liverpool", "description": "Liverpool - Ville portuaire historique et centre culturel sur la côte de la mer d'Irlande." },
-    "manchester": { "name": "Manchester", "description": "Manchester - Grande ville industrielle et commerciale au cœur du Grand Manchester." },
-    "preston": { "name": "Preston", "description": "Preston - Ville culturelle majeure du Lancashire." },
-    "blackburn": { "name": "Blackburn", "description": "Blackburn - Ville textile historique, abritant la cathédrale." },
-    "lytham_st_annes": { "name": "Lytham-St-Annes", "description": "Lytham-St-Annes - Ville balnéaire de la côte de Fylde." },
-    "kirkham": { "name": "Kirkham", "description": "Kirkham - Ville de marché au cœur de la Fylde." },
-    "poulton_le_fylde": { "name": "Poulton-le-Fylde", "description": "Poulton-le-Fylde - Ville de marché au cœur de la Fylde." },
-    "fleetwood": { "name": "Fleetwood", "description": "Fleetwood - Ville côtière à l'embouchure de la Wyre et ancien port de pêche." },
-    "blackpool": { "name": "Blackpool", "description": "Blackpool - Station balnéaire emblématique avec la célèbre Blackpool Tower." },
-    "garstang": { "name": "Garstang", "description": "Garstang - Ville de marché historique sur la rivière Wyre." },
-    "lancaster": { "name": "Lancaster", "description": "Lancaster - Ville historique avec château médiéval et université." },
-    "morecambe": { "name": "Morecambe", "description": "Morecambe - Ville côtière connue pour sa promenade et sa baie." },
-    "heysham": { "name": "Heysham", "description": "Heysham - Village côtier à l'héritage maritime." },
-    "carnforth": { "name": "Carnforth", "description": "Carnforth - Localité connue pour son patrimoine ferroviaire." },
-    "kirkby_lonsdale": { "name": "Kirkby-Lonsdale", "description": "Kirkby-Lonsdale - Village pittoresque de la vallée de la Lune." },
-    "grange_over_sands": { "name": "Grange-Over-Sands", "description": "Grange-Over-Sands - Charmante station côtière de la baie de Morecambe." },
-    "cartmel": { "name": "Cartmel", "description": "Cartmel - Village pittoresque célèbre pour son prieuré et son hippodrome." },
-    "kendal": { "name": "Kendal", "description": "Kendal - Porte d'entrée du Lake District et ville de marché historique." },
-    "windermere": { "name": "Windermere", "description": "Windermere - Cœur du Lake District avec le plus grand lac d'Angleterre." },
-    "ambleside": { "name": "Ambleside", "description": "Ambleside - Ville pittoresque du Lake District au bord du lac Windermere." },
-    "barrow_in_furness": { "name": "Barrow-in-Furness", "description": "Barrow-in-Furness - Ville industrielle sur la côte de la mer d'Irlande." },
-    "keswick": { "name": "Keswick", "description": "Keswick - Ville de marché historique du nord du Lake District." }
+    "liverpool": {
+      "name": "Liverpool",
+      "description": "Liverpool - Ville portuaire historique et centre culturel sur la côte de la mer d'Irlande."
+    },
+    "manchester": {
+      "name": "Manchester",
+      "description": "Manchester - Grande ville industrielle et commerciale au cœur du Grand Manchester."
+    },
+    "preston": {
+      "name": "Preston",
+      "description": "Preston - Ville culturelle majeure du Lancashire."
+    },
+    "blackburn": {
+      "name": "Blackburn",
+      "description": "Blackburn - Ville textile historique, abritant la cathédrale."
+    },
+    "lytham_st_annes": {
+      "name": "Lytham-St-Annes",
+      "description": "Lytham-St-Annes - Ville balnéaire de la côte de Fylde."
+    },
+    "kirkham": {
+      "name": "Kirkham",
+      "description": "Kirkham - Ville de marché au cœur de la Fylde."
+    },
+    "poulton_le_fylde": {
+      "name": "Poulton-le-Fylde",
+      "description": "Poulton-le-Fylde - Ville de marché au cœur de la Fylde."
+    },
+    "fleetwood": {
+      "name": "Fleetwood",
+      "description": "Fleetwood - Ville côtière à l'embouchure de la Wyre et ancien port de pêche."
+    },
+    "blackpool": {
+      "name": "Blackpool",
+      "description": "Blackpool - Station balnéaire emblématique avec la célèbre Blackpool Tower."
+    },
+    "garstang": {
+      "name": "Garstang",
+      "description": "Garstang - Ville de marché historique sur la rivière Wyre."
+    },
+    "lancaster": {
+      "name": "Lancaster",
+      "description": "Lancaster - Ville historique avec château médiéval et université."
+    },
+    "morecambe": {
+      "name": "Morecambe",
+      "description": "Morecambe - Ville côtière connue pour sa promenade et sa baie."
+    },
+    "heysham": {
+      "name": "Heysham",
+      "description": "Heysham - Village côtier à l'héritage maritime."
+    },
+    "carnforth": {
+      "name": "Carnforth",
+      "description": "Carnforth - Localité connue pour son patrimoine ferroviaire."
+    },
+    "kirkby_lonsdale": {
+      "name": "Kirkby-Lonsdale",
+      "description": "Kirkby-Lonsdale - Village pittoresque de la vallée de la Lune."
+    },
+    "grange_over_sands": {
+      "name": "Grange-Over-Sands",
+      "description": "Grange-Over-Sands - Charmante station côtière de la baie de Morecambe."
+    },
+    "cartmel": {
+      "name": "Cartmel",
+      "description": "Cartmel - Village pittoresque célèbre pour son prieuré et son hippodrome."
+    },
+    "kendal": {
+      "name": "Kendal",
+      "description": "Kendal - Porte d'entrée du Lake District et ville de marché historique."
+    },
+    "windermere": {
+      "name": "Windermere",
+      "description": "Windermere - Cœur du Lake District avec le plus grand lac d'Angleterre."
+    },
+    "ambleside": {
+      "name": "Ambleside",
+      "description": "Ambleside - Ville pittoresque du Lake District au bord du lac Windermere."
+    },
+    "barrow_in_furness": {
+      "name": "Barrow-in-Furness",
+      "description": "Barrow-in-Furness - Ville industrielle sur la côte de la mer d'Irlande."
+    },
+    "keswick": {
+      "name": "Keswick",
+      "description": "Keswick - Ville de marché historique du nord du Lake District."
+    }
   }
 }

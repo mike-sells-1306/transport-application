@@ -104,6 +104,35 @@ Environment flags:
 - `LIVE_POLL_MIN_SECONDS=5` (default minimum): caps live API polling cadence (bus/rail/weather).
 - `ROUTE_CONNECTION_INDEX_DB=/tmp/transport_connection_index.sqlite3` (default): SQLite path for the route connection index.
 
+## Viewing Backend Stop/Station Metrics
+
+The backend now tracks route-planning processing counts for:
+
+- total **bus stops processed**
+- total **train stations processed**
+
+### How to trigger metric calculation
+
+Run a route search through the backend route planner (for example `POST /api/routes/search` from the frontend journey planner UI).
+
+### Where to view the metrics
+
+1. **Backend logs** during route planning:
+   - `Bus stops processed: X`
+   - `Train stations processed: Y`
+2. **Debug API endpoint**:
+   - `GET /api/routes/metrics`
+
+### Example output
+
+```json
+{
+  "bus_stops_processed": 284,
+  "train_stations_processed": 30,
+  "planner_stage": "csa"
+}
+```
+
 ## Automated Accessibility Testing
 
 The frontend now includes Playwright + axe-core accessibility smoke tests.
@@ -175,5 +204,3 @@ See [docs/features/account-management.md](docs/features/account-management.md) f
 See [docs/design/software-design-doc-source/main.tex](docs/design/software-design-doc-source/main.tex) for the software design document.
 
 See [docs/README.md](docs/README.md) for a full documentation index.
-# transport-application
-todo

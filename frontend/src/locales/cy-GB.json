@@ -1,5 +1,7 @@
 {
-  "app": { "title": "Trafnidiaeth Gogledd Orllewin" },
+  "app": {
+    "title": "Trafnidiaeth Gogledd Orllewin"
+  },
   "map": {
     "ariaLabel": "Map rhyngweithiol o Ogledd Orllewin Lloegr",
     "popupImageAlt": "Llun o {location}"
@@ -60,21 +62,47 @@
       "oneTime": "12m yn ôl",
       "two": "Rhybudd eira yn Barrow-in-Furness.",
       "twoTime": "4a yn ôl"
+    },
+    "messages": {
+      "welcome": "Croeso i Transport for North West. Mae eich cyfrif bellach yn weithredol.",
+      "routeSaved": "Llwybr wedi'i gadw: {from} → {to}"
     }
   },
   "faq": {
     "title": "Cwestiynau Cyffredin",
     "close": "Cau Cwestiynau Cyffredin",
-    "q1": { "question": "Sut ydw i'n gweld manylion lleoliad?", "answer": "Gallwch chwilio am wybodaeth am leoliad drwy chwilio amdano neu glicio ar y lleoliad ar y map." },
-    "q2": { "question": "Pa ardal mae'r map yn ei chynnwys?", "answer": "Mae'r map yn canolbwyntio ar y coridor arfordirol rhwng Preston a Lancaster, gan gynnwys Blackpool, y Fylde, ac arfordir Wyre." },
-    "q3": { "question": "Sut ydw i'n prynu tocyn ar gyfer taith?", "answer": "Mae'r gwasanaeth hwn ar gyfer canfod llwybrau yn unig. Defnyddiwch wasanaeth arall fel National Rail neu wefan gweithredwr bws lleol i brynu tocynnau." },
-    "q4": { "question": "Sut ydw i'n cadw llwybrau fel ffefrynnau?", "answer": "Gallwch gadw llwybrau i'ch cyfrif drwy glicio'r botwm \"Cadw Llwybr\" ar ganlyniad llwybr. Rhaid i chi fewngofnodi i gadw llwybrau." },
-    "q5": { "question": "Beth sy'n digwydd os oes newidiadau i fy llwybrau cadwedig?", "answer": "Pan ganfyddir tarfu posibl, anfonwn hysbysiad atoch fel y gallwch gynllunio ymlaen llaw." }
+    "q1": {
+      "question": "Sut ydw i'n gweld manylion lleoliad?",
+      "answer": "Gallwch chwilio am wybodaeth am leoliad drwy chwilio amdano neu glicio ar y lleoliad ar y map."
+    },
+    "q2": {
+      "question": "Pa ardal mae'r map yn ei chynnwys?",
+      "answer": "Mae'r map yn canolbwyntio ar y coridor arfordirol rhwng Preston a Lancaster, gan gynnwys Blackpool, y Fylde, ac arfordir Wyre."
+    },
+    "q3": {
+      "question": "Sut ydw i'n prynu tocyn ar gyfer taith?",
+      "answer": "Mae'r gwasanaeth hwn ar gyfer canfod llwybrau yn unig. Defnyddiwch wasanaeth arall fel National Rail neu wefan gweithredwr bws lleol i brynu tocynnau."
+    },
+    "q4": {
+      "question": "Sut ydw i'n cadw llwybrau fel ffefrynnau?",
+      "answer": "Gallwch gadw llwybrau i'ch cyfrif drwy glicio'r botwm \"Cadw Llwybr\" ar ganlyniad llwybr. Rhaid i chi fewngofnodi i gadw llwybrau."
+    },
+    "q5": {
+      "question": "Beth sy'n digwydd os oes newidiadau i fy llwybrau cadwedig?",
+      "answer": "Pan ganfyddir tarfu posibl, anfonwn hysbysiad atoch fel y gallwch gynllunio ymlaen llaw."
+    },
+    "q6": {
+      "question": "Pa nodweddion hygyrchedd y gallaf eu defnyddio?",
+      "answer": "Gallwch newid iaith y wefan, addasu maint y ffont ar gyfer darllenadwyedd, a dewis proffil lliw ar gyfer gwahanol anghenion lliw-gweledigaeth. Yna gallwch arbed y gosodiadau hyn i'ch cyfrif."
+    }
   },
   "support": {
     "title": "Cefnogaeth Cwsmer",
     "close": "Cau Cefnogaeth Cwsmer",
-    "journeyHelp": { "title": "Angen help i gynllunio taith?", "body": "Os yw canlyniadau llwybr yn anghywir neu'n anghyflawn, diweddarwch eich mannau o/i a chwiliwch eto. Os yw'r broblem yn parhau, cysylltwch â ni gyda manylion eich llwybr ac amser y chwiliad." },
+    "journeyHelp": {
+      "title": "Angen help i gynllunio taith?",
+      "body": "Os yw canlyniadau llwybr yn anghywir neu'n anghyflawn, diweddarwch eich mannau o/i a chwiliwch eto. Os yw'r broblem yn parhau, cysylltwch â ni gyda manylion eich llwybr ac amser y chwiliad."
+    },
     "channels": {
       "title": "Sianeli cyswllt",
       "emailLabel": "E-bost:",
@@ -84,15 +112,25 @@
       "chatLabel": "Sgwrs fyw:",
       "chatValue": "Dyddiau gwaith 08:00–18:00"
     },
-    "reportIssue": { "title": "Adrodd am darfu neu fater data", "body": "Cynnwys math gwasanaeth (bws/trên), dechrau a diwedd llwybr, amser ymadael disgwyliedig, a sgrinlun os yn bosibl. Mae hyn yn ein helpu i ymchwilio a datrys yn gyflymach." },
-    "accountHelp": { "title": "Help cyfrif", "body": "Ar gyfer mewngofnodi, cyfrinair, neu faterion llwybrau cadwedig, agorwch dab y Cyfrif yn gyntaf, yna cysylltwch â chefnogaeth os yw'r broblem yn parhau." }
+    "reportIssue": {
+      "title": "Adrodd am darfu neu fater data",
+      "body": "Cynnwys math gwasanaeth (bws/trên), dechrau a diwedd llwybr, amser ymadael disgwyliedig, a sgrinlun os yn bosibl. Mae hyn yn ein helpu i ymchwilio a datrys yn gyflymach."
+    },
+    "accountHelp": {
+      "title": "Help cyfrif",
+      "body": "Ar gyfer mewngofnodi, cyfrinair, neu faterion llwybrau cadwedig, agorwch dab y Cyfrif yn gyntaf, yna cysylltwch â chefnogaeth os yw'r broblem yn parhau."
+    }
   },
   "route": {
     "defaultHeader": "Llwybrau o Lancaster i Blackpool",
     "closeModal": "Cau ffenestr llwybrau",
     "sortBy": "Trefnu yn ôl:",
     "sortByAria": "Trefnu llwybrau yn ôl",
-    "sort": { "startTime": "Amser Cychwyn", "fastest": "Cyflymaf", "fewestChanges": "Y Lleiaf Newidiadau" },
+    "sort": {
+      "startTime": "Amser Cychwyn",
+      "fastest": "Cyflymaf",
+      "fewestChanges": "Y Lleiaf Newidiadau"
+    },
     "download": "Lawrlwytho Llwybrau",
     "downloadAria": "Lawrlwytho llwybrau a ddangosir fel PDF",
     "downloadTooltipEnabled": "Lawrlwytho pob opsiwn llwybr a ddangosir",
@@ -119,7 +157,12 @@
       "stops": "{from} → {to}"
     }
   },
-  "transport": { "bus": "Bws", "train": "Trên", "walk": "Cerdded", "wait": "Aros" },
+  "transport": {
+    "bus": "Bws",
+    "train": "Trên",
+    "walk": "Cerdded",
+    "wait": "Aros"
+  },
   "accessibility": {
     "title": "Hygyrchedd",
     "close": "Cau Hygyrchedd",
@@ -142,7 +185,11 @@
     },
     "fontSizeTitle": "Maint ffont",
     "fontSizeDescription": "Dewiswch faint ffont cyfforddus ar gyfer y rhyngwyneb.",
-    "font": { "small": "Bach", "normal": "Arferol", "large": "Mawr" },
+    "font": {
+      "small": "Bach",
+      "normal": "Arferol",
+      "large": "Mawr"
+    },
     "save": "Cadw i'r cyfrif",
     "saveAria": "Cadw gosodiadau hygyrchedd i'r cyfrif",
     "reset": "Ailosod rhagosodiadau",
@@ -155,7 +202,14 @@
     "cy-GB": "Cymraeg (Y Deyrnas Unedig)",
     "fr-FR": "Français (France)",
     "de-DE": "Deutsch (Deutschland)",
-    "es-ES": "Español (España)"
+    "es-ES": "Español (España)",
+    "zh-CN": "中文（中国）",
+    "hi-IN": "हिन्दी (भारत)",
+    "ar": "العربية",
+    "bn-BD": "বাংলা (বাংলাদেশ)",
+    "pt-BR": "Português (Brasil)",
+    "ru-RU": "Rwsia (Россия)",
+    "ur-PK": "اردو (پاکستان)"
   },
   "auth": {
     "loginTitle": "Mewngofnodi Cyfrif",
@@ -283,27 +337,93 @@
     "pageXofY": "Tudalen {page} o {total}"
   },
   "locations": {
-    "liverpool": { "name": "Lerpwl", "description": "Lerpwl - dinas borthladd hanesyddol a chanolfan ddiwylliannol ar arfordir Môr Iwerddon." },
-    "manchester": { "name": "Manceinion", "description": "Manceinion - dinas ddiwydiannol a masnachol fawr yng nghanol Manceinion Fwyaf." },
-    "preston": { "name": "Preston", "description": "Preston - dinas newyddaf Lloegr a chanolfan ddiwylliannol Swydd Gaerhirfryn." },
-    "blackburn": { "name": "Blackburn", "description": "Blackburn - tref decstilau hanesyddol, cartref yr eglwys gadeiriol." },
-    "lytham_st_annes": { "name": "Lytham-St-Annes", "description": "Lytham-St-Annes - tref glan môr ar arfordir y Fylde." },
-    "kirkham": { "name": "Kirkham", "description": "Kirkham - tref farchnad yng nghanol y Fylde." },
-    "poulton_le_fylde": { "name": "Poulton-le-Fylde", "description": "Poulton-le-Fylde - tref farchnad yng nghanol y Fylde." },
-    "fleetwood": { "name": "Fleetwood", "description": "Fleetwood - tref arfordirol wrth geg Afon Wyre a phorthladd pysgota hanesyddol." },
-    "blackpool": { "name": "Blackpool", "description": "Blackpool - cyrchfan glan môr eiconig gyda Thŵr Blackpool enwog." },
-    "garstang": { "name": "Garstang", "description": "Garstang - tref farchnad hanesyddol ar Afon Wyre." },
-    "lancaster": { "name": "Lancaster", "description": "Lancaster - dinas hanesyddol gyda chastell canoloesol a phrifysgol." },
-    "morecambe": { "name": "Morecambe", "description": "Morecambe - tref glan môr sy'n adnabyddus am ei phromenâd a golygfeydd y bae." },
-    "heysham": { "name": "Heysham", "description": "Heysham - pentref arfordirol gyda gorsaf niwclear a threftadaeth forol." },
-    "carnforth": { "name": "Carnforth", "description": "Carnforth - pentref sy'n enwog am ei dreftadaeth reilffordd." },
-    "kirkby_lonsdale": { "name": "Kirkby-Lonsdale", "description": "Kirkby-Lonsdale - pentref hardd yn Nyffryn Lune." },
-    "grange_over_sands": { "name": "Grange-Over-Sands", "description": "Grange-Over-Sands - cyrchfan arfordirol swynol ar Fae Morecambe." },
-    "cartmel": { "name": "Cartmel", "description": "Cartmel - pentref prydferth sy'n enwog am ei Briordy a'i rasfa geffylau." },
-    "kendal": { "name": "Kendal", "description": "Kendal - porth i'r Ardal Llynnoedd, tref farchnad hanesyddol." },
-    "windermere": { "name": "Windermere", "description": "Windermere - calon yr Ardal Llynnoedd gyda llyn mwyaf Lloegr." },
-    "ambleside": { "name": "Ambleside", "description": "Ambleside - tref hardd yn yr Ardal Llynnoedd ar lan Llyn Windermere." },
-    "barrow_in_furness": { "name": "Barrow-in-Furness", "description": "Barrow-in-Furness - tref ddiwydiannol ar arfordir Môr Iwerddon." },
-    "keswick": { "name": "Keswick", "description": "Keswick - tref farchnad hanesyddol yng ngogledd yr Ardal Llynnoedd." }
+    "liverpool": {
+      "name": "Lerpwl",
+      "description": "Lerpwl - dinas borthladd hanesyddol a chanolfan ddiwylliannol ar arfordir Môr Iwerddon."
+    },
+    "manchester": {
+      "name": "Manceinion",
+      "description": "Manceinion - dinas ddiwydiannol a masnachol fawr yng nghanol Manceinion Fwyaf."
+    },
+    "preston": {
+      "name": "Preston",
+      "description": "Preston - dinas newyddaf Lloegr a chanolfan ddiwylliannol Swydd Gaerhirfryn."
+    },
+    "blackburn": {
+      "name": "Blackburn",
+      "description": "Blackburn - tref decstilau hanesyddol, cartref yr eglwys gadeiriol."
+    },
+    "lytham_st_annes": {
+      "name": "Lytham-St-Annes",
+      "description": "Lytham-St-Annes - tref glan môr ar arfordir y Fylde."
+    },
+    "kirkham": {
+      "name": "Kirkham",
+      "description": "Kirkham - tref farchnad yng nghanol y Fylde."
+    },
+    "poulton_le_fylde": {
+      "name": "Poulton-le-Fylde",
+      "description": "Poulton-le-Fylde - tref farchnad yng nghanol y Fylde."
+    },
+    "fleetwood": {
+      "name": "Fleetwood",
+      "description": "Fleetwood - tref arfordirol wrth geg Afon Wyre a phorthladd pysgota hanesyddol."
+    },
+    "blackpool": {
+      "name": "Blackpool",
+      "description": "Blackpool - cyrchfan glan môr eiconig gyda Thŵr Blackpool enwog."
+    },
+    "garstang": {
+      "name": "Garstang",
+      "description": "Garstang - tref farchnad hanesyddol ar Afon Wyre."
+    },
+    "lancaster": {
+      "name": "Lancaster",
+      "description": "Lancaster - dinas hanesyddol gyda chastell canoloesol a phrifysgol."
+    },
+    "morecambe": {
+      "name": "Morecambe",
+      "description": "Morecambe - tref glan môr sy'n adnabyddus am ei phromenâd a golygfeydd y bae."
+    },
+    "heysham": {
+      "name": "Heysham",
+      "description": "Heysham - pentref arfordirol gyda gorsaf niwclear a threftadaeth forol."
+    },
+    "carnforth": {
+      "name": "Carnforth",
+      "description": "Carnforth - pentref sy'n enwog am ei dreftadaeth reilffordd."
+    },
+    "kirkby_lonsdale": {
+      "name": "Kirkby-Lonsdale",
+      "description": "Kirkby-Lonsdale - pentref hardd yn Nyffryn Lune."
+    },
+    "grange_over_sands": {
+      "name": "Grange-Over-Sands",
+      "description": "Grange-Over-Sands - cyrchfan arfordirol swynol ar Fae Morecambe."
+    },
+    "cartmel": {
+      "name": "Cartmel",
+      "description": "Cartmel - pentref prydferth sy'n enwog am ei Briordy a'i rasfa geffylau."
+    },
+    "kendal": {
+      "name": "Kendal",
+      "description": "Kendal - porth i'r Ardal Llynnoedd, tref farchnad hanesyddol."
+    },
+    "windermere": {
+      "name": "Windermere",
+      "description": "Windermere - calon yr Ardal Llynnoedd gyda llyn mwyaf Lloegr."
+    },
+    "ambleside": {
+      "name": "Ambleside",
+      "description": "Ambleside - tref hardd yn yr Ardal Llynnoedd ar lan Llyn Windermere."
+    },
+    "barrow_in_furness": {
+      "name": "Barrow-in-Furness",
+      "description": "Barrow-in-Furness - tref ddiwydiannol ar arfordir Môr Iwerddon."
+    },
+    "keswick": {
+      "name": "Keswick",
+      "description": "Keswick - tref farchnad hanesyddol yng ngogledd yr Ardal Llynnoedd."
+    }
   }
 }

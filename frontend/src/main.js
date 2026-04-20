@@ -217,8 +217,10 @@ async function setLocale(locale, options = {}) {
   }
 
   if (!document.getElementById('weather-panel')?.classList.contains('hidden')) {
-    renderWeatherPanel();
+    renderWeatherPanel({ announce: false });
   }
+
+  renderNotifications(latestNotifications, { announce: false });
 
   if (announce) {
     announceToScreenReader(t('announce.languageChanged', { locale: getLocaleDisplayName(requested) }));
@@ -462,8 +464,9 @@ function refreshMapPopupTranslations() {
 
 // Store current routes data for sorting
 let currentRoutesData = null;
-let activeRouteSearchController = null;
+const activeRouteSearchControllers = new Set();
 const ROUTE_SEARCH_TIMEOUT_MS = 30000;
+let latestNotifications = [];
 
 // Swap button functionality
 function setupSwapButton() {
@@ -651,7 +654,8 @@ function initializeMap() {
   ];
 
   // Create Leaflet map instance
-  const map = L.map('map').setView(mapCenter, initialZoom);
+  const map = L.map('map', { zoomControl: false }).setView(mapCenter, initialZoom);
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
 
   // Add default tile layer and expose a cycle helper for quick in-app style testing.
   let currentMapStyleIndex = 0;
@@ -996,13 +1000,17 @@ function getWeatherLocations() {
 // Cache for weather data to avoid repeated API calls
 let weatherCache = null;
 let weatherCacheTimestamp = 0;
-const WEATHER_CACHE_DURATION_MS = 5 * 1000; // 5 seconds
+const WEATHER_CACHE_DURATION_MS = 60 * 1000; // 1 minute cache TTL
+const WEATHER_REFRESH_INTERVAL_MS = 30 * 1000; // 30 second UI refresh cadence
 
 // Auto-refresh interval ID (runs while panel is open)
 let weatherRefreshInterval = null;
 
 // Debounce timer for weather search
 let weatherSearchTimer = null;
+let weatherRenderInFlight = false;
+let queuedWeatherRenderOptions = null;
+const weatherExpandedRowState = new Map();
 
 /**
  * Fetch weather data for all default locations from the backend API.
@@ -1010,9 +1018,10 @@ let weatherSearchTimer = null;
  * Results are cached for 1 minute to reduce API load.
  * @returns {Promise<Array>} Array of { name, weather } objects
  */
-async function fetchWeatherForAllLocations() {
+async function fetchWeatherForAllLocations(options = {}) {
+  const { forceRefresh = false } = options;
   const now = Date.now();
-  if (weatherCache && (now - weatherCacheTimestamp) < WEATHER_CACHE_DURATION_MS) {
+  if (!forceRefresh && weatherCache && (now - weatherCacheTimestamp) < WEATHER_CACHE_DURATION_MS) {
     return weatherCache;
   }
 
@@ -1022,18 +1031,51 @@ async function fetchWeatherForAllLocations() {
         const res = await fetch(`/api/weather?lat=${loc.lat}&lon=${loc.lon}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        return { name: loc.name, weather: data };
+        return { key: loc.id, name: loc.name, weather: data };
       } catch (err) {
         console.warn(`Weather fetch failed for ${loc.name}:`, err);
-        return { name: loc.name, weather: null };
+        return { key: loc.id, name: loc.name, weather: null };
       }
     })
   );
 
-  const weatherData = results.map(r => r.status === 'fulfilled' ? r.value : r.reason);
+  const weatherData = results.map((r, index) => (
+    r.status === 'fulfilled'
+      ? r.value
+      : { key: `fallback-${index}`, name: 'Unknown location', weather: null }
+  ));
   weatherCache = weatherData;
   weatherCacheTimestamp = now;
   return weatherData;
+}
+
+function generateWeatherItemKey(entry) {
+  const keyPart = entry?.key ? `id-${entry.key}` : `name-${entry?.name || 'unknown'}`;
+  return keyPart.toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+}
+
+function weatherRenderSignature(name, weather) {
+  return JSON.stringify({
+    locale: i18nState.locale,
+    name,
+    error: !!weather?.error,
+    temp: weather?.temperature?.current ?? null,
+    feelsLike: weather?.temperature?.feels_like ?? null,
+    humidity: weather?.atmospheric_conditions?.humidity ?? null,
+    windSpeed: weather?.wind?.speed ?? null,
+    windUnit: weather?.wind?.speed_unit ?? null,
+    cloudCoverage: weather?.cloud_coverage?.percentage ?? null,
+    visibility: weather?.visibility?.distance ?? null,
+    description: weather?.conditions?.description ?? null,
+    icon: weather?.icon?.code ?? null,
+  });
+}
+
+function isWeatherItemInitiallyOpen(itemKey, existingItem) {
+  if (weatherExpandedRowState.has(itemKey)) {
+    return !!weatherExpandedRowState.get(itemKey);
+  }
+  return !!existingItem?.classList.contains('weather-item-open');
 }
 
 /**
@@ -1059,10 +1101,14 @@ async function searchWeatherLocations(query) {
  * @param {object|null} weather - Parsed weather data from API
  * @returns {HTMLLIElement}
  */
-function buildWeatherListItem(name, weather) {
+function buildWeatherListItem(name, weather, options = {}) {
+  const { itemKey = generateWeatherItemKey({ name }), signature = weatherRenderSignature(name, weather), initiallyOpen = false } = options;
   const li = document.createElement('li');
   li.className = 'weather-item';
-  const detailId = `weather-detail-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+  li.dataset.weatherKey = itemKey;
+  li.dataset.weatherSignature = signature;
+  li.dataset.weatherName = name;
+  const detailId = `weather-detail-${itemKey}`;
 
   // --- Top row (always visible): name + icon + temp ---
   const row = document.createElement('div');
@@ -1166,6 +1212,7 @@ function buildWeatherListItem(name, weather) {
   row.addEventListener('click', () => {
     const isOpen = li.classList.toggle('weather-item-open');
     row.setAttribute('aria-expanded', String(isOpen));
+    weatherExpandedRowState.set(itemKey, isOpen);
   });
   row.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -1174,7 +1221,61 @@ function buildWeatherListItem(name, weather) {
     }
   });
 
+  if (initiallyOpen) {
+    li.classList.add('weather-item-open');
+    row.setAttribute('aria-expanded', 'true');
+    weatherExpandedRowState.set(itemKey, true);
+  }
+
   return li;
+}
+
+function reconcileWeatherPanelList(weatherList, weatherData) {
+  Array.from(weatherList.querySelectorAll('.weather-loading')).forEach(node => node.remove());
+
+  const existingByKey = new Map(
+    Array.from(weatherList.querySelectorAll('.weather-item')).map(item => [item.dataset.weatherKey, item])
+  );
+  const nextNodes = [];
+  const nextKeys = new Set();
+
+  weatherData.forEach((entry, index) => {
+    const name = entry?.name || 'Unknown location';
+    const weather = entry?.weather ?? null;
+    const keyedEntry = entry?.key ? entry : { ...entry, key: `row-${index}-${name}` };
+    const itemKey = generateWeatherItemKey(keyedEntry);
+    if (nextKeys.has(itemKey)) return;
+    nextKeys.add(itemKey);
+    const signature = weatherRenderSignature(name, weather);
+    const existing = existingByKey.get(itemKey);
+    const initiallyOpen = isWeatherItemInitiallyOpen(itemKey, existing);
+
+    if (existing && existing.dataset.weatherSignature === signature) {
+      nextNodes.push(existing);
+    } else {
+      nextNodes.push(buildWeatherListItem(name, weather, { itemKey, signature, initiallyOpen }));
+    }
+
+    weatherExpandedRowState.set(itemKey, initiallyOpen);
+    existingByKey.delete(itemKey);
+  });
+
+  existingByKey.forEach((_node, key) => weatherExpandedRowState.delete(key));
+
+  let cursor = weatherList.firstElementChild;
+  nextNodes.forEach(node => {
+    if (node === cursor) {
+      cursor = cursor?.nextElementSibling || null;
+      return;
+    }
+    weatherList.insertBefore(node, cursor);
+  });
+
+  while (cursor) {
+    const next = cursor.nextElementSibling;
+    cursor.remove();
+    cursor = next;
+  }
 }
 
 /**
@@ -1182,24 +1283,46 @@ function buildWeatherListItem(name, weather) {
  * Each item displays: location name, weather icon, temperature,
  * and an expandable detail section with a brief description.
  */
-async function renderWeatherPanel() {
+async function renderWeatherPanel(options = {}) {
+  const { forceRefresh = false, announce = true } = options;
   const weatherList = document.getElementById('weather-list');
   if (!weatherList) return;
 
-  // Show loading state
-  weatherList.innerHTML = `<li class="weather-loading">${t('weather.loading')}</li>`;
+  const hasExistingRows = weatherList.querySelector('.weather-item');
+  if (!hasExistingRows && !weatherList.querySelector('.weather-loading')) {
+    weatherList.innerHTML = `<li class="weather-loading">${t('weather.loading')}</li>`;
+  }
+
+  if (weatherRenderInFlight) {
+    queuedWeatherRenderOptions = {
+      forceRefresh: !!(options.forceRefresh || queuedWeatherRenderOptions?.forceRefresh),
+      announce: !!(options.announce || queuedWeatherRenderOptions?.announce),
+    };
+    return;
+  }
+  weatherRenderInFlight = true;
+  weatherList.setAttribute('aria-busy', 'true');
 
   try {
-    const weatherData = await fetchWeatherForAllLocations();
-    weatherList.innerHTML = '';
-    weatherData.forEach(({ name, weather }) => {
-      weatherList.appendChild(buildWeatherListItem(name, weather));
-    });
-    announceToScreenReader(t('announce.weatherUpdated', { count: weatherData.length }));
+    const weatherData = await fetchWeatherForAllLocations({ forceRefresh });
+    reconcileWeatherPanelList(weatherList, weatherData);
+    if (announce) {
+      announceToScreenReader(t('announce.weatherUpdated', { count: weatherData.length }));
+    }
   } catch (err) {
     console.error('Failed to load weather data:', err);
-    weatherList.innerHTML = `<li class="weather-loading">${t('weather.unableToLoad')}</li>`;
+    if (!weatherList.querySelector('.weather-item')) {
+      weatherList.innerHTML = `<li class="weather-loading">${t('weather.unableToLoad')}</li>`;
+    }
     announceToScreenReader(t('announce.weatherLoadFailed'), 'assertive');
+  } finally {
+    weatherRenderInFlight = false;
+    weatherList.setAttribute('aria-busy', 'false');
+    if (queuedWeatherRenderOptions) {
+      const nextOptions = queuedWeatherRenderOptions;
+      queuedWeatherRenderOptions = null;
+      renderWeatherPanel(nextOptions);
+    }
   }
 }
 
@@ -1339,19 +1462,16 @@ function toggleWeatherPanel() {
     const searchInput = document.getElementById('weather-search-input');
     if (searchInput) searchInput.value = '';
     // Fetch and render live weather data when panel is opened
-    renderWeatherPanel();
-    // Start auto-refresh every 5 seconds while panel is open
+    renderWeatherPanel({ forceRefresh: true });
+    // Start background auto-refresh while panel is open
     clearInterval(weatherRefreshInterval);
     weatherRefreshInterval = setInterval(() => {
-      // Invalidate cache so next render fetches fresh data
-      weatherCache = null;
-      weatherCacheTimestamp = 0;
       // Only re-render if search bar is empty (don't overwrite active search)
       const si = document.getElementById('weather-search-input');
       if (!si || si.value.trim() === '') {
-        renderWeatherPanel();
+        renderWeatherPanel({ forceRefresh: true, announce: false });
       }
-    }, WEATHER_CACHE_DURATION_MS);
+    }, WEATHER_REFRESH_INTERVAL_MS);
     announceToScreenReader(t('announce.weatherPanelOpened'));
   } else {
     // Panel is closing — stop auto-refresh
@@ -1836,31 +1956,27 @@ async function viewSavedRoute(savedRoute) {
   ]);
   selectedStops.from = fromResolved;
   selectedStops.to = toResolved;
+  setFieldError('from-input', 'from-input-error', '');
+  setFieldError('to-input', 'to-input-error', '');
 
   try {
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), ROUTE_SEARCH_TIMEOUT_MS);
-    const selectedSort = document.getElementById('sort')?.value || 'soonest_arrival';
-    const response = await fetch('/api/routes/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
-      body: JSON.stringify({
-        from: selectedStops.from,
-        to: selectedStops.to,
-        sort_by: selectedSort,
-      }),
-    });
-    window.clearTimeout(timeoutId);
+    const [resolvedFrom, resolvedTo] = await Promise.all([
+      resolveSavedRouteStop(savedRoute.routeStart),
+      resolveSavedRouteStop(savedRoute.routeEnd),
+    ]);
 
-    if (!response.ok) {
-      const err = await response.json();
+    if (!resolvedFrom || !resolvedTo) {
       alert(t('alerts.couldNotLoadSavedJourneyRoutes'));
+      announceToScreenReader(t('alerts.couldNotLoadSavedJourneyRoutes'), 'assertive');
       return;
     }
 
-    const data = await response.json();
-    displayRoutesModal(data);
+    selectedStops.from = resolvedFrom;
+    selectedStops.to = resolvedTo;
+
+    // Use the standard route search flow so all journeys for this origin/destination
+    // are fetched and rendered consistently with normal autocomplete searches.
+    await searchRoutes();
   } catch (error) {
     console.error('Error loading saved route:', error);
     if (error && error.name === 'AbortError') {
@@ -1869,6 +1985,91 @@ async function viewSavedRoute(savedRoute) {
       alert(t('alerts.couldNotLoadRoutesTryAgain'));
     }
   }
+}
+
+function normalizeStopNameForMatching(name) {
+  return String(name || '')
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function pickBestSavedRouteStop(stopName, stops) {
+  if (!Array.isArray(stops) || stops.length === 0) {
+    return null;
+  }
+
+  const target = normalizeStopNameForMatching(stopName);
+  const withCodes = stops.filter(stop => stop && stop.atcoCode);
+  const candidates = withCodes.length ? withCodes : stops;
+
+  const exact = candidates.find(stop => normalizeStopNameForMatching(stop.name) === target);
+  if (exact) return exact;
+
+  const startsWith = candidates.find(stop => normalizeStopNameForMatching(stop.name).startsWith(target));
+  if (startsWith) return startsWith;
+
+  const includes = candidates.find(stop => normalizeStopNameForMatching(stop.name).includes(target));
+  if (includes) return includes;
+
+  return candidates[0] || null;
+}
+
+function buildSavedRouteStopQueries(stopName) {
+  const raw = String(stopName || '').trim();
+  if (!raw) {
+    return [];
+  }
+
+  const withoutBracketed = raw.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+  const beforeComma = raw.split(',')[0]?.trim() || '';
+  const beforeCommaNoBrackets = beforeComma.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+  const localityOnly = raw.split(',').slice(-1)[0]?.trim() || '';
+
+  const queries = [
+    raw,
+    withoutBracketed,
+    beforeComma,
+    beforeCommaNoBrackets,
+    localityOnly,
+  ].filter(Boolean);
+
+  const words = normalizeStopNameForMatching(beforeCommaNoBrackets || raw)
+    .split(' ')
+    .filter(Boolean);
+  if (words.length >= 2) {
+    queries.push(words.slice(0, 2).join(' '));
+  }
+  if (words.length >= 1) {
+    queries.push(words[0]);
+  }
+
+  // Preserve order and remove duplicates / too-short queries.
+  return Array.from(new Set(queries.map(q => q.trim()))).filter(q => q.length >= 2);
+}
+
+async function resolveSavedRouteStop(stopName) {
+  const queries = buildSavedRouteStopQueries(stopName);
+  if (!queries.length) {
+    return null;
+  }
+
+  for (const query of queries) {
+    const response = await fetch(`/api/stops/search?q=${encodeURIComponent(query)}&limit=10`);
+    if (!response.ok) {
+      continue;
+    }
+
+    const data = await response.json();
+    const best = pickBestSavedRouteStop(stopName, data?.stops || []);
+    if (best) {
+      return best;
+    }
+  }
+
+  return null;
 }
 
 function updateSavedRoutesScrollButton() {
@@ -1899,30 +2100,58 @@ function scrollSavedRoutes() {
   list.scrollBy({ top: scrollStep, behavior: 'smooth' });
 }
 
-function renderNotifications(notifications) {
+function localizeNotificationMessage(notification) {
+  const message = String(notification?.message || '').trim();
+  if (!message) {
+    return '';
+  }
+
+  if (/^Welcome to Transport for North West\. Your account is now active\.?$/i.test(message)) {
+    return t('notifications.messages.welcome');
+  }
+
+  const routeSavedMatch = message.match(/^Route saved:\s*(.+?)\s*(?:→|->)\s*(.+)$/i);
+  if (routeSavedMatch) {
+    return t('notifications.messages.routeSaved', {
+      from: routeSavedMatch[1].trim(),
+      to: routeSavedMatch[2].trim(),
+    });
+  }
+
+  return message;
+}
+
+function renderNotifications(notifications, options = {}) {
+  const { announce = true } = options;
   const notifList = document.querySelector('.notif-list');
   if (!notifList) {
     return;
   }
 
+  latestNotifications = Array.isArray(notifications) ? notifications : [];
+
   notifList.innerHTML = '';
-  if (!notifications.length) {
+  if (!latestNotifications.length) {
     const emptyNode = document.createElement('div');
     emptyNode.className = 'notif-item';
     emptyNode.textContent = t('notifications.none');
     notifList.appendChild(emptyNode);
-    announceToScreenReader(t('announce.noNotifications'));
+    if (announce) {
+      announceToScreenReader(t('announce.noNotifications'));
+    }
     return;
   }
 
-  notifications.slice(0, 5).forEach(item => {
+  latestNotifications.slice(0, 5).forEach(item => {
     const row = document.createElement('div');
     row.className = 'notif-item';
-    row.textContent = item.message;
+    row.textContent = localizeNotificationMessage(item);
     notifList.appendChild(row);
   });
 
-  announceToScreenReader(t('announce.notificationsLoaded', { count: Math.min(notifications.length, 5) }), 'assertive');
+  if (announce) {
+    announceToScreenReader(t('announce.notificationsLoaded', { count: Math.min(latestNotifications.length, 5) }), 'assertive');
+  }
 }
 
 async function handleLoginSubmit(event) {
@@ -2412,13 +2641,14 @@ async function searchRoutes() {
   setFieldError('from-input', 'from-input-error', '');
   setFieldError('to-input', 'to-input-error', '');
 
+  const requestFrom = selectedStops.from;
+  const requestTo = selectedStops.to;
+  const controller = new AbortController();
+  activeRouteSearchControllers.add(controller);
+  let timeoutId = null;
+
   try {
-    if (activeRouteSearchController) {
-      activeRouteSearchController.abort();
-    }
-    const controller = new AbortController();
-    activeRouteSearchController = controller;
-    const timeoutId = window.setTimeout(() => controller.abort(), ROUTE_SEARCH_TIMEOUT_MS);
+    timeoutId = window.setTimeout(() => controller.abort(), ROUTE_SEARCH_TIMEOUT_MS);
 
     const selectedSort = document.getElementById('sort')?.value || 'soonest_arrival';
     const response = await fetch('/api/routes/search', {
@@ -2428,8 +2658,8 @@ async function searchRoutes() {
       },
       signal: controller.signal,
       body: JSON.stringify({
-        from: selectedStops.from,
-        to: selectedStops.to,
+        from: requestFrom,
+        to: requestTo,
         sort_by: selectedSort,
       }),
     });
@@ -2459,9 +2689,10 @@ async function searchRoutes() {
       announceToScreenReader(t('announce.routeFetchError'), 'assertive');
     }
   } finally {
-    if (activeRouteSearchController && activeRouteSearchController.signal.aborted) {
-      activeRouteSearchController = null;
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
     }
+    activeRouteSearchControllers.delete(controller);
   }
 }
 

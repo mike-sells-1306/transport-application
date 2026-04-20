@@ -1,11 +1,20 @@
 {
-  "app": { "title": "西北交通" },
+  "app": {
+    "title": "西北交通"
+  },
   "navigation": {
     "account": "账户",
     "faq": "常见问题",
     "support": "客户支持",
     "accessibility": "无障碍",
-    "accessibilityActive": "无障碍 ✓"
+    "accessibilityActive": "无障碍 ✓",
+    "primarySidebar": "主要侧边栏",
+    "main": "主导航",
+    "toggleSidebar": "切换侧边栏",
+    "expandSidebar": "展开侧边栏",
+    "collapseSidebar": "折叠侧边栏",
+    "expandSidebarAria": "展开侧边栏导航菜单",
+    "collapseSidebarAria": "折叠侧边栏导航菜单"
   },
   "journey": {
     "prompt": "您今天想去哪里？",
@@ -19,14 +28,69 @@
     "departureRequired": "请从建议列表中选择出发站。",
     "arrivalRequired": "请从建议列表中选择到达站。"
   },
+  "weather": {
+    "openPanel": "查看天气更新",
+    "title": "天气",
+    "searchLabel": "按地点搜索天气",
+    "searchPlaceholder": "搜索地点…",
+    "loading": "正在加载天气数据…",
+    "unableToLoad": "无法加载天气数据",
+    "noLocations": "未找到地点",
+    "searchingMore": "正在搜索更多地点…",
+    "feelsLike": "体感温度 {value}°C",
+    "humidity": "湿度 {value}%",
+    "wind": "风速 {value} {unit}",
+    "cloudCover": "云量 {value}%",
+    "visibility": "能见度 {value} 公里",
+    "noDetail": "暂无详细信息",
+    "temperatureUnavailable": "温度不可用",
+    "rowAria": "查看 {location} 的天气详情，{temperature}",
+    "iconAlt": "天气图标"
+  },
+  "notifications": {
+    "openPanel": "查看服务通知",
+    "title": "通知",
+    "none": "暂无通知。",
+    "announcementPrefix": "公告：",
+    "viewMore": "查看更多…",
+    "sample": {
+      "one": "前往 Blackpool 的列车晚点 12 分钟。",
+      "oneTime": "12 分钟前",
+      "two": "Barrow-in-Furness 发布降雪预警。",
+      "twoTime": "4 小时前"
+    },
+    "messages": {
+      "welcome": "欢迎使用西北交通。您的账户现已激活。",
+      "routeSaved": "路线已保存：{from} → {to}"
+    }
+  },
   "faq": {
     "title": "常见问题",
     "close": "关闭常见问题",
-    "q1": { "question": "如何查看地点详情？", "answer": "您可以搜索地点，或直接点击地图上的地点查看详情。" },
-    "q2": { "question": "地图覆盖哪些区域？", "answer": "地图重点覆盖普雷斯顿与兰卡斯特之间沿海走廊，包括布莱克浦及周边地区。" },
-    "q3": { "question": "如何购买行程车票？", "answer": "本服务用于路线查询。购票请使用 National Rail 或当地运营商网站。" },
-    "q4": { "question": "如何收藏路线？", "answer": "在路线结果中点击“保存路线”。保存前需要先登录账户。" },
-    "q5": { "question": "已保存路线发生变化怎么办？", "answer": "若检测到潜在中断，我们会发送通知帮助您提前安排。" }
+    "q1": {
+      "question": "如何查看地点详情？",
+      "answer": "您可以搜索地点，或直接点击地图上的地点查看详情。"
+    },
+    "q2": {
+      "question": "地图覆盖哪些区域？",
+      "answer": "地图重点覆盖普雷斯顿与兰卡斯特之间沿海走廊，包括布莱克浦及周边地区。"
+    },
+    "q3": {
+      "question": "如何购买行程车票？",
+      "answer": "本服务用于路线查询。购票请使用 National Rail 或当地运营商网站。"
+    },
+    "q4": {
+      "question": "如何收藏路线？",
+      "answer": "在路线结果中点击“保存路线”。保存前需要先登录账户。"
+    },
+    "q5": {
+      "question": "已保存路线发生变化怎么办？",
+      "answer": "若检测到潜在中断，我们会发送通知帮助您提前安排。"
+    },
+    "q6": {
+      "question": "我可以使用哪些辅助功能？",
+      "answer": "您可以更改网站语言，调整字体大小以提高可读性，并选择颜色配置文件以满足不同的色觉需求。然后您可以将这些设置保存到您的帐户中。"
+    }
   },
   "support": {
     "title": "客户支持",
@@ -133,10 +197,43 @@
     "promptConfirmDeletePassword": "确认密码以删除账户："
   },
   "announce": {
-    "languageChanged": "语言已切换为 {locale}。"
+    "languageChanged": "语言已切换为 {locale}。",
+    "journeySwapped": "出发站和到达站互换。",
+    "weatherUpdated": "{count} 地点的天气已更新。",
+    "weatherLoadFailed": "无法加载天气数据。",
+    "weatherNoLocations": "未找到天气地点。",
+    "weatherShowingResults": "显示 {count} 地点的天气结果。",
+    "weatherPanelOpened": "天气面板打开。提供实时天气更新。",
+    "weatherPanelClosed": "天气面板关闭。",
+    "notificationsPanelOpened": "通知面板打开。将自动阅读服务公告。",
+    "notificationsPanelClosed": "通知面板已关闭。",
+    "notificationsLoaded": "{count} 通知已加载。",
+    "faqOpened": "常见问题解答面板已打开。",
+    "faqClosed": "常见问题解答面板已关闭。",
+    "supportOpened": "客户支持面板打开。",
+    "supportClosed": "客户支持面板已关闭。",
+    "accessibilityOpened": "辅助功能设置面板已打开。",
+    "accessibilityClosed": "辅助功能设置面板已关闭。",
+    "authOpened": "帐户登录对话框打开。",
+    "authClosed": "帐户登录对话框已关闭。",
+    "accountOpened": "打开帐户设置对话框。",
+    "accountClosed": "帐户设置对话框已关闭。",
+    "noNotifications": "没有任何通知。",
+    "stopSuggestionsUnavailable": "目前无法加载停止建议。",
+    "selectBothStops": "搜索路线前请选择出发站和到达站。",
+    "routeFetchError": "获取路线时出错。请再试一次。",
+    "routesShowing": "显示从 {from} 到 {to} 的 {count} 路线选项。",
+    "routesAvailable": "{count} 可用路线。在路线上使用 Enter 或 Space 可查看详细信息。",
+    "routeSaved": "路线已保存到您的帐户。",
+    "routesModalClosed": "路线模式已关闭。",
+    "sidebarCollapsed": "侧边栏崩溃了。",
+    "sidebarExpanded": "侧边栏已展开。"
   },
   "common": {
-    "close": "关闭"
+    "close": "关闭",
+    "minutesOnly": "{minutes} 分钟",
+    "hoursMinutes": "{hours}h {minutes} 分钟",
+    "hoursOnly": "{hours}h"
   },
   "locale": {
     "en-GB": "英语（英国）",
@@ -152,5 +249,181 @@
     "pt-BR": "葡萄牙语（巴西）",
     "ru-RU": "俄语（俄罗斯）",
     "ur-PK": "乌尔都语（巴基斯坦）"
+  },
+  "map": {
+    "ariaLabel": "英格兰西北部互动地图",
+    "popupImageAlt": "{location} 的照片"
+  },
+  "route": {
+    "defaultHeader": "从 兰卡斯特 到 布莱克浦 的路线",
+    "closeModal": "关闭路线模态",
+    "sortBy": "排序方式：",
+    "sortByAria": "路线排序依据",
+    "sort": {
+      "startTime": "开始时间",
+      "fastest": "最快",
+      "fewestChanges": "最少的变化"
+    },
+    "download": "下载路线",
+    "downloadAria": "将显示的路线下载为 PDF 格式",
+    "downloadTooltipEnabled": "下载所有显示的路线选项",
+    "downloadTooltipDisabled": "搜索路线以启用路线下载",
+    "headerFromTo": "从 {from} 到 {to} 的路线",
+    "noResults": "没有找到此旅程的路线。",
+    "viewDetails": "查看路线详情",
+    "rowAria": "查看路线 {index}、{startTime} 至 {endTime}，持续时间 {duration}、{changes} 换乘 {suffix}。",
+    "changesBadge": "{count} 变化{suffix}",
+    "save": "保存路线",
+    "saveAria": "保存从 {startTime} 到 {endTime} 的路线 {index}",
+    "saved": "已保存",
+    "savedAria": "路线已保存到您的帐户",
+    "walkingRoute": "步行路线",
+    "genericName": "路线",
+    "noLegDetails": "没有此路线的详细航段信息。",
+    "leg": {
+      "walk": "从 {from} 步行至 {to} ({distance}m, {duration}) • {depart}–{arrive}",
+      "wait": "更改于 {at}（{duration} 等待） • {depart}–{arrive}",
+      "transport": "{service} 从 {from} 到 {to} ({duration}) • {depart}–{arrive}",
+      "walkSummary": "步行 {distance}m • {duration}",
+      "waitSummary": "更改于 {at} • {duration} 等待",
+      "transportSummary": "{service} • {duration}",
+      "stops": "{from} → {to}"
+    }
+  },
+  "transport": {
+    "bus": "公共汽车",
+    "train": "火车",
+    "walk": "走",
+    "wait": "等待"
+  },
+  "alerts": {
+    "loginToSaveAccessibility": "请登录以将辅助功能首选项保存到您的帐户。",
+    "accessibilitySaved": "辅助功能偏好设置已保存到您的帐户。",
+    "couldNotSavePreferences": "目前无法保存首选项。",
+    "couldNotLoadSavedJourneyRoutes": "无法加载此已保存旅程的路线。",
+    "couldNotLoadRoutesTryAgain": "无法加载路线。请检查您的连接并重试。",
+    "passwordUpdated": "密码更新成功。",
+    "accountDeleted": "您的帐户已被删除。",
+    "unableToFindRoutes": "无法找到此旅程的路线。",
+    "searchRouteBeforePdf": "首先搜索下载 PDF 的路径。",
+    "pdfUnavailable": "目前无法导出 PDF。请稍后重试。",
+    "loginToSaveRoutes": "请登录以保存路线。",
+    "requestFailedGeneric": "出了点问题。请再试一次。",
+    "networkError": "网络错误。请检查您的连接。",
+    "invalidEmail": "请输入有效的电子邮件地址。",
+    "invalidPassword": "请检查您的密码并重试。",
+    "accountAlreadyExists": "包含这些详细信息的帐户已存在。",
+    "unauthorized": "您无权执行此操作。",
+    "forbidden": "不允许执行此操作。",
+    "notFound": "找不到所请求的资源。",
+    "tooManyRequests": "请求太多。请等待并重试。",
+    "loginFailed": "登录失败。请检查您的详细信息，然后重试。",
+    "registrationFailed": "注册失败。请检查您的详细信息并重试。",
+    "passwordUpdateFailed": "目前无法更新密码。",
+    "accountDeletionFailed": "目前无法删除您的帐户。",
+    "saveRouteFailed": "目前无法保存此路线。"
+  },
+  "autocomplete": {
+    "noStops": "区域内未找到停靠点",
+    "errorLoadingStops": "加载停止时出错"
+  },
+  "pdf": {
+    "completeRoutePlan": "完整的路线计划",
+    "routePlanContinued": "路线图续",
+    "summaryMeta": "导出{exportedAt} • {count} 路线选项{suffix} • 按{sortLabel} 排序",
+    "routeMeta": "时间：{startTime} 至 {endTime} • 持续时间：{duration} • 变更：{changes}",
+    "routeTitle": "路线 {index}: {summary}",
+    "intermediateStop": "中间站：{stop}",
+    "pageXofY": "第 {page} 页（共 {total}）"
+  },
+  "locations": {
+    "liverpool": {
+      "name": "利物浦",
+      "description": "利物浦 - 爱尔兰海沿岸历史悠久的港口城市和文化中心。"
+    },
+    "manchester": {
+      "name": "曼彻斯特",
+      "description": "曼彻斯特 - 大曼彻斯特市中心的主要工业和商业城市。"
+    },
+    "preston": {
+      "name": "普雷斯顿",
+      "description": "普雷斯顿 - 英格兰最新的城市，兰开夏郡的文化中心。"
+    },
+    "blackburn": {
+      "name": "布莱克本",
+      "description": "布莱克本 - 历史悠久的纺织小镇，大教堂的所在地。"
+    },
+    "lytham_st_annes": {
+      "name": "莱瑟姆-圣安妮",
+      "description": "Lytham-St-Annes - 法尔德海岸的海滨小镇。"
+    },
+    "kirkham": {
+      "name": "柯卡姆",
+      "description": "Kirkham - 位于 Fylde 中心的集镇。"
+    },
+    "poulton_le_fylde": {
+      "name": "波尔顿勒法尔德",
+      "description": "Poulton-le-Fylde - 位于法尔德中心的集镇。"
+    },
+    "fleetwood": {
+      "name": "弗利特伍德",
+      "description": "弗利特伍德 - 怀尔河河口的沿海小镇和历史悠久的渔港。"
+    },
+    "blackpool": {
+      "name": "布莱克浦",
+      "description": "布莱克浦 - 标志性的海滨度假胜地，拥有著名的布莱克浦塔。"
+    },
+    "garstang": {
+      "name": "加斯坦",
+      "description": "加斯唐 (Garstang) - 怀尔河畔历史悠久的集镇。"
+    },
+    "lancaster": {
+      "name": "兰开斯特",
+      "description": "兰开斯特 - 历史悠久的城市，拥有中世纪城堡和大学。"
+    },
+    "morecambe": {
+      "name": "莫克姆",
+      "description": "莫克姆 - 海滨小镇，以其海滨长廊和海湾景观而闻名。"
+    },
+    "heysham": {
+      "name": "希沙姆",
+      "description": "Heysham - 沿海村庄，拥有核电站和海洋遗产。"
+    },
+    "carnforth": {
+      "name": "康福斯",
+      "description": "康福斯 (Carnforth) - 以其铁路遗产而闻名的村庄。"
+    },
+    "kirkby_lonsdale": {
+      "name": "柯比-朗斯代尔",
+      "description": "柯比-朗斯代尔 (Kirkby-Lonsdale) - 月牙谷 (Lune Valley) 风景如画的村庄。"
+    },
+    "grange_over_sands": {
+      "name": "桑兹农庄",
+      "description": "Grange-Over-Sands - 莫克姆湾迷人的海滨度假胜地。"
+    },
+    "cartmel": {
+      "name": "卡特梅尔",
+      "description": "卡特梅尔 - 风景如画的村庄，以其修道院和障碍赛马场而闻名。"
+    },
+    "kendal": {
+      "name": "肯德尔",
+      "description": "肯德尔 - 通往湖区的门户，历史悠久的集镇。"
+    },
+    "windermere": {
+      "name": "温德米尔",
+      "description": "温德米尔 - 湖区中心，拥有英格兰最大的湖泊。"
+    },
+    "ambleside": {
+      "name": "安布尔赛德",
+      "description": "安布尔塞德 - 风景如画的湖区小镇，位于温德米尔湖畔。"
+    },
+    "barrow_in_furness": {
+      "name": "巴罗因弗内斯",
+      "description": "巴罗因弗内斯 - 爱尔兰海沿岸的工业城镇。"
+    },
+    "keswick": {
+      "name": "凯西克",
+      "description": "凯瑟克 - 北部湖区历史悠久的集镇。"
+    }
   }
 }

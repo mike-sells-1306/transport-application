@@ -1,11 +1,20 @@
 {
-  "app": { "title": "النقل في الشمال الغربي" },
+  "app": {
+    "title": "النقل في الشمال الغربي"
+  },
   "navigation": {
     "account": "الحساب",
     "faq": "الأسئلة الشائعة",
     "support": "دعم العملاء",
     "accessibility": "إمكانية الوصول",
-    "accessibilityActive": "إمكانية الوصول ✓"
+    "accessibilityActive": "إمكانية الوصول ✓",
+    "primarySidebar": "الشريط الجانبي الأساسي",
+    "main": "الملاحة الرئيسية",
+    "toggleSidebar": "تبديل الشريط الجانبي",
+    "expandSidebar": "قم بتوسيع الشريط الجانبي",
+    "collapseSidebar": "طي الشريط الجانبي",
+    "expandSidebarAria": "قم بتوسيع قائمة التنقل في الشريط الجانبي",
+    "collapseSidebarAria": "طي قائمة التنقل في الشريط الجانبي"
   },
   "journey": {
     "prompt": "إلى أين تود السفر اليوم؟",
@@ -19,14 +28,69 @@
     "departureRequired": "يرجى اختيار محطة الانطلاق من قائمة الاقتراحات.",
     "arrivalRequired": "يرجى اختيار محطة الوصول من قائمة الاقتراحات."
   },
+  "weather": {
+    "openPanel": "عرض تحديثات الطقس",
+    "title": "الطقس",
+    "searchLabel": "ابحث عن الطقس حسب الموقع",
+    "searchPlaceholder": "ابحث عن موقع…",
+    "loading": "جارٍ تحميل بيانات الطقس…",
+    "unableToLoad": "تعذر تحميل بيانات الطقس",
+    "noLocations": "لم يتم العثور على مواقع",
+    "searchingMore": "جارٍ البحث عن المزيد من المواقع…",
+    "feelsLike": "المحسوس {value}°م",
+    "humidity": "الرطوبة {value}%",
+    "wind": "الرياح {value} {unit}",
+    "cloudCover": "غطاء السحب {value}%",
+    "visibility": "مدى الرؤية {value} كم",
+    "noDetail": "لا توجد تفاصيل متاحة",
+    "temperatureUnavailable": "درجة الحرارة غير متاحة",
+    "rowAria": "عرض تفاصيل الطقس لـ {location}، {temperature}",
+    "iconAlt": "أيقونة الطقس"
+  },
+  "notifications": {
+    "openPanel": "عرض إشعارات الخدمة",
+    "title": "الإشعارات",
+    "none": "لا توجد إشعارات حتى الآن.",
+    "announcementPrefix": "إعلان:",
+    "viewMore": "عرض المزيد…",
+    "sample": {
+      "one": "تأخر القطار إلى بلاكبول لمدة 12 دقيقة.",
+      "oneTime": "منذ 12 دقيقة",
+      "two": "تحذير من الثلوج في بارو-إن-فيرنِس.",
+      "twoTime": "منذ 4 ساعات"
+    },
+    "messages": {
+      "welcome": "مرحبًا بك في النقل في الشمال الغربي. حسابك نشط الآن.",
+      "routeSaved": "تم حفظ المسار: {from} → {to}"
+    }
+  },
   "faq": {
     "title": "الأسئلة الشائعة",
     "close": "إغلاق الأسئلة الشائعة",
-    "q1": { "question": "كيف أعرض تفاصيل موقع؟", "answer": "يمكنك البحث عن الموقع أو النقر عليه مباشرة في الخريطة." },
-    "q2": { "question": "ما المنطقة التي تغطيها الخريطة؟", "answer": "تركّز الخريطة على الممر الساحلي بين بريستون ولانكستر." },
-    "q3": { "question": "كيف أشتري تذكرة للرحلة؟", "answer": "هذه الخدمة للعثور على المسارات فقط. شراء التذاكر يتم عبر خدمات أخرى." },
-    "q4": { "question": "كيف أحفظ المسارات كمفضلة؟", "answer": "اضغط \"حفظ المسار\" في نتيجة المسار. يجب تسجيل الدخول أولاً." },
-    "q5": { "question": "ماذا يحدث إذا تغيّرت مساراتي المحفوظة؟", "answer": "سنرسل إشعارًا عند وجود اضطرابات محتملة." }
+    "q1": {
+      "question": "كيف أعرض تفاصيل موقع؟",
+      "answer": "يمكنك البحث عن الموقع أو النقر عليه مباشرة في الخريطة."
+    },
+    "q2": {
+      "question": "ما المنطقة التي تغطيها الخريطة؟",
+      "answer": "تركّز الخريطة على الممر الساحلي بين بريستون ولانكستر."
+    },
+    "q3": {
+      "question": "كيف أشتري تذكرة للرحلة؟",
+      "answer": "هذه الخدمة للعثور على المسارات فقط. شراء التذاكر يتم عبر خدمات أخرى."
+    },
+    "q4": {
+      "question": "كيف أحفظ المسارات كمفضلة؟",
+      "answer": "اضغط \"حفظ المسار\" في نتيجة المسار. يجب تسجيل الدخول أولاً."
+    },
+    "q5": {
+      "question": "ماذا يحدث إذا تغيّرت مساراتي المحفوظة؟",
+      "answer": "سنرسل إشعارًا عند وجود اضطرابات محتملة."
+    },
+    "q6": {
+      "question": "ما هي ميزات إمكانية الوصول التي يمكنني استخدامها؟",
+      "answer": "يمكنك تغيير لغة موقع الويب، وضبط حجم الخط لسهولة القراءة، واختيار ملف تعريف الألوان لتلبية احتياجات رؤية الألوان المختلفة. ويمكنك بعد ذلك حفظ هذه الإعدادات في حسابك."
+    }
   },
   "support": {
     "title": "دعم العملاء",
@@ -133,10 +197,43 @@
     "promptConfirmDeletePassword": "أكد كلمة المرور لحذف الحساب:"
   },
   "announce": {
-    "languageChanged": "تم تغيير اللغة إلى {locale}."
+    "languageChanged": "تم تغيير اللغة إلى {locale}.",
+    "journeySwapped": "تم تبديل محطات المغادرة والوصول.",
+    "weatherUpdated": "تم تحديث الطقس لمواقع {count}.",
+    "weatherLoadFailed": "غير قادر على تحميل بيانات الطقس.",
+    "weatherNoLocations": "لم يتم العثور على مواقع الطقس.",
+    "weatherShowingResults": "عرض نتائج الطقس لمواقع {count}.",
+    "weatherPanelOpened": "تم فتح لوحة الطقس. تتوفر تحديثات الطقس الحية.",
+    "weatherPanelClosed": "لوحة الطقس مغلقة.",
+    "notificationsPanelOpened": "تم فتح لوحة الإشعارات. سيتم قراءة إعلانات الخدمة تلقائيا.",
+    "notificationsPanelClosed": "تم إغلاق لوحة الإشعارات.",
+    "notificationsLoaded": "{count} تم تحميل الإشعارات.",
+    "faqOpened": "تم فتح لوحة الأسئلة الشائعة.",
+    "faqClosed": "تم إغلاق لوحة الأسئلة الشائعة.",
+    "supportOpened": "تم فتح لوحة دعم العملاء.",
+    "supportClosed": "تم إغلاق لوحة دعم العملاء.",
+    "accessibilityOpened": "تم فتح لوحة إعدادات إمكانية الوصول.",
+    "accessibilityClosed": "تم إغلاق لوحة إعدادات إمكانية الوصول.",
+    "authOpened": "تم فتح مربع حوار تسجيل الدخول إلى الحساب.",
+    "authClosed": "تم إغلاق مربع حوار تسجيل الدخول إلى الحساب.",
+    "accountOpened": "تم فتح مربع حوار إعدادات الحساب.",
+    "accountClosed": "تم إغلاق مربع حوار إعدادات الحساب.",
+    "noNotifications": "لا توجد إخطارات.",
+    "stopSuggestionsUnavailable": "غير قادر على تحميل اقتراحات الإيقاف الآن.",
+    "selectBothStops": "يرجى تحديد محطات المغادرة والوصول قبل البحث عن المسارات.",
+    "routeFetchError": "حدث خطأ أثناء جلب المسارات. يرجى المحاولة مرة أخرى.",
+    "routesShowing": "عرض خيارات مسار {count} من {from} إلى {to}.",
+    "routesAvailable": "{count} الطرق المتاحة. استخدم Enter أو Space على الطريق لعرض التفاصيل.",
+    "routeSaved": "تم حفظ المسار في حسابك.",
+    "routesModalClosed": "الطرق مشروط مغلقة.",
+    "sidebarCollapsed": "انهار الشريط الجانبي.",
+    "sidebarExpanded": "تم توسيع الشريط الجانبي."
   },
   "common": {
-    "close": "إغلاق"
+    "close": "إغلاق",
+    "minutesOnly": "{minutes} دقيقة",
+    "hoursMinutes": "{hours}h {minutes} دقيقة",
+    "hoursOnly": "{hours}h"
   },
   "locale": {
     "en-GB": "الإنجليزية (المملكة المتحدة)",
@@ -152,5 +249,181 @@
     "pt-BR": "البرتغالية (البرازيل)",
     "ru-RU": "الروسية (روسيا)",
     "ur-PK": "الأردية (باكستان)"
+  },
+  "map": {
+    "ariaLabel": "خريطة تفاعلية لشمال غرب إنجلترا",
+    "popupImageAlt": "صورة {location}"
+  },
+  "route": {
+    "defaultHeader": "الرحلات من لانكستر إلى بلاكبول",
+    "closeModal": "إغلاق الطرق مشروط",
+    "sortBy": "الترتيب حسب:",
+    "sortByAria": "فرز المسارات حسب",
+    "sort": {
+      "startTime": "وقت البدء",
+      "fastest": "الأسرع",
+      "fewestChanges": "أقل التغييرات"
+    },
+    "download": "تحميل الطرق",
+    "downloadAria": "قم بتنزيل الطرق المعروضة بصيغة PDF",
+    "downloadTooltipEnabled": "قم بتنزيل جميع خيارات المسار المعروضة",
+    "downloadTooltipDisabled": "ابحث عن طرق لتمكين تنزيل المسار",
+    "headerFromTo": "المسارات من {from} إلى {to}",
+    "noResults": "لم يتم العثور على طرق لهذه الرحلة.",
+    "viewDetails": "عرض تفاصيل الطريق",
+    "rowAria": "عرض المسار {index}، {startTime} إلى {endTime}، المدة {duration}، {changes} التغيير{suffix}.",
+    "changesBadge": "{count} التغيير{suffix}",
+    "save": "حفظ المسار",
+    "saveAria": "حفظ المسار {index} من {startTime} إلى {endTime}",
+    "saved": "أنقذ",
+    "savedAria": "تم حفظ المسار في حسابك",
+    "walkingRoute": "طريق المشي",
+    "genericName": "طريق",
+    "noLegDetails": "لا تتوفر معلومات تفصيلية عن المحطة لهذا المسار.",
+    "leg": {
+      "walk": "المشي من {from} إلى {to} ({distance}m، {duration}) • {depart}–{arrive}",
+      "wait": "التغيير عند {at} ({duration} انتظر) • {depart}–{arrive}",
+      "transport": "{service} من {from} إلى {to} ({duration}) • {depart}–{arrive}",
+      "walkSummary": "المشي {distance}m • {duration}",
+      "waitSummary": "قم بالتغيير عند {at} • {duration} انتظر",
+      "transportSummary": "{service} • {duration}",
+      "stops": "{from} → {to}"
+    }
+  },
+  "transport": {
+    "bus": "حافلة",
+    "train": "يدرب",
+    "walk": "يمشي",
+    "wait": "انتظر"
+  },
+  "alerts": {
+    "loginToSaveAccessibility": "يرجى تسجيل الدخول لحفظ تفضيلات إمكانية الوصول إلى حسابك.",
+    "accessibilitySaved": "تم حفظ تفضيلات إمكانية الوصول في حسابك.",
+    "couldNotSavePreferences": "تعذر حفظ التفضيلات الآن.",
+    "couldNotLoadSavedJourneyRoutes": "تعذر تحميل المسارات لهذه الرحلة المحفوظة.",
+    "couldNotLoadRoutesTryAgain": "لا يمكن تحميل المسارات. يرجى التحقق من اتصالك والمحاولة مرة أخرى.",
+    "passwordUpdated": "تم تحديث كلمة المرور بنجاح.",
+    "accountDeleted": "لقد تم حذف حسابك.",
+    "unableToFindRoutes": "غير قادر على العثور على طرق لهذه الرحلة.",
+    "searchRouteBeforePdf": "ابحث عن طريق أولاً لتنزيل ملف PDF.",
+    "pdfUnavailable": "تصدير PDF غير متوفر في الوقت الحالي. الرجاء المحاولة مرة أخرى في لحظة.",
+    "loginToSaveRoutes": "الرجاء تسجيل الدخول لحفظ المسارات.",
+    "requestFailedGeneric": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+    "networkError": "خطأ في الشبكة. يرجى التحقق من الاتصال الخاص بك.",
+    "invalidEmail": "يرجى إدخال عنوان بريد إلكتروني صالح.",
+    "invalidPassword": "يرجى التحقق من كلمة المرور الخاصة بك والمحاولة مرة أخرى.",
+    "accountAlreadyExists": "هناك حساب بهذه التفاصيل موجود بالفعل.",
+    "unauthorized": "أنت غير مصرح لك بهذا الإجراء.",
+    "forbidden": "هذا الإجراء غير مسموح به.",
+    "notFound": "لا يمكن العثور على المورد المطلوب.",
+    "tooManyRequests": "طلبات كثيرة جدًا. يرجى الانتظار والمحاولة مرة أخرى.",
+    "loginFailed": "فشل تسجيل الدخول. يرجى التحقق من التفاصيل الخاصة بك وحاول مرة أخرى.",
+    "registrationFailed": "فشل التسجيل. يرجى مراجعة التفاصيل الخاصة بك وحاول مرة أخرى.",
+    "passwordUpdateFailed": "تعذر تحديث كلمة المرور الآن.",
+    "accountDeletionFailed": "لا يمكن حذف حسابك الآن.",
+    "saveRouteFailed": "تعذر حفظ هذا المسار الآن."
+  },
+  "autocomplete": {
+    "noStops": "لم يتم العثور على توقف داخل المنطقة",
+    "errorLoadingStops": "خطأ في توقف التحميل"
+  },
+  "pdf": {
+    "completeRoutePlan": "خطة الطريق كاملة",
+    "routePlanContinued": "استمرار خطة الطريق",
+    "summaryMeta": "تم التصدير {exportedAt} • {count} خيار المسار{suffix} • تم الترتيب حسب {sortLabel}",
+    "routeMeta": "الأوقات: {startTime} إلى {endTime} • المدة: {duration} • التغييرات: {changes}",
+    "routeTitle": "الطريق {index}: {summary}",
+    "intermediateStop": "التوقف المتوسط: {stop}",
+    "pageXofY": "الصفحة {page} من {total}"
+  },
+  "locations": {
+    "liverpool": {
+      "name": "ليفربول",
+      "description": "ليفربول - مدينة ساحلية تاريخية ومركز ثقافي على ساحل البحر الأيرلندي."
+    },
+    "manchester": {
+      "name": "مانشستر",
+      "description": "مانشستر - مدينة صناعية وتجارية كبرى في قلب مانشستر الكبرى."
+    },
+    "preston": {
+      "name": "بريستون",
+      "description": "بريستون - أحدث مدينة في إنجلترا، والمركز الثقافي لانكشاير."
+    },
+    "blackburn": {
+      "name": "بلاكبيرن",
+      "description": "بلاكبيرن - مدينة النسيج التاريخية، موطن الكاتدرائية."
+    },
+    "lytham_st_annes": {
+      "name": "ليثام سانت آن",
+      "description": "ليثام سانت آن - مدينة ساحلية على ساحل فيلد."
+    },
+    "kirkham": {
+      "name": "كيركهام",
+      "description": "كيركهام - مدينة السوق في قلب فيلد."
+    },
+    "poulton_le_fylde": {
+      "name": "بولتون لو فيلد",
+      "description": "بولتون لو فيلد - مدينة السوق في قلب فيلد."
+    },
+    "fleetwood": {
+      "name": "فليتوود",
+      "description": "فليتوود - مدينة ساحلية تقع عند مصب نهر واير وميناء صيد تاريخي."
+    },
+    "blackpool": {
+      "name": "بلاكبول",
+      "description": "بلاكبول - منتجع ساحلي مميز يضم برج بلاكبول الشهير."
+    },
+    "garstang": {
+      "name": "جارستانج",
+      "description": "جارستانج - مدينة السوق التاريخية على نهر واير."
+    },
+    "lancaster": {
+      "name": "لانكستر",
+      "description": "لانكستر - مدينة تاريخية بها قلعة من العصور الوسطى وجامعة."
+    },
+    "morecambe": {
+      "name": "موركامب",
+      "description": "موركامب - مدينة ساحلية تشتهر بمناظرها الخلابة والخليج."
+    },
+    "heysham": {
+      "name": "هيشام",
+      "description": "هيشام - قرية ساحلية بها محطة للطاقة النووية وتراث بحري."
+    },
+    "carnforth": {
+      "name": "كارنفورث",
+      "description": "كارنفورث - قرية معروفة بتراث السكك الحديدية."
+    },
+    "kirkby_lonsdale": {
+      "name": "كيركبي لونسديل",
+      "description": "كيركبي لونسديل - قرية خلابة في وادي لون."
+    },
+    "grange_over_sands": {
+      "name": "جرانج أوفر ساندز",
+      "description": "جرانج أوفر ساندز - منتجع ساحلي ساحر على خليج موركامب."
+    },
+    "cartmel": {
+      "name": "كارتميل",
+      "description": "كارتميل - قرية خلابة تشتهر بمضمار سباق الخيل بريوري وموانع السباق."
+    },
+    "kendal": {
+      "name": "كيندال",
+      "description": "كندال - بوابة منطقة البحيرة، مدينة السوق التاريخية."
+    },
+    "windermere": {
+      "name": "ويندرمير",
+      "description": "ويندرمير - قلب منطقة البحيرات وبها أكبر بحيرة في إنجلترا."
+    },
+    "ambleside": {
+      "name": "آمبيلسايد",
+      "description": "آمبيلسايد - بلدة منطقة البحيرة الخلابة على ضفاف بحيرة ويندرمير."
+    },
+    "barrow_in_furness": {
+      "name": "بارو إن فورنيس",
+      "description": "بارو إن فورنيس - مدينة صناعية على ساحل البحر الأيرلندي."
+    },
+    "keswick": {
+      "name": "كيسويك",
+      "description": "كيسويك - مدينة السوق التاريخية في منطقة البحيرة الشمالية."
+    }
   }
 }

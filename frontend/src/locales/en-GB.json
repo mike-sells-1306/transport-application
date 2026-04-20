@@ -62,6 +62,10 @@
       "oneTime": "12m ago",
       "two": "Snow warning in Barrow-in-Furness.",
       "twoTime": "4h ago"
+    },
+    "messages": {
+      "welcome": "Welcome to Transport for North West. Your account is now active.",
+      "routeSaved": "Route saved: {from} → {to}"
     }
   },
   "faq": {

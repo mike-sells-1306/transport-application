@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import gzip
 import importlib.util
+import logging
 
 
 def _load_connection_index_store_class():
@@ -23,6 +24,7 @@ def _load_connection_index_store_class():
 ConnectionIndexStore = _load_connection_index_store_class()
 
 BASE_URL = "http://transport.scc.lancs.ac.uk"
+logger = logging.getLogger(__name__)
 
 class NPTGAdapter:
     def fetch_nptg(self):
@@ -434,6 +436,9 @@ class RoutePlannerAdapter:
     WALK_FACTOR = 1.35
     DATASET_CACHE_FORMAT_VERSION = 12
     UK_TZ = ZoneInfo('Europe/London')
+    METRIC_BUS_STOPS_KEY = 'bus_stops_processed'
+    METRIC_TRAIN_STATIONS_KEY = 'train_stations_processed'
+    METRIC_PLANNER_STAGE_KEY = 'planner_stage'
 
     # ------------------------------------------------------------------
     # Railway station database  (CRS → name, lat, lon)
@@ -696,6 +701,25 @@ class RoutePlannerAdapter:
             Path(index_db)
         )
         self._connection_index_ready = False
+        self._last_processing_metrics = {
+            self.METRIC_BUS_STOPS_KEY: 0,
+            self.METRIC_TRAIN_STATIONS_KEY: 0,
+            self.METRIC_PLANNER_STAGE_KEY: 'init',
+        }
+
+    def _record_processing_metrics(self, bus_stops_processed, train_stations_processed, planner_stage):
+        bus_count = max(0, int(bus_stops_processed))
+        train_count = max(0, int(train_stations_processed))
+        self._last_processing_metrics = {
+            self.METRIC_BUS_STOPS_KEY: bus_count,
+            self.METRIC_TRAIN_STATIONS_KEY: train_count,
+            self.METRIC_PLANNER_STAGE_KEY: planner_stage,
+        }
+        logger.info("Bus stops processed: %s", bus_count)
+        logger.info("Train stations processed: %s", train_count)
+
+    def get_last_processing_metrics(self):
+        return dict(self._last_processing_metrics)
 
     def _local_cached_datasets_index(self):
         """Build a minimal dataset index from local timetable cache files."""
@@ -1179,6 +1203,11 @@ class RoutePlannerAdapter:
         *transport*, *changes*, and *legs*.
         """
         if from_lat is None or to_lat is None:
+            self._record_processing_metrics(
+                bus_stops_processed=0,
+                train_stations_processed=0,
+                planner_stage='invalid-route-input',
+            )
             return []
 
         # Primary planner: CSA over indexed timetable/departure connections.
@@ -2486,11 +2515,11 @@ class RoutePlannerAdapter:
 
         datasets = self._select_bus_timetable_datasets(from_name, to_name, now)
         if dist_km <= 8:
-            datasets = datasets[:1]
+            datasets = datasets[:4]
         elif dist_km <= 25:
-            datasets = datasets[:3]
+            datasets = datasets[:6]
         else:
-            datasets = datasets[:5]
+            datasets = datasets[:8]
 
         # Restrict bus legs to lines explicitly published by the selected
         # online SCC datasets for this query context.
@@ -2500,6 +2529,11 @@ class RoutePlannerAdapter:
                 norm = re.sub(r'[^A-Za-z0-9]+', '', str(ln or '').upper())
                 if norm:
                     allowed_lines.add(norm)
+
+        # Dataset `lines` metadata can be incomplete for local services.
+        # For local/medium journeys, avoid over-restricting by line code.
+        if dist_km <= 25:
+            allowed_lines.clear()
 
         def line_allowed(service_label):
             if not allowed_lines:
@@ -2597,6 +2631,12 @@ class RoutePlannerAdapter:
                 'kind': 'rail',
             }
 
+        self._record_processing_metrics(
+            bus_stops_processed=len(bus_meta),
+            train_stations_processed=len(self.STATIONS),
+            planner_stage='csa',
+        )
+
         for crs in rail_targets:
             if crs not in self.STATIONS:
                 continue
@@ -2679,9 +2719,9 @@ class RoutePlannerAdapter:
             d_to = self._haversine(md['lat'], md['lon'], to_lat, to_lon)
             if from_stop_code:
                 if from_exact_meta is None:
-                    from_limit = 0.35
+                    from_limit = 0.60
                 else:
-                    from_limit = 0.25
+                    from_limit = 0.45
                 if d_from > from_limit:
                     pass
                 else:
@@ -2700,7 +2740,7 @@ class RoutePlannerAdapter:
                 origin_access.append((ref, max(1, int(wm / self.WALK_SPEED)), wm))
 
             if to_stop_code:
-                to_limit = 0.35 if to_exact_meta is None else 0.25
+                to_limit = 0.60 if to_exact_meta is None else 0.45
                 if d_to > to_limit:
                     pass
                 else:
@@ -2978,10 +3018,12 @@ class RoutePlannerAdapter:
         nodes = {}
         adjacency = defaultdict(list)  # transit edges only
         walk_neighbors = defaultdict(list)
+        bus_nodes_processed = 0
 
         bus_ref_nodes = defaultdict(list)
 
         def add_node(name, lat, lon, kind, ref=None):
+            nonlocal bus_nodes_processed
             key = (name.strip().lower(), round(float(lat), 4), round(float(lon), 4), kind, (ref or ''))
             if key not in nodes:
                 nodes[key] = {
@@ -2992,8 +3034,10 @@ class RoutePlannerAdapter:
                     'kind': kind,
                     'ref': ref or '',
                 }
-                if kind == 'bus' and ref:
-                    bus_ref_nodes[ref].append(key)
+                if kind == 'bus':
+                    bus_nodes_processed += 1
+                    if ref:
+                        bus_ref_nodes[ref].append(key)
             return key
 
         # ---- Build bus network trips from SCC timetable datasets ----
@@ -3067,6 +3111,12 @@ class RoutePlannerAdapter:
         station_nodes = {}
         for crs, info in self.STATIONS.items():
             station_nodes[crs] = add_node(f"{info['name']} Railway Station", info['lat'], info['lon'], 'rail')
+
+        self._record_processing_metrics(
+            bus_stops_processed=bus_nodes_processed,
+            train_stations_processed=len(station_nodes),
+            planner_stage='network',
+        )
 
         for crs in rail_targets:
             if crs not in self.STATIONS:
@@ -3162,7 +3212,7 @@ class RoutePlannerAdapter:
                 continue
             if from_exact is not None:
                 d_from_exact = self._haversine(from_exact['lat'], from_exact['lon'], nd['lat'], nd['lon'])
-                if d_from_exact <= 0.25:
+                if d_from_exact <= 0.45:
                     walk_neighbors[origin_id].append((nid, d_from_exact))
             elif not has_from_exact_bus and not from_crs:
                 d_from = self._haversine(from_lat, from_lon, nd['lat'], nd['lon'])
@@ -3170,7 +3220,7 @@ class RoutePlannerAdapter:
                     walk_neighbors[origin_id].append((nid, d_from))
             if to_exact is not None:
                 d_to_exact = self._haversine(nd['lat'], nd['lon'], to_exact['lat'], to_exact['lon'])
-                if d_to_exact <= 0.25:
+                if d_to_exact <= 0.45:
                     walk_neighbors[nid].append((dest_id, d_to_exact))
             elif not has_to_exact_bus and not to_crs:
                 d_to = self._haversine(nd['lat'], nd['lon'], to_lat, to_lon)
