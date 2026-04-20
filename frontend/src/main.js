@@ -428,7 +428,7 @@ const LOCATION_CATALOG = [
     id: 'keswick',
     lat: 54.6010,
     lng: -3.1376,
-    image: 'https://www.mountain-goat.com/getmedia/75c36f97-015f-4347-95ec-cf08f8133057/Keswick-Page-Image.jpg.aspx',
+    image: 'https://www.armathwaite-hall.com/2024/06/what-to-do-in-keswick/',
   },
 ];
 
