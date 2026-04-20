@@ -534,13 +534,6 @@ body.sidebar-minimized {
 .map-style-dark .autocomplete-no-results {
   color: var(--white);
 }
-.map-style-dark .top-right-icons .icon-btn,
-.map-style-dark .top-right-icons .map-style-select {
-  background: #131516;
-  color: #e6e6e6;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.6);
-  border: 1px solid rgba(255,255,255,0.04);
-}
 .map-style-dark .leaflet-map .leaflet-control {
   background: rgba(18,18,18,0.9);
   color: #efefef;
@@ -564,42 +557,10 @@ body.sidebar-minimized {
   border-color: rgba(255,255,255,0.08);
   color: #fff;
 }
-.map-style-dark .weather-panel,
-.map-style-dark .notif-panel,
-.map-style-dark .faq-panel,
-.map-style-dark .accessibility-panel,
-.map-style-dark .support-panel {
-  background: #0f1112;
-  color: #e8e8e8;
-  box-shadow: 0 10px 36px rgba(0,0,0,0.65);
-}
-.map-style-dark .panel-header {
-  background: #0b0c0d;
-  color: #fff;
-  border-bottom: 1px solid rgba(255,255,255,0.03);
-}
-.map-style-dark .panel-header + .weather-search-wrapper input,
-.map-style-dark .weather-search-input,
-.map-style-dark .faq-content,
-.map-style-dark .notif-list {
-  color: #e6e6e6;
-}
-
-/* Accessibility panel: some internal controls use white backgrounds
-   so override their text colour to remain dark for legibility. */
-.map-style-dark .accessibility-panel .accessibility-select,
-.map-style-dark .accessibility-panel .accessibility-fieldset label,
-.map-style-dark .accessibility-panel .accessibility-actions .action-btn,
-.map-style-dark .accessibility-panel .accessibility-actions .secondary-btn,
-.map-style-dark .accessibility-panel .accessibility-item p {
-  color: #222 !important;
-}
-.map-style-dark .accessibility-panel .accessibility-fieldset label {
-  background: rgba(0,0,0,0.04);
-}
-
-/* Ensure focus and outline remain visible in dark mode */
-.map-style-dark :focus {
+/* Ensure focus and outline remain visible in dark mode map controls */
+.map-style-dark .leaflet-map :focus,
+.map-style-dark .top-right-icons :focus,
+.map-style-dark .route-modal :focus {
   outline: 3px solid rgba(34, 122, 255, 0.18);
   outline-offset: 2px;
 }

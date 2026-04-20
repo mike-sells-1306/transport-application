@@ -86,6 +86,10 @@
     "q5": {
       "question": "What happens if there are changes to my saved routes?",
       "answer": "When potential disruptions are detected, we send a notification so you can plan ahead."
+    },
+    "q6": {
+      "question": "What accessibility features can I use?",
+      "answer": "You can change the website language, adjust font size for readability, and choose a colour profile for different colour-vision needs. You can then save these settings to your account."
     }
   },
   "support": {
