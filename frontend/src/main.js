@@ -466,6 +466,7 @@ function refreshMapPopupTranslations() {
 let currentRoutesData = null;
 const activeRouteSearchControllers = new Set();
 const ROUTE_SEARCH_TIMEOUT_MS = 30000;
+const DEFAULT_ROUTE_MODES = new Set(['walk', 'cycle', 'drive', 'bus', 'tram', 'rail', 'train', 'wait']);
 let latestNotifications = [];
 
 // Swap button functionality
@@ -2716,18 +2717,39 @@ async function searchRoutes() {
     timeoutId = window.setTimeout(() => controller.abort(), ROUTE_SEARCH_TIMEOUT_MS);
 
     const selectedSort = document.getElementById('sort')?.value || 'soonest_arrival';
-    const response = await fetch('/api/routes/search', {
+    const selectedModes = getSelectedRouteModes();
+    const useTimelineView = isTimelineViewEnabled();
+    const body = {
+      from: requestFrom,
+      to: requestTo,
+      sort_by: selectedSort,
+      modes: selectedModes,
+      prefer_reliability: useTimelineView,
+    };
+
+    let response = await fetch(useTimelineView ? '/api/routes/search-v2' : '/api/routes/search', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       signal: controller.signal,
-      body: JSON.stringify({
-        from: requestFrom,
-        to: requestTo,
-        sort_by: selectedSort,
-      }),
+      body: JSON.stringify(body),
     });
+    if (!response.ok && useTimelineView) {
+      console.warn('Timeline search v2 unavailable; falling back to legacy route search without v2-only filters.');
+      response = await fetch('/api/routes/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          from: requestFrom,
+          to: requestTo,
+          sort_by: selectedSort,
+        }),
+      });
+    }
     window.clearTimeout(timeoutId);
 
     if (!response.ok) {
@@ -2888,7 +2910,11 @@ function formatRouteTransportSummary(route) {
   }
 
   return route.transport
-    .map(mode => t(`transport.${mode}`))
+    .map(mode => {
+      const key = `transport.${mode}`;
+      const translated = t(key);
+      return translated === key ? mode : translated;
+    })
     .join(' → ');
 }
 
@@ -3371,8 +3397,15 @@ function renderRoutesTable(routes) {
     return;
   }
 
+  const modeFilteredRoutes = filterRoutesByModeSelection(routes);
+  if (isTimelineViewEnabled()) {
+    renderTimelineRoutes(routeList, modeFilteredRoutes);
+    announceToScreenReader(t('announce.routesAvailable', { count: modeFilteredRoutes.length }));
+    return;
+  }
+
   // Add each route as a clickable row
-  routes.forEach((route, index) => {
+  modeFilteredRoutes.forEach((route, index) => {
     const routeRow = document.createElement('div');
     routeRow.className = 'route-row' + (index % 2 === 1 ? ' alt' : '');
     routeRow.style.cursor = 'pointer';
@@ -3467,7 +3500,88 @@ function renderRoutesTable(routes) {
     routeList.appendChild(routeRow);
   });
 
-  announceToScreenReader(t('announce.routesAvailable', { count: routes.length }));
+  announceToScreenReader(t('announce.routesAvailable', { count: modeFilteredRoutes.length }));
+}
+
+function getSelectedRouteModes() {
+  const checkboxes = Array.from(document.querySelectorAll('.route-mode-filter'));
+  const selected = checkboxes.filter(cb => cb.checked).map(cb => String(cb.value || '').toLowerCase());
+  if (!selected.length) {
+    return Array.from(DEFAULT_ROUTE_MODES);
+  }
+  return selected;
+}
+
+function routeModeAllowed(mode, selectedModes) {
+  const normalized = String(mode || '').toLowerCase();
+  // Legacy `/api/routes/search` can still emit `train` while v2 emits `rail`.
+  if (normalized === 'train') {
+    return selectedModes.has('rail') || selectedModes.has('train');
+  }
+  return selectedModes.has(normalized);
+}
+
+function filterRoutesByModeSelection(routes) {
+  const selectedModes = new Set(getSelectedRouteModes());
+  return (routes || []).filter(route => {
+    const legs = Array.isArray(route.legs) ? route.legs : [];
+    if (!legs.length) return true;
+    return legs.every(leg => routeModeAllowed(leg.mode, selectedModes));
+  });
+}
+
+function isTimelineViewEnabled() {
+  const toggle = document.getElementById('timeline-view-toggle');
+  return toggle?.getAttribute('aria-pressed') === 'true';
+}
+
+function renderTimelineRoutes(routeList, routes) {
+  routeList.innerHTML = '';
+  if (!routes || routes.length === 0) {
+    routeList.innerHTML = `<div class="route-row">${t('route.noResults')}</div>`;
+    return;
+  }
+
+  routes.forEach(route => {
+    const detail = document.createElement('div');
+    detail.className = 'route-detail';
+    const hasRiskyTransfer = Array.isArray(route.transfer_windows)
+      && route.transfer_windows.some(tw => !tw.feasible);
+    if (hasRiskyTransfer) {
+      detail.classList.add('transfer-risk');
+    }
+
+    const title = document.createElement('div');
+    title.className = 'leg-summary';
+    title.textContent = `${formatLocalizedClockTime(route.start_time)} – ${formatLocalizedClockTime(route.end_time)} · ${formatDuration(route.duration_mins)} · ${formatRouteTransportSummary(route)}`;
+    detail.appendChild(title);
+
+    const legs = Array.isArray(route.legs) ? route.legs : [];
+    legs.forEach((leg, index) => {
+      if (leg.mode === 'walk') {
+        detail.appendChild(buildWalkLeg(leg));
+      } else if (leg.mode === 'wait') {
+        detail.appendChild(buildWaitLeg(leg));
+      } else {
+        detail.appendChild(buildTransportLeg(leg));
+      }
+
+      const tw = Array.isArray(route.transfer_windows) ? route.transfer_windows.find(w => w.index_from_leg === index) : null;
+      if (tw) {
+        const buffer = document.createElement('div');
+        buffer.className = 'route-transfer-buffer';
+        const feasibleLabel = t('route.transferFeasibleLabel');
+        const riskyLabel = t('route.transferRiskyLabel');
+        const status = tw.feasible
+          ? (feasibleLabel === 'route.transferFeasibleLabel' ? 'Feasible transfer' : feasibleLabel)
+          : (riskyLabel === 'route.transferRiskyLabel' ? 'Risky transfer' : riskyLabel);
+        buffer.textContent = `${status} at ${tw.at_stop}: ${tw.buffer_mins}m (min ${tw.minimum_required_mins}m)`;
+        detail.appendChild(buffer);
+      }
+    });
+
+    routeList.appendChild(detail);
+  });
 }
 
 // ============================================================================
@@ -3487,6 +3601,25 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   // Set up swap button functionality
   setupSwapButton();
+
+  const timelineToggle = document.getElementById('timeline-view-toggle');
+  if (timelineToggle) {
+    timelineToggle.addEventListener('click', () => {
+      const next = timelineToggle.getAttribute('aria-pressed') !== 'true';
+      timelineToggle.setAttribute('aria-pressed', next ? 'true' : 'false');
+      if (currentRoutesData && Array.isArray(currentRoutesData.routes)) {
+        renderRoutesTable(getCurrentSortedRoutes());
+      }
+    });
+  }
+
+  document.querySelectorAll('.route-mode-filter').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (currentRoutesData && Array.isArray(currentRoutesData.routes)) {
+        renderRoutesTable(getCurrentSortedRoutes());
+      }
+    });
+  });
   
   // Set up panel toggle event listeners
   const weatherBtn = document.getElementById('weather-btn');
