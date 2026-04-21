@@ -159,6 +159,42 @@
   text-align: center;
 }
 
+/* Grouped autocomplete header and child rows */
+.autocomplete-group-header {
+  padding: 10px 14px;
+  cursor: pointer;
+  color: var(--white);
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #333;
+  background: linear-gradient(0deg, rgba(255,255,255,0.01), rgba(255,255,255,0.01));
+}
+
+.autocomplete-group-header:hover,
+.autocomplete-group-header.selected {
+  background-color: #2a2a2a;
+}
+
+.autocomplete-group-header .group-count {
+  color: #ccc;
+  font-weight: 400;
+  margin-left: 8px;
+}
+
+.autocomplete-suggestion-item.group-child {
+  padding-left: 20px;
+  font-size: 0.9rem;
+  color: #ddd;
+  background: transparent;
+}
+
+.autocomplete-suggestion-item.group-child:hover,
+.autocomplete-suggestion-item.group-child.selected {
+  background-color: #2a2a2a;
+}
+
 /* Scrollbar styling for autocomplete */
 .autocomplete-suggestions::-webkit-scrollbar {
   width: 8px;
