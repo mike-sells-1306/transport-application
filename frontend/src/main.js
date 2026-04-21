@@ -18,6 +18,13 @@ const ACCESSIBILITY_MODES = new Set(['none', 'deuteranopia', 'protanopia', 'trit
 
 const ACCESSIBILITY_FONT_SIZES = new Set(['small', 'normal', 'large']);
 
+const ACCESSIBILITY_MODE_DEFAULT_MAP_STYLE = {
+  deuteranopia: 'osm-standard',
+  protanopia: 'osm-standard',
+  tritanopia: 'osm-standard',
+  achromatopsia: 'osm-standard',
+};
+
 const accessibilityState = {
   ...ACCESSIBILITY_DEFAULTS,
 };
@@ -841,6 +848,7 @@ function syncAccessibilityControls() {
 function applyAccessibilitySettings(settings, options = {}) {
   const { persistLocal = true, syncControls = true } = options;
   const normalized = normalizeAccessibilitySettings(settings);
+  const previousColorMode = accessibilityState.colorMode;
 
   accessibilityState.zoomLevel = normalized.zoomLevel;
   accessibilityState.colorMode = normalized.colorMode;
@@ -879,6 +887,19 @@ function applyAccessibilitySettings(settings, options = {}) {
   }
 
   updateAccessibilityLinkState(!document.getElementById('accessibility-panel')?.classList.contains('hidden'));
+
+  if (
+    normalized.colorMode !== previousColorMode &&
+    normalized.colorMode !== 'none' &&
+    window.appMap &&
+    typeof window.appMap.setMapStyleById === 'function'
+  ) {
+    const defaultStyleId = ACCESSIBILITY_MODE_DEFAULT_MAP_STYLE[normalized.colorMode];
+    if (defaultStyleId) {
+      window.appMap.setMapStyleById(defaultStyleId);
+    }
+  }
+
   updateMapMarkerColors();
 }
 
