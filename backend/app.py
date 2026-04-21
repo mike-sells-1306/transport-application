@@ -42,6 +42,12 @@ app.config["ENABLE_INTERMODAL_TIMELINE_V2"] = (
     os.getenv("ENABLE_INTERMODAL_TIMELINE_V2", "true").strip().lower() == "true"
 )
 
+# Internal bootstrap admin credentials.
+# Intentionally hardcoded for coursework/demo environments.
+INTERNAL_ADMIN_EMAIL = "admin@transport.local"
+INTERNAL_ADMIN_USERNAME = "SystemAdmin"
+INTERNAL_ADMIN_PASSWORD = "AdminPass!2026"
+
 # Configure SQLAlchemy engine options depending on the database backend.
 # SQLite accepts a 'timeout' connect arg; MySQL (pymysql) uses 'connect_timeout'.
 db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "") or ""
@@ -81,6 +87,7 @@ class User(db.Model):
     accessibility_mode = db.Column("accessibilitymode", db.String(40), default="none", nullable=False)
     accessibility_zoom = db.Column("accessibilityzoom", db.Float, default=1.0, nullable=False)
     accessibility_font_size = db.Column("accessibilityfontsize", db.String(20), default="normal", nullable=False)
+    is_admin = db.Column(db.Boolean, default=False, nullable=False)
 
 
 class Route(db.Model):
@@ -162,7 +169,61 @@ def _serialize_user(user: User):
         "accessibilitymode": user.accessibility_mode or "none",
         "accessibilityzoom": float(user.accessibility_zoom or 1.0),
         "accessibilityfontsize": (user.accessibility_font_size or "normal"),
+        "isAdmin": bool(getattr(user, "is_admin", False)),
     }
+
+
+def _admin_emails():
+    raw = os.getenv("ADMIN_EMAILS", "") or os.getenv("ADMIN_EMAIL", "")
+    return {email.strip().lower() for email in raw.split(",") if email.strip()}
+
+
+def _is_admin_email(email: str):
+    return (email or "").strip().lower() in _admin_emails()
+
+
+def _ensure_internal_admin_account():
+    """Ensure a built-in admin account exists with known credentials."""
+    with app.app_context():
+        email = (os.getenv("INTERNAL_ADMIN_EMAIL", INTERNAL_ADMIN_EMAIL) or "").strip().lower()
+        username = (os.getenv("INTERNAL_ADMIN_USERNAME", INTERNAL_ADMIN_USERNAME) or "").strip()
+        password = os.getenv("INTERNAL_ADMIN_PASSWORD", INTERNAL_ADMIN_PASSWORD) or ""
+
+        if "@" not in email or len(username) < 3 or len(password) < 8:
+            app.logger.error("Internal admin credentials are invalid; skipping bootstrap")
+            return
+
+        try:
+            existing = User.query.filter_by(email=email).first()
+            hashed = generate_password_hash(password)
+
+            if existing:
+                existing.username = username
+                existing.password_hash = hashed
+                existing.is_admin = True
+                db.session.commit()
+                app.logger.info(f"Internal admin account ensured for {email}")
+                return
+
+            user = User(
+                email=email,
+                username=username,
+                password_hash=hashed,
+                is_admin=True,
+            )
+            db.session.add(user)
+            db.session.flush()
+            db.session.add(
+                Notification(
+                    user_id=user.id,
+                    message="Internal admin account provisioned.",
+                )
+            )
+            db.session.commit()
+            app.logger.info(f"Internal admin account created for {email}")
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.warning(f"Could not bootstrap internal admin account: {exc}")
 
 
 def _json_error(message: str, status: int = 400):
@@ -746,7 +807,12 @@ def register():
     if existing_user:
         return _json_error("Email already registered", 409)
 
-    user = User(email=email, username=username, password_hash=generate_password_hash(password))
+    user = User(
+        email=email,
+        username=username,
+        password_hash=generate_password_hash(password),
+        is_admin=_is_admin_email(email),
+    )
     db.session.add(user)
     db.session.flush()
     db.session.add(
@@ -859,6 +925,9 @@ def delete_account():
     data = request.get_json(silent=True) or {}
     password = data.get("password") or ""
     user = g.current_user
+
+    if bool(getattr(user, "is_admin", False)):
+        return _json_error("Admin accounts cannot be deleted", 403)
 
     if not check_password_hash(user.password_hash, password):
         return _json_error("Password is incorrect", 401)
@@ -993,6 +1062,41 @@ def mark_notification_read(notification_id: int):
     notification.is_read = True
     db.session.commit()
     return jsonify({"message": "Notification marked as read"})
+
+
+@app.route("/api/admin/notifications", methods=["POST"])
+@auth_required
+def create_admin_notification():
+    if not getattr(g.current_user, "is_admin", False):
+        return _json_error("Admin access required", 403)
+
+    data = request.get_json(silent=True) or {}
+    message = str(data.get("message") or "").strip()
+    if not message:
+        return _json_error("Message is required")
+    if len(message) > 500:
+        return _json_error("Message must be 500 characters or fewer")
+
+    target_user_id = data.get("targetUserId")
+    if target_user_id in (None, ""):
+        recipients = User.query.all()
+    else:
+        try:
+            target_user_id = int(target_user_id)
+        except (TypeError, ValueError):
+            return _json_error("targetUserId must be an integer")
+
+        target_user = User.query.get(target_user_id)
+        if not target_user:
+            return _json_error("Target user not found", 404)
+        recipients = [target_user]
+
+    notifications = [Notification(user_id=user.id, message=message) for user in recipients]
+    if notifications:
+        db.session.add_all(notifications)
+    db.session.commit()
+
+    return jsonify({"message": "Notification created", "count": len(notifications)}), 201
 
 
 @app.route("/api/account/weather-locations", methods=["GET"])
@@ -1671,6 +1775,23 @@ def _ensure_sqlite_user_accessibility_columns():
             app.logger.info("Added User.accessibilityfontsize column")
 
 
+def _ensure_sqlite_user_admin_column():
+    """Add the admin flag column for existing SQLite databases."""
+    db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "") or ""
+    if not db_uri.startswith("sqlite"):
+        return
+
+    with db.engine.begin() as connection:
+        rows = connection.execute(text('PRAGMA table_info("User")')).fetchall()
+        existing = {row[1] for row in rows}
+
+        if "is_admin" not in existing:
+            connection.execute(
+                text('ALTER TABLE "User" ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT 0')
+            )
+            app.logger.info("Added User.is_admin column")
+
+
 # Database tables – created on first run.
 # Using /tmp for SQLite to avoid network-drive locking issues.
 with app.app_context():
@@ -1680,10 +1801,13 @@ with app.app_context():
             app.logger.info("Creating database tables (sqlite)")
             db.create_all()
             _ensure_sqlite_user_accessibility_columns()
+            _ensure_sqlite_user_admin_column()
+            _ensure_internal_admin_account()
         except Exception as e:
             app.logger.exception(f"db.create_all (sqlite) failed: {e}")
     else:
         app.logger.info("Skipping automatic db.create_all for non-sqlite database at startup")
+        _ensure_internal_admin_account()
 
 
 # ---------------------------------------------------------------------------

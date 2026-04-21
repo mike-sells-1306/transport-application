@@ -9,7 +9,14 @@ import json
 
 import pytest
 
-from app import app, db
+from app import (
+    app,
+    db,
+    INTERNAL_ADMIN_EMAIL,
+    INTERNAL_ADMIN_PASSWORD,
+    INTERNAL_ADMIN_USERNAME,
+    _ensure_internal_admin_account,
+)
 
 
 # =============================================================================
@@ -564,6 +571,52 @@ class TestNotifications:
             headers=_auth_header(registered_user["token"]),
         )
         assert resp.status_code == 200
+
+
+class TestInternalAdminBootstrap:
+    """Test built-in internal admin account provisioning."""
+
+    def test_internal_admin_account_can_be_bootstrapped_and_login(self, client):
+        _ensure_internal_admin_account()
+
+        login_resp = client.post(
+            "/api/auth/login",
+            data=json.dumps(
+                {
+                    "email": INTERNAL_ADMIN_EMAIL,
+                    "password": INTERNAL_ADMIN_PASSWORD,
+                }
+            ),
+            content_type="application/json",
+        )
+        assert login_resp.status_code == 200
+        login_data = json.loads(login_resp.data)
+        assert login_data["user"]["userName"] == INTERNAL_ADMIN_USERNAME
+        assert login_data["user"]["isAdmin"] is True
+
+    def test_internal_admin_cannot_delete_itself(self, client):
+        _ensure_internal_admin_account()
+
+        login_resp = client.post(
+            "/api/auth/login",
+            data=json.dumps(
+                {
+                    "email": INTERNAL_ADMIN_EMAIL,
+                    "password": INTERNAL_ADMIN_PASSWORD,
+                }
+            ),
+            content_type="application/json",
+        )
+        assert login_resp.status_code == 200
+        token = json.loads(login_resp.data)["token"]
+
+        delete_resp = client.delete(
+            "/api/account",
+            headers=_auth_header(token),
+            data=json.dumps({"password": INTERNAL_ADMIN_PASSWORD}),
+            content_type="application/json",
+        )
+        assert delete_resp.status_code == 403
 
 
 # =============================================================================

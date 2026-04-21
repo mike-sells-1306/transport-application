@@ -159,6 +159,42 @@
   text-align: center;
 }
 
+/* Grouped autocomplete header and child rows */
+.autocomplete-group-header {
+  padding: 10px 14px;
+  cursor: pointer;
+  color: var(--white);
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #333;
+  background: linear-gradient(0deg, rgba(255,255,255,0.01), rgba(255,255,255,0.01));
+}
+
+.autocomplete-group-header:hover,
+.autocomplete-group-header.selected {
+  background-color: #2a2a2a;
+}
+
+.autocomplete-group-header .group-count {
+  color: #ccc;
+  font-weight: 400;
+  margin-left: 8px;
+}
+
+.autocomplete-suggestion-item.group-child {
+  padding-left: 20px;
+  font-size: 0.9rem;
+  color: #ddd;
+  background: transparent;
+}
+
+.autocomplete-suggestion-item.group-child:hover,
+.autocomplete-suggestion-item.group-child.selected {
+  background-color: #2a2a2a;
+}
+
 /* Scrollbar styling for autocomplete */
 .autocomplete-suggestions::-webkit-scrollbar {
   width: 8px;
@@ -1588,6 +1624,54 @@ body.sidebar-minimized {
 
 .account-info {
   min-width: 0;
+}
+
+.admin-notification-panel {
+  background: var(--grey-light);
+  border: 1.5px solid #c8c8c8;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-notification-panel h3 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--red-main);
+}
+
+.admin-notification-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-notification-form label {
+  font-weight: 600;
+  color: #222;
+}
+
+.admin-notification-form textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: block;
+  resize: vertical;
+  min-height: 96px;
+  border: 1.5px solid #bfbfbf;
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font: inherit;
+  color: #222;
+  background: #fff;
+}
+
+.admin-notification-form textarea:focus {
+  outline: 2px solid rgba(183, 28, 28, 0.25);
+  border-color: var(--red-main);
 }
 
 .account-username {

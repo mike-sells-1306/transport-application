@@ -18,6 +18,13 @@ const ACCESSIBILITY_MODES = new Set(['none', 'deuteranopia', 'protanopia', 'trit
 
 const ACCESSIBILITY_FONT_SIZES = new Set(['small', 'normal', 'large']);
 
+const ACCESSIBILITY_MODE_DEFAULT_MAP_STYLE = {
+  deuteranopia: 'osm-standard',
+  protanopia: 'osm-standard',
+  tritanopia: 'osm-standard',
+  achromatopsia: 'osm-standard',
+};
+
 const accessibilityState = {
   ...ACCESSIBILITY_DEFAULTS,
 };
@@ -841,6 +848,7 @@ function syncAccessibilityControls() {
 function applyAccessibilitySettings(settings, options = {}) {
   const { persistLocal = true, syncControls = true } = options;
   const normalized = normalizeAccessibilitySettings(settings);
+  const previousColorMode = accessibilityState.colorMode;
 
   accessibilityState.zoomLevel = normalized.zoomLevel;
   accessibilityState.colorMode = normalized.colorMode;
@@ -879,6 +887,19 @@ function applyAccessibilitySettings(settings, options = {}) {
   }
 
   updateAccessibilityLinkState(!document.getElementById('accessibility-panel')?.classList.contains('hidden'));
+
+  if (
+    normalized.colorMode !== previousColorMode &&
+    normalized.colorMode !== 'none' &&
+    window.appMap &&
+    typeof window.appMap.setMapStyleById === 'function'
+  ) {
+    const defaultStyleId = ACCESSIBILITY_MODE_DEFAULT_MAP_STYLE[normalized.colorMode];
+    if (defaultStyleId) {
+      window.appMap.setMapStyleById(defaultStyleId);
+    }
+  }
+
   updateMapMarkerColors();
 }
 
@@ -1919,6 +1940,20 @@ async function refreshAccountView() {
       usernameTarget.textContent = authState.user.userName;
     }
 
+    const adminPanel = document.getElementById('admin-notification-panel');
+    const adminForm = document.getElementById('admin-notification-form');
+    const adminStatus = document.getElementById('admin-notification-status');
+    if (adminPanel) {
+      const isAdmin = Boolean(authState.user?.isAdmin);
+      adminPanel.classList.toggle('hidden', !isAdmin);
+      if (!isAdmin) {
+        adminForm?.reset();
+        if (adminStatus) {
+          adminStatus.textContent = '';
+        }
+      }
+    }
+
     const savedRoutesResponse = await apiRequest('/api/account/saved-routes');
     renderSavedRoutes(savedRoutesResponse.savedRoutes || []);
 
@@ -2329,6 +2364,43 @@ async function handleDeleteAccount() {
   }
 }
 
+async function handleAdminNotificationSubmit(event) {
+  event.preventDefault();
+
+  if (!authState.user?.isAdmin) {
+    return;
+  }
+
+  const messageInput = document.getElementById('admin-notification-message');
+  const statusNode = document.getElementById('admin-notification-status');
+  const message = String(messageInput?.value || '').trim();
+
+  if (!message) {
+    if (statusNode) {
+      statusNode.textContent = 'Enter a notification message first.';
+    }
+    return;
+  }
+
+  try {
+    const response = await apiRequest('/api/admin/notifications', {
+      method: 'POST',
+      body: { message },
+    });
+
+    if (statusNode) {
+      statusNode.textContent = `Notification sent to ${response.count || 0} user(s).`;
+    }
+    if (messageInput) {
+      messageInput.value = '';
+    }
+  } catch (error) {
+    if (statusNode) {
+      statusNode.textContent = error.message;
+    }
+  }
+}
+
 function attachAccountEventHandlers() {
   const accountLink = document.getElementById('account-link');
   if (accountLink) {
@@ -2354,6 +2426,7 @@ function attachAccountEventHandlers() {
   document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
   document.getElementById('update-password-btn')?.addEventListener('click', handleUpdatePassword);
   document.getElementById('delete-account-btn')?.addEventListener('click', handleDeleteAccount);
+  document.getElementById('admin-notification-form')?.addEventListener('submit', handleAdminNotificationSubmit);
   document.querySelector('.saved-routes-more')?.addEventListener('click', scrollSavedRoutes);
 
   document.getElementById('accessibility-link')?.addEventListener('click', e => {
@@ -2498,7 +2571,7 @@ function setupAutocomplete(input, suggestionsContainer, inputType) {
 
   // Keyboard navigation
   input.addEventListener('keydown', function(event) {
-    const suggestions = suggestionsContainer.querySelectorAll('.autocomplete-suggestion-item');
+    const suggestions = suggestionsContainer.querySelectorAll('.autocomplete-group-header, .autocomplete-suggestion-item');
     
     if (suggestions.length === 0) return;
 
@@ -2552,40 +2625,136 @@ async function searchStops(query, suggestionsContainer, input, inputType) {
  * Display suggestions in the dropdown
  */
 function displaySuggestions(stops, suggestionsContainer, input, inputType) {
+  // Group stops by a normalized name so visually identical/very-similar
+  // stop names are merged in the autocomplete list.
   suggestionsContainer.innerHTML = '';
 
-  stops.forEach((stop, index) => {
-    const item = document.createElement('div');
-    item.className = 'autocomplete-suggestion-item';
-    item.id = `${inputType}-suggestion-${index}`;
-    item.textContent = stop.name;
-    item.setAttribute('role', 'option');
-    item.setAttribute('aria-selected', 'false');
-    item.dataset.atcoCode = stop.atcoCode;
-    item.dataset.lat = stop.lat;
-    item.dataset.lon = stop.lon;
-    item.dataset.name = stop.name;
-    item.dataset.stopType = stop.stopType;
+  const groups = new Map();
+  stops.forEach(stop => {
+    const key = normalizeStopNameForMatching(stop.name) || stop.name;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(stop);
+  });
 
-    item.addEventListener('click', function() {
+  let groupIndex = 0;
+  groups.forEach((groupStops, key) => {
+    if (!Array.isArray(groupStops) || groupStops.length === 0) return;
+
+    if (groupStops.length === 1) {
+      const stop = groupStops[0];
+      const item = document.createElement('div');
+      item.className = 'autocomplete-suggestion-item';
+      item.id = `${inputType}-suggestion-${groupIndex}`;
+      item.textContent = stop.name;
+      item.setAttribute('role', 'option');
+      item.setAttribute('aria-selected', 'false');
+      item.dataset.atcoCode = stop.atcoCode;
+      item.dataset.lat = stop.lat;
+      item.dataset.lon = stop.lon;
+      item.dataset.name = stop.name;
+      item.dataset.stopType = stop.stopType;
+
+      item.addEventListener('click', function() {
+        selectStop(stop, input, suggestionsContainer, inputType);
+      });
+
+      item.addEventListener('mouseenter', function() {
+        const allItems = suggestionsContainer.querySelectorAll('.autocomplete-suggestion-item, .autocomplete-group-header');
+        allItems.forEach(i => {
+          i.classList.remove('selected');
+          i.setAttribute('aria-selected', 'false');
+        });
+        this.classList.add('selected');
+        this.setAttribute('aria-selected', 'true');
+      });
+
+      suggestionsContainer.appendChild(item);
+    } else {
+      // Create a group header that can be expanded to show each specific stop
+      const header = document.createElement('div');
+      header.className = 'autocomplete-group-header';
+      header.id = `${inputType}-group-${groupIndex}`;
+      header.setAttribute('role', 'option');
+      header.setAttribute('aria-expanded', 'false');
+      header.setAttribute('aria-selected', 'false');
+
+      const title = document.createElement('span');
+      title.className = 'group-title';
+      title.textContent = groupStops[0].name;
+
+      const count = document.createElement('span');
+      count.className = 'group-count';
+      count.textContent = ` (${groupStops.length})`;
+
+      header.appendChild(title);
+      header.appendChild(count);
+
+      // Clicking header toggles expansion
+      header.addEventListener('click', function() {
+        const expanded = header.getAttribute('aria-expanded') === 'true';
+        header.setAttribute('aria-expanded', String(!expanded));
+        if (!expanded) {
+          // Render children
+          renderGroupChildren(groupStops, suggestionsContainer, input, inputType, header, groupIndex);
+        } else {
+          // Remove children
+          removeGroupChildren(suggestionsContainer, groupIndex);
+        }
+      });
+
+      header.addEventListener('mouseenter', function() {
+        const allItems = suggestionsContainer.querySelectorAll('.autocomplete-suggestion-item, .autocomplete-group-header');
+        allItems.forEach(i => { i.classList.remove('selected'); i.setAttribute('aria-selected', 'false'); });
+        header.classList.add('selected');
+        header.setAttribute('aria-selected', 'true');
+      });
+
+      suggestionsContainer.appendChild(header);
+    }
+
+    groupIndex += 1;
+  });
+
+  showSuggestions(suggestionsContainer);
+}
+
+function renderGroupChildren(groupStops, suggestionsContainer, input, inputType, header, groupIndex) {
+  // Insert children directly after the header
+  let insertAfter = header;
+  groupStops.forEach((stop, idx) => {
+    const child = document.createElement('div');
+    child.className = 'autocomplete-suggestion-item group-child';
+    child.id = `${inputType}-group-${groupIndex}-child-${idx}`;
+    child.textContent = stop.name + (stop.atcoCode ? ` — ${stop.atcoCode}` : '');
+    child.setAttribute('role', 'option');
+    child.setAttribute('aria-selected', 'false');
+
+    child.dataset.atcoCode = stop.atcoCode;
+    child.dataset.lat = stop.lat;
+    child.dataset.lon = stop.lon;
+    child.dataset.name = stop.name;
+    child.dataset.stopType = stop.stopType;
+
+    child.addEventListener('click', function() {
       selectStop(stop, input, suggestionsContainer, inputType);
     });
 
-    // Hover effect
-    item.addEventListener('mouseenter', function() {
-      const allItems = suggestionsContainer.querySelectorAll('.autocomplete-suggestion-item');
-      allItems.forEach(i => {
-        i.classList.remove('selected');
-        i.setAttribute('aria-selected', 'false');
-      });
+    child.addEventListener('mouseenter', function() {
+      const allItems = suggestionsContainer.querySelectorAll('.autocomplete-suggestion-item, .autocomplete-group-header');
+      allItems.forEach(i => { i.classList.remove('selected'); i.setAttribute('aria-selected', 'false'); });
       this.classList.add('selected');
       this.setAttribute('aria-selected', 'true');
     });
 
-    suggestionsContainer.appendChild(item);
+    insertAfter.insertAdjacentElement('afterend', child);
+    insertAfter = child;
   });
+}
 
-  showSuggestions(suggestionsContainer);
+function removeGroupChildren(suggestionsContainer, groupIndex) {
+  suggestionsContainer.querySelectorAll('.autocomplete-suggestion-item.group-child').forEach(n => {
+    if (n.id.includes(`-group-${groupIndex}-child-`)) n.remove();
+  });
 }
 
 /**
@@ -2880,8 +3049,27 @@ function updateRouteModalHeader() {
   }
 
   const closeBtn = modalHeader.querySelector('#close-route-modal');
-  const headerLabel = currentRoutesData
-    ? t('route.headerFromTo', { from: currentRoutesData.from, to: currentRoutesData.to })
+  // Prefer explicit selected stop details when available to clarify which
+  // physical stop was chosen (e.g. include ATCO code or other identifier).
+  const fmtStop = (stopObj, fallback) => {
+    if (!stopObj) return fallback;
+    if (typeof stopObj === 'string') return stopObj;
+    const parts = [stopObj.name];
+    if (stopObj.atcoCode) parts.push(stopObj.atcoCode);
+    else if (stopObj.naptan) parts.push(stopObj.naptan);
+    return parts.filter(Boolean).join(' — ');
+  };
+
+  const fromLabel = currentRoutesData && currentRoutesData.from
+    ? currentRoutesData.from
+    : fmtStop(selectedStops.from, t('route.unknownFrom'));
+
+  const toLabel = currentRoutesData && currentRoutesData.to
+    ? currentRoutesData.to
+    : fmtStop(selectedStops.to, t('route.unknownTo'));
+
+  const headerLabel = currentRoutesData || selectedStops.from || selectedStops.to
+    ? t('route.headerFromTo', { from: fromLabel, to: toLabel })
     : t('route.defaultHeader');
 
   modalHeader.textContent = '';

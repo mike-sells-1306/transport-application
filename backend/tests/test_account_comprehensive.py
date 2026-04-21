@@ -83,6 +83,34 @@ def second_user(client):
     return {"token": data["token"], "user": data["user"]}
 
 
+@pytest.fixture
+def admin_user(client):
+    """Create an authenticated admin user."""
+    resp = client.post(
+        "/api/auth/register",
+        data=json.dumps({
+            "email": "admin@example.com",
+            "userName": "AdminUser",
+            "password": "securepass999",
+        }),
+        content_type="application/json",
+    )
+    data = json.loads(resp.data)
+
+    with app.app_context():
+        user = User.query.filter_by(email="admin@example.com").first()
+        user.is_admin = True
+        db.session.commit()
+
+    data["user"]["isAdmin"] = True
+    return {
+        "token": data["token"],
+        "user": data["user"],
+        "email": "admin@example.com",
+        "password": "securepass999",
+    }
+
+
 def _auth(token):
     """Helper to create authorization header."""
     return {"Authorization": f"Bearer {token}"}
@@ -807,6 +835,42 @@ class TestNotifications:
         """Notifications endpoint requires auth."""
         resp = client.get("/api/account/notifications")
         assert resp.status_code == 401
+
+
+class TestAdminNotifications:
+    """Test admin notification creation."""
+
+    def test_admin_can_broadcast_notification(self, client, auth_user, second_user, admin_user):
+        """Admin can create a notification for all users."""
+        resp = _post_json(
+            client,
+            "/api/admin/notifications",
+            {"message": "Service update: expect delays this evening."},
+            token=admin_user["token"],
+        )
+
+        assert resp.status_code == 201
+        data = json.loads(resp.data)
+        assert data["count"] == 3
+
+        for token in (auth_user["token"], second_user["token"], admin_user["token"]):
+            notif_resp = client.get("/api/account/notifications", headers=_auth(token))
+            notifications = json.loads(notif_resp.data)["notifications"]
+            assert any(
+                item["message"] == "Service update: expect delays this evening."
+                for item in notifications
+            )
+
+    def test_non_admin_cannot_create_notification(self, client, auth_user):
+        """Regular users are forbidden from creating admin notifications."""
+        resp = _post_json(
+            client,
+            "/api/admin/notifications",
+            {"message": "Not allowed"},
+            token=auth_user["token"],
+        )
+
+        assert resp.status_code == 403
 
 
 # =============================================================================
