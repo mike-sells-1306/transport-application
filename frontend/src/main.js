@@ -2870,7 +2870,7 @@ function getCurrentSortedRoutes() {
   }
 
   const sortMethod = document.getElementById('sort')?.value || 'soonest_arrival';
-  return sortRoutes(sortMethod, currentRoutesData.routes);
+  return filterRoutesByModeSelection(sortRoutes(sortMethod, currentRoutesData.routes));
 }
 
 function updateRouteModalHeader() {
@@ -3514,6 +3514,11 @@ function getSelectedRouteModes() {
 
 function routeModeAllowed(mode, selectedModes) {
   const normalized = String(mode || '').toLowerCase();
+  // Wait/transfer legs are auxiliary and should not hide an otherwise
+  // valid route when mode filters are applied.
+  if (normalized === 'wait') {
+    return true;
+  }
   // Legacy `/api/routes/search` can still emit `train` while v2 emits `rail`.
   if (normalized === 'train') {
     return selectedModes.has('rail') || selectedModes.has('train');
