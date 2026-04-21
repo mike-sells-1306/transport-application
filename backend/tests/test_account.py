@@ -594,6 +594,30 @@ class TestInternalAdminBootstrap:
         assert login_data["user"]["userName"] == INTERNAL_ADMIN_USERNAME
         assert login_data["user"]["isAdmin"] is True
 
+    def test_internal_admin_cannot_delete_itself(self, client):
+        _ensure_internal_admin_account()
+
+        login_resp = client.post(
+            "/api/auth/login",
+            data=json.dumps(
+                {
+                    "email": INTERNAL_ADMIN_EMAIL,
+                    "password": INTERNAL_ADMIN_PASSWORD,
+                }
+            ),
+            content_type="application/json",
+        )
+        assert login_resp.status_code == 200
+        token = json.loads(login_resp.data)["token"]
+
+        delete_resp = client.delete(
+            "/api/account",
+            headers=_auth_header(token),
+            data=json.dumps({"password": INTERNAL_ADMIN_PASSWORD}),
+            content_type="application/json",
+        )
+        assert delete_resp.status_code == 403
+
 
 # =============================================================================
 # Legacy Tests (for backwards compatibility)

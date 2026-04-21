@@ -926,6 +926,9 @@ def delete_account():
     password = data.get("password") or ""
     user = g.current_user
 
+    if bool(getattr(user, "is_admin", False)):
+        return _json_error("Admin accounts cannot be deleted", 403)
+
     if not check_password_hash(user.password_hash, password):
         return _json_error("Password is incorrect", 401)
 
