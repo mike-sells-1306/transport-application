@@ -42,6 +42,12 @@ app.config["ENABLE_INTERMODAL_TIMELINE_V2"] = (
     os.getenv("ENABLE_INTERMODAL_TIMELINE_V2", "true").strip().lower() == "true"
 )
 
+# Internal bootstrap admin credentials.
+# Intentionally hardcoded for coursework/demo environments.
+INTERNAL_ADMIN_EMAIL = "admin@transport.local"
+INTERNAL_ADMIN_USERNAME = "SystemAdmin"
+INTERNAL_ADMIN_PASSWORD = "AdminPass!2026"
+
 # Configure SQLAlchemy engine options depending on the database backend.
 # SQLite accepts a 'timeout' connect arg; MySQL (pymysql) uses 'connect_timeout'.
 db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "") or ""
@@ -174,6 +180,50 @@ def _admin_emails():
 
 def _is_admin_email(email: str):
     return (email or "").strip().lower() in _admin_emails()
+
+
+def _ensure_internal_admin_account():
+    """Ensure a built-in admin account exists with known credentials."""
+    with app.app_context():
+        email = (os.getenv("INTERNAL_ADMIN_EMAIL", INTERNAL_ADMIN_EMAIL) or "").strip().lower()
+        username = (os.getenv("INTERNAL_ADMIN_USERNAME", INTERNAL_ADMIN_USERNAME) or "").strip()
+        password = os.getenv("INTERNAL_ADMIN_PASSWORD", INTERNAL_ADMIN_PASSWORD) or ""
+
+        if "@" not in email or len(username) < 3 or len(password) < 8:
+            app.logger.error("Internal admin credentials are invalid; skipping bootstrap")
+            return
+
+        try:
+            existing = User.query.filter_by(email=email).first()
+            hashed = generate_password_hash(password)
+
+            if existing:
+                existing.username = username
+                existing.password_hash = hashed
+                existing.is_admin = True
+                db.session.commit()
+                app.logger.info(f"Internal admin account ensured for {email}")
+                return
+
+            user = User(
+                email=email,
+                username=username,
+                password_hash=hashed,
+                is_admin=True,
+            )
+            db.session.add(user)
+            db.session.flush()
+            db.session.add(
+                Notification(
+                    user_id=user.id,
+                    message="Internal admin account provisioned.",
+                )
+            )
+            db.session.commit()
+            app.logger.info(f"Internal admin account created for {email}")
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.warning(f"Could not bootstrap internal admin account: {exc}")
 
 
 def _json_error(message: str, status: int = 400):
@@ -1749,10 +1799,12 @@ with app.app_context():
             db.create_all()
             _ensure_sqlite_user_accessibility_columns()
             _ensure_sqlite_user_admin_column()
+            _ensure_internal_admin_account()
         except Exception as e:
             app.logger.exception(f"db.create_all (sqlite) failed: {e}")
     else:
         app.logger.info("Skipping automatic db.create_all for non-sqlite database at startup")
+        _ensure_internal_admin_account()
 
 
 # ---------------------------------------------------------------------------

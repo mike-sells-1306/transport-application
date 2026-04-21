@@ -1620,6 +1620,9 @@ body.sidebar-minimized {
 
 .admin-notification-form textarea {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: block;
   resize: vertical;
   min-height: 96px;
   border: 1.5px solid #bfbfbf;
