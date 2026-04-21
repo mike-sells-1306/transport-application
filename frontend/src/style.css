@@ -1590,6 +1590,51 @@ body.sidebar-minimized {
   min-width: 0;
 }
 
+.admin-notification-panel {
+  background: var(--grey-light);
+  border: 1.5px solid #c8c8c8;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-notification-panel h3 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--red-main);
+}
+
+.admin-notification-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-notification-form label {
+  font-weight: 600;
+  color: #222;
+}
+
+.admin-notification-form textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 96px;
+  border: 1.5px solid #bfbfbf;
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font: inherit;
+  color: #222;
+  background: #fff;
+}
+
+.admin-notification-form textarea:focus {
+  outline: 2px solid rgba(183, 28, 28, 0.25);
+  border-color: var(--red-main);
+}
+
 .account-username {
   font-size: clamp(1.25rem, 1.7vw, 1.6rem);
   color: #222;

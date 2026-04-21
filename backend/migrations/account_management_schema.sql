@@ -6,7 +6,8 @@ CREATE TABLE User (
     email VARCHAR(255) NOT NULL UNIQUE,
     userName VARCHAR(100) NOT NULL,
     password VARCHAR(255) NOT NULL,
-    colorblindmode BOOLEAN DEFAULT FALSE
+    colorblindmode BOOLEAN DEFAULT FALSE,
+    is_admin BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE Route (

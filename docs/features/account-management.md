@@ -60,6 +60,9 @@ Core tables are defined in [backend/migrations/account_management_schema.sql](..
 
 - `GET /api/account/notifications`
 - `PATCH /api/account/notifications/:notification_id/read`
+- `POST /api/admin/notifications` *(admin only)*
+  - body: `{ "message", "targetUserId"? }`
+  - omitting `targetUserId` broadcasts to all users
 
 ### Weather tracking
 
@@ -80,6 +83,7 @@ Core tables are defined in [backend/migrations/account_management_schema.sql](..
 - On successful login/register, token is stored in `localStorage`.
 - Account modal loads current user profile and saved routes.
 - Notifications panel is populated from account notifications when available.
+- Admin users can create announcement notifications from the account modal.
 
 ## Next recommended improvements
 

@@ -133,6 +133,21 @@ Get latest notifications (up to 30).
 ### `PATCH /api/account/notifications/<notification_id>/read` *(auth required)*
 Mark a notification as read.
 
+### `POST /api/admin/notifications` *(auth required, admin only)*
+Create a notification message.
+
+Request body:
+
+```json
+{
+  "message": "Service update: expect delays this evening.",
+  "targetUserId": 123
+}
+```
+
+- Omit `targetUserId` to broadcast to all users.
+- Returns `201` with `{ message, count }`.
+
 ### `GET /api/account/weather-locations` *(auth required)*
 List tracked weather locations.
 

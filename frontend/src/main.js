@@ -1919,6 +1919,20 @@ async function refreshAccountView() {
       usernameTarget.textContent = authState.user.userName;
     }
 
+    const adminPanel = document.getElementById('admin-notification-panel');
+    const adminForm = document.getElementById('admin-notification-form');
+    const adminStatus = document.getElementById('admin-notification-status');
+    if (adminPanel) {
+      const isAdmin = Boolean(authState.user?.isAdmin);
+      adminPanel.classList.toggle('hidden', !isAdmin);
+      if (!isAdmin) {
+        adminForm?.reset();
+        if (adminStatus) {
+          adminStatus.textContent = '';
+        }
+      }
+    }
+
     const savedRoutesResponse = await apiRequest('/api/account/saved-routes');
     renderSavedRoutes(savedRoutesResponse.savedRoutes || []);
 
@@ -2329,6 +2343,43 @@ async function handleDeleteAccount() {
   }
 }
 
+async function handleAdminNotificationSubmit(event) {
+  event.preventDefault();
+
+  if (!authState.user?.isAdmin) {
+    return;
+  }
+
+  const messageInput = document.getElementById('admin-notification-message');
+  const statusNode = document.getElementById('admin-notification-status');
+  const message = String(messageInput?.value || '').trim();
+
+  if (!message) {
+    if (statusNode) {
+      statusNode.textContent = 'Enter a notification message first.';
+    }
+    return;
+  }
+
+  try {
+    const response = await apiRequest('/api/admin/notifications', {
+      method: 'POST',
+      body: { message },
+    });
+
+    if (statusNode) {
+      statusNode.textContent = `Notification sent to ${response.count || 0} user(s).`;
+    }
+    if (messageInput) {
+      messageInput.value = '';
+    }
+  } catch (error) {
+    if (statusNode) {
+      statusNode.textContent = error.message;
+    }
+  }
+}
+
 function attachAccountEventHandlers() {
   const accountLink = document.getElementById('account-link');
   if (accountLink) {
@@ -2354,6 +2405,7 @@ function attachAccountEventHandlers() {
   document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
   document.getElementById('update-password-btn')?.addEventListener('click', handleUpdatePassword);
   document.getElementById('delete-account-btn')?.addEventListener('click', handleDeleteAccount);
+  document.getElementById('admin-notification-form')?.addEventListener('submit', handleAdminNotificationSubmit);
   document.querySelector('.saved-routes-more')?.addEventListener('click', scrollSavedRoutes);
 
   document.getElementById('accessibility-link')?.addEventListener('click', e => {

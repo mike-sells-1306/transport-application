@@ -381,6 +381,16 @@
           </div>
         </div>
 
+        <section class="admin-notification-panel hidden" id="admin-notification-panel" aria-labelledby="admin-notification-title">
+          <h3 id="admin-notification-title">Admin notifications</h3>
+          <form id="admin-notification-form" class="admin-notification-form">
+            <label for="admin-notification-message">Message</label>
+            <textarea id="admin-notification-message" rows="4" maxlength="500" placeholder="Write a notification for users..."></textarea>
+            <button type="submit" class="action-btn" id="admin-notification-send-btn">Send notification</button>
+            <p id="admin-notification-status" class="field-error" aria-live="polite"></p>
+          </form>
+        </section>
+
         <div class="account-content-grid">
           <section class="saved-routes-panel" aria-labelledby="saved-routes-title">
             <h3 id="saved-routes-title" data-i18n="account.savedRoutesTitle">Saved Routes</h3>
