@@ -915,6 +915,78 @@ body.sidebar-minimized {
 .route-list::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.6);
 }
+
+.stop-services-modal-subtitle {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  opacity: 0.95;
+}
+
+.stop-services-list {
+  gap: 10px;
+}
+
+.stop-services-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 10px;
+  table-layout: auto;
+}
+
+.stop-services-table thead th {
+  text-align: left;
+  font-size: 0.84rem;
+  font-weight: 700;
+  opacity: 0.95;
+  padding: 0 10px 4px;
+}
+
+.stop-services-table tbody td {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 12px 10px;
+  vertical-align: middle;
+  font-size: 1rem;
+}
+
+.stop-services-table tbody td:first-child {
+  border-top-left-radius: var(--radius-sm);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.stop-services-table tbody td:last-child {
+  border-top-right-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.stop-service-col-mode {
+  width: 28px;
+  text-align: center;
+}
+
+.stop-service-col-stop-time,
+.stop-service-col-final-time {
+  width: 92px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.stop-service-col-service {
+  width: 170px;
+  font-weight: 600;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.stop-service-col-destination {
+  font-weight: 600;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.stop-modal-empty {
+  justify-content: center;
+  min-height: 56px;
+}
 .route-row {
   display: flex;
   align-items: center;
@@ -2028,6 +2100,62 @@ body.sidebar-minimized {
   margin: 0;
   font-size: 0.95rem;
   color: #333;
+}
+
+.stop-popup-content {
+  min-width: 260px;
+  max-width: 360px;
+}
+
+.stop-popup-route-style {
+  border-top: 4px solid #a00;
+  padding-top: 4px;
+}
+
+.stop-service-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stop-service-item {
+  border: 1px solid #d2d2d2;
+  border-radius: 8px;
+  padding: 8px;
+  background: #fff;
+}
+
+.stop-service-name {
+  margin: 0 0 4px;
+  font-weight: 700;
+  color: #222;
+}
+
+.stop-service-time {
+  margin: 2px 0;
+  font-size: 0.9rem;
+  color: #2f2f2f;
+}
+
+.stop-no-data-message {
+  font-style: italic;
+}
+
+.map-style-dark .stop-service-item {
+  background: #1d1f23;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.map-style-dark .stop-popup-route-style {
+  border-top-color: #ff7a7a;
+}
+
+.map-style-dark .stop-service-name,
+.map-style-dark .stop-service-time {
+  color: #e7e7e7;
 }
 
 /* Colourblind toggle styling */

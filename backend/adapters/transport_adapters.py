@@ -2384,7 +2384,7 @@ class RoutePlannerAdapter:
                     return {'indexed_datasets': 0, 'connections': 0, 'warning': 'index store unavailable'}
         index = self._fetch_bus_times_index()
         if not index:
-            return {'indexed_datasets': 0, 'connections': 0}
+            index = []
 
         max_datasets = int(os.getenv('ROUTE_INDEX_MAX_DATASETS', '20'))
         allowed_regions = {

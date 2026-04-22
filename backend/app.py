@@ -1,4 +1,6 @@
 import os
+import re
+import sqlite3
 import threading
 from datetime import datetime
 from functools import wraps
@@ -158,6 +160,8 @@ class StopCache(db.Model):
 # Flag indicating whether the stop cache has finished loading
 _stop_cache_ready = False
 _stop_cache_lock = threading.Lock()
+_stop_services_index_checked = False
+_stop_services_index_lock = threading.Lock()
 
 
 def _serialize_user(user: User):
@@ -391,6 +395,153 @@ def _resolve_stop_by_atco(atco_code: str):
         }
     except Exception:
         return None
+
+
+def _minutes_to_clock(total_minutes: int):
+    mins = int(total_minutes) % (24 * 60)
+    return f"{mins // 60:02d}:{mins % 60:02d}"
+
+
+def _next_occurrence(raw_minutes: int, now_minutes: int):
+    raw = int(raw_minutes) % (24 * 60)
+    now = int(now_minutes)
+    if raw < now:
+        raw += 24 * 60
+    return raw
+
+
+def _align_at_or_after(raw_minutes: int, baseline_abs_minutes: int):
+    """Align a time-of-day minute value so it is at/after an absolute baseline."""
+    value = int(raw_minutes) % (24 * 60)
+    baseline = int(baseline_abs_minutes)
+    while value < baseline:
+        value += 24 * 60
+    return value
+
+
+def _connection_index_stop_refs(atco_code: str):
+    code = (atco_code or '').strip()
+    refs = set()
+    if not code:
+        return refs
+
+    refs.update({code, code.upper()})
+
+    if code.upper().startswith('CRS:'):
+        crs = code.split(':', 1)[1].strip().upper()
+        if crs:
+            refs.update({crs, f'CRS:{crs}', f'rail:{crs}', f'RAIL:{crs}'})
+
+    return refs
+
+
+def _connection_index_name_refs(stop_name: str):
+    name = (stop_name or '').strip()
+    if not name:
+        return set()
+
+    refs = {name}
+
+    # Remove qualifiers commonly absent in raw connection refs.
+    no_brackets = ' '.join(name.replace('(', ' ').replace(')', ' ').split())
+    if no_brackets:
+        refs.add(no_brackets)
+
+    head = no_brackets.split(',')[0].strip()
+    if head:
+        refs.add(head)
+
+    lower = {x.lower() for x in refs if x}
+    refs.update(lower)
+    return {x for x in refs if x}
+
+
+def _ensure_stop_services_index_ready(planner):
+    """Ensure stop-services has an index available on first use."""
+    global _stop_services_index_checked
+
+    store = getattr(planner, '_connection_index_store', None)
+    if store is None:
+        return False
+
+    try:
+        if store.has_connections():
+            return True
+    except Exception:
+        pass
+
+    with _stop_services_index_lock:
+        store = getattr(planner, '_connection_index_store', None)
+        if store is None:
+            return False
+
+        try:
+            if store.has_connections():
+                return True
+        except Exception:
+            pass
+
+        if not _stop_services_index_checked:
+            try:
+                planner.build_connection_index(force_rebuild=False)
+            except Exception as e:
+                app.logger.warning(f"Stop-services first-run index build failed: {e}")
+            finally:
+                _stop_services_index_checked = True
+
+        try:
+            return bool(store.has_connections())
+        except Exception:
+            return False
+
+
+def _parse_hhmm(value):
+    txt = (value or '').strip()
+    if not re.match(r'^\d{1,2}:\d{2}$', txt):
+        return None
+    hh, mm = txt.split(':', 1)
+    try:
+        h = int(hh)
+        m = int(mm)
+    except Exception:
+        return None
+    if h < 0 or h > 23 or m < 0 or m > 59:
+        return None
+    return h * 60 + m
+
+
+def _candidate_rail_crs_codes(planner, atco_code: str, stop_meta: dict):
+    candidates = []
+
+    code = (atco_code or '').strip().upper()
+    if code.startswith('CRS:') and len(code) >= 8:
+        candidates.append(code.split(':', 1)[1])
+
+    stop_name = (stop_meta or {}).get('name', '') or ''
+    if stop_name:
+        try:
+            locality_codes = planner._crs_for_locality(stop_name) or []
+            candidates.extend([str(c).upper() for c in locality_codes if c])
+        except Exception:
+            pass
+
+    try:
+        lat = float((stop_meta or {}).get('lat'))
+        lon = float((stop_meta or {}).get('lon'))
+        nearest = planner._find_nearest_stations(lat, lon, max_km=2.2, max_results=3) or []
+        candidates.extend([str(crs).upper() for crs, _, _ in nearest if crs])
+    except Exception:
+        pass
+
+    deduped = []
+    seen = set()
+    for crs in candidates:
+        c = (crs or '').strip().upper()
+        if len(c) != 3 or c in seen:
+            continue
+        seen.add(c)
+        deduped.append(c)
+    return deduped
 
 
 def _generic_intermediate_stops(from_name, to_name, mode):
@@ -1281,6 +1432,292 @@ def search_stops():
     except Exception as e:
         app.logger.error(f"Stop search error: {e}")
         return jsonify({"error": str(e), "stops": []}), 500
+
+
+@app.route('/api/stops/in-bounds')
+def stops_in_bounds():
+    """Return stops within a map bounding box for map overlays."""
+    try:
+        min_lat = float(request.args.get('minLat', 53.0))
+        max_lat = float(request.args.get('maxLat', 55.2))
+        min_lon = float(request.args.get('minLon', -3.7))
+        max_lon = float(request.args.get('maxLon', -1.9))
+        limit = min(max(int(request.args.get('limit', 400)), 1), 1000)
+
+        # Clamp to the application map envelope.
+        map_min_lat, map_max_lat = 53.0, 55.2
+        map_min_lon, map_max_lon = -3.7, -1.9
+
+        min_lat = max(min(min_lat, max_lat), map_min_lat)
+        max_lat = min(max(min_lat, max_lat), map_max_lat)
+        min_lon = max(min(min_lon, max_lon), map_min_lon)
+        max_lon = min(max(min_lon, max_lon), map_max_lon)
+
+        rows = (
+            StopCache.query
+            .filter(
+                StopCache.latitude >= min_lat,
+                StopCache.latitude <= max_lat,
+                StopCache.longitude >= min_lon,
+                StopCache.longitude <= max_lon,
+            )
+            .order_by(StopCache.locality_name.asc(), StopCache.common_name.asc())
+            .limit(limit)
+            .all()
+        )
+
+        stops = []
+        for stop in rows:
+            display_name = stop.common_name
+            if stop.indicator:
+                display_name += f" ({stop.indicator})"
+            if stop.locality_name and stop.locality_name not in display_name:
+                display_name += f", {stop.locality_name}"
+            stops.append({
+                'name': display_name,
+                'atcoCode': stop.atco_code,
+                'lat': float(stop.latitude),
+                'lon': float(stop.longitude),
+                'stopType': stop.stop_type,
+            })
+
+        return jsonify({'stops': stops})
+    except Exception as e:
+        app.logger.error(f"Stops in bounds error: {e}")
+        return jsonify({'error': str(e), 'stops': []}), 500
+
+
+@app.route('/api/stops/<string:atco_code>/services')
+def stop_services(atco_code):
+    """Return upcoming services for a specific stop and each service's final destination ETA."""
+    stop_meta = _resolve_stop_by_atco(atco_code)
+    if not stop_meta:
+        return jsonify({'error': 'Stop not found', 'services': []}), 404
+
+    try:
+        limit = min(max(int(request.args.get('limit', 8)), 1), 30)
+    except (TypeError, ValueError):
+        limit = 8
+    try:
+        horizon_mins = min(max(int(request.args.get('horizonMins', 240)), 30), 24 * 60)
+    except (TypeError, ValueError):
+        horizon_mins = 240
+
+    planner = transport_service.route_planner
+
+    # Rail stops: prefer live rail departure boards for accuracy.
+    is_rail_stop = str(stop_meta.get('stopType', '')).strip().lower() == 'rail' or str(atco_code).upper().startswith('CRS:')
+    if is_rail_stop:
+        now_mins = datetime.now().hour * 60 + datetime.now().minute
+        rail_candidates = []
+        for crs in _candidate_rail_crs_codes(planner, atco_code, stop_meta):
+            try:
+                board = planner._fetch_rail_departures_cached(crs)
+            except Exception:
+                continue
+
+            for svc in board.get('services', []) or []:
+                std = (svc.get('std') or '').strip()
+                dep_raw = _parse_hhmm(std)
+                if dep_raw is None:
+                    continue
+                dep_abs = _next_occurrence(dep_raw, now_mins)
+                if dep_abs > (now_mins + horizon_mins):
+                    continue
+
+                cps = svc.get('calling_points') or []
+                final_cp = None
+                for cp in reversed(cps):
+                    sched = (cp.get('scheduled') or '').strip()
+                    est = (cp.get('estimated') or '').strip()
+                    if _parse_hhmm(sched) is not None or _parse_hhmm(est) is not None:
+                        final_cp = cp
+                        break
+
+                if final_cp:
+                    final_dest = (final_cp.get('name') or '').strip()
+                    final_time_str = (final_cp.get('scheduled') or '').strip() or (final_cp.get('estimated') or '').strip()
+                else:
+                    final_dest = (svc.get('destination') or {}).get('name', '')
+                    final_time_str = ''
+
+                final_raw = _parse_hhmm(final_time_str)
+                if not final_dest or final_raw is None:
+                    continue
+
+                final_abs = _align_at_or_after(final_raw, dep_abs)
+                mode = 'train'
+                service_type = str(svc.get('service_type', '')).strip().lower()
+                if service_type == 'bus':
+                    mode = 'bus'
+
+                service_name = (svc.get('operator') or '').strip()
+                if not service_name:
+                    service_name = (svc.get('service_id') or '').strip()
+                if not service_name:
+                    service_name = 'Rail service'
+
+                rail_candidates.append({
+                    'service': service_name,
+                    'mode': mode,
+                    'arrivalAtStop': _minutes_to_clock(dep_abs),
+                    'arrivalAtFinalDestination': _minutes_to_clock(final_abs),
+                    'finalDestination': final_dest,
+                    '_sort': dep_abs,
+                })
+
+            if rail_candidates:
+                break
+
+        if rail_candidates:
+            deduped = []
+            seen = set()
+            for item in sorted(rail_candidates, key=lambda x: (x['_sort'], x['service'], x['finalDestination'])):
+                key = (item['service'], item['mode'], item['arrivalAtStop'], item['finalDestination'])
+                if key in seen:
+                    continue
+                seen.add(key)
+                payload = dict(item)
+                payload.pop('_sort', None)
+                deduped.append(payload)
+                if len(deduped) >= limit:
+                    break
+            return jsonify({'stop': stop_meta, 'services': deduped})
+
+    store = getattr(planner, '_connection_index_store', None)
+    if store is None:
+        return jsonify({'stop': stop_meta, 'services': []})
+
+    if not _ensure_stop_services_index_ready(planner):
+        return jsonify({'stop': stop_meta, 'services': []})
+
+    exact_refs = set(_connection_index_stop_refs(atco_code))
+    fallback_refs = set(exact_refs)
+    fallback_refs.update(_connection_index_name_refs(stop_meta.get('name', '')))
+
+    search_refs = list(exact_refs if exact_refs else fallback_refs)
+    if not search_refs:
+        return jsonify({'stop': stop_meta, 'services': []})
+
+    placeholders = ','.join(['?'] * len(search_refs))
+    now_mins = datetime.now().hour * 60 + datetime.now().minute
+
+    candidates = []
+    try:
+        with sqlite3.connect(str(store.db_path), timeout=30) as con:
+            con.row_factory = sqlite3.Row
+
+            rows = con.execute(
+                f"""
+                SELECT dataset_id, trip_id, service, mode, from_ref, to_ref, dep_raw, arr_raw
+                FROM connections
+                WHERE from_ref IN ({placeholders}) OR to_ref IN ({placeholders})
+                ORDER BY dep_raw ASC, arr_raw ASC
+                LIMIT 600
+                """,
+                search_refs + search_refs,
+            ).fetchall()
+
+            # If exact stop-code refs did not yield rows, fall back to name refs.
+            if not rows and fallback_refs and fallback_refs != set(search_refs):
+                search_refs = list(fallback_refs)
+                placeholders = ','.join(['?'] * len(search_refs))
+                rows = con.execute(
+                    f"""
+                    SELECT dataset_id, trip_id, service, mode, from_ref, to_ref, dep_raw, arr_raw
+                    FROM connections
+                    WHERE from_ref IN ({placeholders}) OR to_ref IN ({placeholders})
+                    ORDER BY dep_raw ASC, arr_raw ASC
+                    LIMIT 600
+                    """,
+                    search_refs + search_refs,
+                ).fetchall()
+
+            MAX_TRIP_PROGRESS_MINS = 12 * 60
+
+            for row in rows:
+                is_boarding_point = row['from_ref'] in search_refs
+                event_raw = int(row['dep_raw'] if is_boarding_point else row['arr_raw'])
+                event_abs = _next_occurrence(event_raw, now_mins)
+                if event_abs > (now_mins + horizon_mins):
+                    continue
+
+                trip_id = (row['trip_id'] or '').strip()
+                dataset_id = (row['dataset_id'] or '').strip()
+
+                final_stop_name = None
+                final_arrival_abs = None
+
+                if trip_id and dataset_id:
+                    trip_rows = con.execute(
+                        """
+                        SELECT from_ref, to_ref, dep_raw, arr_raw
+                        FROM connections
+                        WHERE dataset_id = ? AND trip_id = ?
+                        ORDER BY dep_raw ASC, arr_raw ASC
+                        """,
+                        (dataset_id, trip_id),
+                    ).fetchall()
+
+                    for trip_row in trip_rows:
+                        # Compute progress from selected-stop event within one service day.
+                        # This avoids selecting artefacts where times wrap to "almost 24h later"
+                        # and appear as one minute earlier when formatted as HH:MM.
+                        arr_raw_trip = int(trip_row['arr_raw']) % (24 * 60)
+                        progress = (arr_raw_trip - event_raw) % (24 * 60)
+                        if progress < 0 or progress > MAX_TRIP_PROGRESS_MINS:
+                            continue
+
+                        arr_abs = event_abs + progress
+                        if final_arrival_abs is None or arr_abs >= final_arrival_abs:
+                            final_arrival_abs = arr_abs
+                            final_stop_name = trip_row['to_ref']
+
+                if final_arrival_abs is None:
+                    fallback_arr_raw = int(row['arr_raw']) % (24 * 60)
+                    fallback_progress = (fallback_arr_raw - event_raw) % (24 * 60)
+                    if fallback_progress > MAX_TRIP_PROGRESS_MINS:
+                        continue
+                    final_arrival_abs = event_abs + fallback_progress
+                    final_stop_name = row['to_ref']
+
+                final_name_row = None
+                if final_stop_name:
+                    final_name_row = con.execute(
+                        "SELECT name FROM stops WHERE ref = ? LIMIT 1",
+                        (final_stop_name,),
+                    ).fetchone()
+
+                mode = (row['mode'] or '').strip().lower()
+                if mode == 'rail':
+                    mode = 'train'
+
+                candidates.append({
+                    'service': (row['service'] or '').strip(),
+                    'mode': mode or 'bus',
+                    'arrivalAtStop': _minutes_to_clock(event_abs),
+                    'arrivalAtFinalDestination': _minutes_to_clock(final_arrival_abs),
+                    'finalDestination': (final_name_row['name'] if final_name_row and final_name_row['name'] else str(final_stop_name or '')),
+                    '_sort': event_abs,
+                })
+    except Exception as e:
+        app.logger.error(f"Stop services error for {atco_code}: {e}")
+        return jsonify({'stop': stop_meta, 'services': []})
+
+    deduped = []
+    seen = set()
+    for item in sorted(candidates, key=lambda x: (x['_sort'], x['service'], x['finalDestination'])):
+        key = (item['service'], item['mode'], item['arrivalAtStop'], item['finalDestination'])
+        if key in seen:
+            continue
+        seen.add(key)
+        payload = dict(item)
+        payload.pop('_sort', None)
+        deduped.append(payload)
+        if len(deduped) >= limit:
+            break
+
+    return jsonify({'stop': stop_meta, 'services': deduped})
 
 
 @app.route('/api/routes/search', methods=['POST'])
