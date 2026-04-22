@@ -29,6 +29,8 @@
     "departureLabel": "Select departure station",
     "arrivalLabel": "Select arrival station",
     "searchPlaceholder": "Search…",
+    "searchAction": "Search routes",
+    "searchActionAria": "Search for routes",
     "toPlaceholder": "to",
     "departureSuggestions": "Departure station suggestions",
     "arrivalSuggestions": "Arrival station suggestions",

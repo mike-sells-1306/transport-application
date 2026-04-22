@@ -639,6 +639,7 @@ function openStopServicesModal(stopName) {
     return;
   }
   title.textContent = stopName || 'Stop';
+  resetFloatingPanelToDefault('stop-services-modal');
   modal.classList.remove('hidden');
   announceToScreenReader(`Opened service details for ${stopName || 'selected stop'}.`);
 }
@@ -649,6 +650,7 @@ function closeStopServicesModal() {
     return;
   }
   modal.classList.add('hidden');
+  resetFloatingPanelToDefault('stop-services-modal');
   announceToScreenReader('Closed stop service details.');
 }
 
@@ -858,6 +860,16 @@ const ROUTE_SEARCH_TIMEOUT_MS = 30000;
 const DEFAULT_ROUTE_MODES = new Set(['walk', 'bus', 'rail', 'train', 'wait']);
 let latestNotifications = [];
 
+const FLOATING_PANEL_CONFIGS = [
+  { id: 'route-modal', headerSelector: '.route-modal-header', minWidth: 500, minHeight: 300, resizable: true },
+  { id: 'stop-services-modal', headerSelector: '.route-modal-header', minWidth: 540, minHeight: 260, resizable: true },
+  { id: 'auth-modal', headerSelector: '.auth-modal-header', minWidth: 420, minHeight: 260, resizable: true },
+  { id: 'support-panel', headerSelector: '.faq-header', minWidth: 540, minHeight: 300, resizable: true },
+  { id: 'accessibility-panel', headerSelector: '.faq-header', minWidth: 500, minHeight: 320, resizable: true },
+];
+
+const floatingPanelDefaults = new Map();
+
 // Swap button functionality
 function setupSwapButton() {
   const swapBtn = document.querySelector('.journey-swap-btn');
@@ -888,14 +900,303 @@ function setupSwapButton() {
       setFieldError('to-input', 'to-input-error', '');
       syncSelectedStopMapMarkers({ focus: true });
       syncRouteModalWithInputState();
+      updateJourneySearchButtonState();
       announceToScreenReader(t('announce.journeySwapped'));
-      
-      // Search for routes if both stops are selected
-      if (selectedStops.from && selectedStops.to) {
-        searchRoutes();
-      }
     });
   }
+}
+
+function updateJourneySearchButtonState() {
+  const searchBtn = document.getElementById('journey-search-btn');
+  if (!searchBtn) {
+    return;
+  }
+
+  searchBtn.disabled = !(selectedStops.from && selectedStops.to);
+}
+
+function setupJourneySearchButton() {
+  const searchBtn = document.getElementById('journey-search-btn');
+  if (!searchBtn) {
+    return;
+  }
+
+  searchBtn.addEventListener('click', () => {
+    searchRoutes();
+  });
+
+  updateJourneySearchButtonState();
+}
+
+function getFloatingPanelConfig(panelId) {
+  return FLOATING_PANEL_CONFIGS.find(item => item.id === panelId) || null;
+}
+
+function getMapAreaBounds() {
+  const mapArea = document.querySelector('.map-area');
+  if (!mapArea) {
+    return null;
+  }
+
+  const mapRect = mapArea.getBoundingClientRect();
+  let minLeft = 0;
+
+  const sidebar = document.querySelector('.sidebar');
+  if (sidebar && !sidebar.classList.contains('minimized')) {
+    const sidebarRect = sidebar.getBoundingClientRect();
+    const overlapsMapHorizontally = sidebarRect.right > mapRect.left && sidebarRect.left < mapRect.right;
+    const overlapsMapVertically = sidebarRect.bottom > mapRect.top && sidebarRect.top < mapRect.bottom;
+    if (overlapsMapHorizontally && overlapsMapVertically) {
+      minLeft = Math.max(minLeft, sidebarRect.right - mapRect.left);
+    }
+  }
+
+  return {
+    mapArea,
+    mapRect,
+    minLeft,
+    minTop: 0,
+    maxWidth: mapRect.width,
+    maxHeight: mapRect.height,
+  };
+}
+
+function clampFloatingPanelRect(rect, bounds, config) {
+  const minWidth = Math.max(320, Number(config?.minWidth || 320));
+  const minHeight = Math.max(200, Number(config?.minHeight || 200));
+  const availableWidth = Math.max(180, bounds.maxWidth - bounds.minLeft);
+  const availableHeight = Math.max(160, bounds.maxHeight - bounds.minTop);
+
+  const effectiveMinWidth = Math.min(minWidth, availableWidth);
+  const effectiveMinHeight = Math.min(minHeight, availableHeight);
+
+  const width = Math.min(Math.max(rect.width, effectiveMinWidth), availableWidth);
+  const height = Math.min(Math.max(rect.height, effectiveMinHeight), availableHeight);
+
+  const maxLeft = Math.max(bounds.minLeft, bounds.maxWidth - width);
+  const maxTop = Math.max(bounds.minTop, bounds.maxHeight - height);
+
+  return {
+    left: Math.min(Math.max(rect.left, bounds.minLeft), maxLeft),
+    top: Math.min(Math.max(rect.top, bounds.minTop), maxTop),
+    width,
+    height,
+  };
+}
+
+function setFloatingPanelRect(panel, rect) {
+  panel.style.left = `${rect.left}px`;
+  panel.style.top = `${rect.top}px`;
+  panel.style.width = `${rect.width}px`;
+  panel.style.height = `${rect.height}px`;
+  panel.style.maxHeight = 'none';
+  panel.style.transform = 'none';
+}
+
+function pinFloatingPanelToCurrentRect(panel, panelId) {
+  const bounds = getMapAreaBounds();
+  if (!bounds) {
+    return;
+  }
+
+  const panelRect = panel.getBoundingClientRect();
+  const config = getFloatingPanelConfig(panelId);
+  const localRect = clampFloatingPanelRect({
+    left: panelRect.left - bounds.mapRect.left,
+    top: panelRect.top - bounds.mapRect.top,
+    width: panelRect.width,
+    height: panelRect.height,
+  }, bounds, config);
+
+  setFloatingPanelRect(panel, localRect);
+}
+
+function captureFloatingPanelDefault(panel, panelId) {
+  const wasHidden = panel.classList.contains('hidden');
+  const previousVisibility = panel.style.visibility;
+  const previousPointerEvents = panel.style.pointerEvents;
+
+  panel.style.left = '';
+  panel.style.top = '';
+  panel.style.width = '';
+  panel.style.height = '';
+  panel.style.maxHeight = '';
+  panel.style.transform = '';
+
+  if (wasHidden) {
+    panel.classList.remove('hidden');
+  }
+  panel.style.visibility = 'hidden';
+  panel.style.pointerEvents = 'none';
+
+  const bounds = getMapAreaBounds();
+  const panelRect = panel.getBoundingClientRect();
+  const config = getFloatingPanelConfig(panelId);
+
+  if (bounds) {
+    const defaultRect = clampFloatingPanelRect({
+      left: panelRect.left - bounds.mapRect.left,
+      top: panelRect.top - bounds.mapRect.top,
+      width: panelRect.width,
+      height: panelRect.height,
+    }, bounds, config);
+
+    floatingPanelDefaults.set(panelId, defaultRect);
+  }
+
+  panel.style.visibility = previousVisibility;
+  panel.style.pointerEvents = previousPointerEvents;
+  if (wasHidden) {
+    panel.classList.add('hidden');
+  }
+}
+
+function resetFloatingPanelToDefault(panelId) {
+  const panel = document.getElementById(panelId);
+  const defaults = floatingPanelDefaults.get(panelId);
+  const bounds = getMapAreaBounds();
+  const config = getFloatingPanelConfig(panelId);
+
+  if (!panel || !defaults || !bounds) {
+    return;
+  }
+
+  const clamped = clampFloatingPanelRect({ ...defaults }, bounds, config);
+  setFloatingPanelRect(panel, clamped);
+}
+
+function clampVisibleFloatingPanels() {
+  const bounds = getMapAreaBounds();
+  if (!bounds) {
+    return;
+  }
+
+  FLOATING_PANEL_CONFIGS.forEach(({ id }) => {
+    const panel = document.getElementById(id);
+    if (!panel || panel.classList.contains('hidden')) {
+      return;
+    }
+
+    pinFloatingPanelToCurrentRect(panel, id);
+  });
+}
+
+function makeFloatingPanelDraggableAndResizable(panelId, config) {
+  const panel = document.getElementById(panelId);
+  if (!panel) {
+    return;
+  }
+
+  panel.classList.add('floating-panel-draggable');
+
+  const header = panel.querySelector(config.headerSelector);
+  if (header) {
+    header.classList.add('floating-drag-handle');
+    header.addEventListener('mousedown', event => {
+      if (event.button !== 0) {
+        return;
+      }
+      if (event.target instanceof Element && event.target.closest('button,input,select,textarea,a,label')) {
+        return;
+      }
+
+      pinFloatingPanelToCurrentRect(panel, panelId);
+
+      const startLeft = panel.offsetLeft;
+      const startTop = panel.offsetTop;
+      const startX = event.clientX;
+      const startY = event.clientY;
+
+      const handleMouseMove = moveEvent => {
+        const bounds = getMapAreaBounds();
+        if (!bounds) {
+          return;
+        }
+
+        const nextRect = clampFloatingPanelRect({
+          left: startLeft + (moveEvent.clientX - startX),
+          top: startTop + (moveEvent.clientY - startY),
+          width: panel.offsetWidth,
+          height: panel.offsetHeight,
+        }, bounds, config);
+
+        setFloatingPanelRect(panel, nextRect);
+      };
+
+      const stopDrag = () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', stopDrag);
+      };
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', stopDrag);
+      event.preventDefault();
+    });
+  }
+
+  if (config.resizable) {
+    const resizeHandle = document.createElement('div');
+    resizeHandle.className = 'floating-panel-resize-handle';
+    resizeHandle.setAttribute('aria-hidden', 'true');
+    panel.appendChild(resizeHandle);
+
+    resizeHandle.addEventListener('mousedown', event => {
+      if (event.button !== 0) {
+        return;
+      }
+
+      pinFloatingPanelToCurrentRect(panel, panelId);
+
+      const startWidth = panel.offsetWidth;
+      const startHeight = panel.offsetHeight;
+      const startX = event.clientX;
+      const startY = event.clientY;
+      const startLeft = panel.offsetLeft;
+      const startTop = panel.offsetTop;
+
+      const handleMouseMove = moveEvent => {
+        const bounds = getMapAreaBounds();
+        if (!bounds) {
+          return;
+        }
+
+        const rawWidth = startWidth + (moveEvent.clientX - startX);
+        const rawHeight = startHeight + (moveEvent.clientY - startY);
+
+        const nextRect = clampFloatingPanelRect({
+          left: startLeft,
+          top: startTop,
+          width: rawWidth,
+          height: rawHeight,
+        }, bounds, config);
+
+        setFloatingPanelRect(panel, nextRect);
+      };
+
+      const stopResize = () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', stopResize);
+      };
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', stopResize);
+      event.preventDefault();
+      event.stopPropagation();
+    });
+  }
+}
+
+function initializeFloatingPanels() {
+  FLOATING_PANEL_CONFIGS.forEach(config => {
+    const panel = document.getElementById(config.id);
+    if (!panel) {
+      return;
+    }
+
+    captureFloatingPanelDefault(panel, config.id);
+    makeFloatingPanelDraggableAndResizable(config.id, config);
+    resetFloatingPanelToDefault(config.id);
+  });
 }
 
 // Initialize Leaflet map focused on North West England (Preston, Blackpool, Fylde, Wyre)
@@ -2100,6 +2401,7 @@ function openSupportPanel() {
   const accountModal = document.getElementById('account-modal');
 
   if (supportPanel) {
+    resetFloatingPanelToDefault('support-panel');
     supportPanel.classList.remove('hidden');
     supportPanel.setAttribute('aria-hidden', 'false');
 
@@ -2122,6 +2424,7 @@ function closeSupportPanel() {
   if (supportPanel) {
     supportPanel.classList.add('hidden');
     supportPanel.setAttribute('aria-hidden', 'true');
+    resetFloatingPanelToDefault('support-panel');
     announceToScreenReader(t('announce.supportClosed'));
   }
 }
@@ -2149,6 +2452,7 @@ function openAccessibilityPanel() {
     return;
   }
 
+  resetFloatingPanelToDefault('accessibility-panel');
   panel.classList.remove('hidden');
   panel.setAttribute('aria-hidden', 'false');
   faqPanel?.classList.add('hidden');
@@ -2171,6 +2475,7 @@ function closeAccessibilityPanel() {
 
   panel.classList.add('hidden');
   panel.setAttribute('aria-hidden', 'true');
+  resetFloatingPanelToDefault('accessibility-panel');
   updateAccessibilityLinkState(false);
   announceToScreenReader(t('announce.accessibilityClosed'));
 }
@@ -2259,6 +2564,7 @@ function openAuthModal() {
   const faqPanel = document.getElementById('faq-panel');
   const supportPanel = document.getElementById('support-panel');
   
+  resetFloatingPanelToDefault('auth-modal');
   document.getElementById('auth-modal')?.classList.remove('hidden');
   document.getElementById('account-modal')?.classList.add('hidden');
   showLoginAuthView();
@@ -2276,6 +2582,7 @@ function openAuthModal() {
 
 function closeAuthModal() {
   document.getElementById('auth-modal')?.classList.add('hidden');
+  resetFloatingPanelToDefault('auth-modal');
   showLoginAuthView();
   announceToScreenReader(t('announce.authClosed'));
 }
@@ -3201,13 +3508,9 @@ function selectStop(stop, input, suggestionsContainer, inputType) {
     ''
   );
   syncRouteModalWithInputState();
+  updateJourneySearchButtonState();
   
   console.log(`Selected ${inputType} stop:`, stop);
-  
-  // Search for routes if both stops are selected
-  if (selectedStops.from && selectedStops.to) {
-    searchRoutes();
-  }
 }
 
 /**
@@ -3318,8 +3621,11 @@ function syncRouteModalWithInputState() {
   }
 
   const { hasBothStopsSelected } = getRouteInputLabels();
+  updateJourneySearchButtonState();
+
   if (hasBothStopsSelected) {
-    showRouteLoadingState();
+    updateRouteModalHeader();
+    updateRouteDownloadButtonState();
     return;
   }
 
@@ -3328,12 +3634,15 @@ function syncRouteModalWithInputState() {
   routeList.innerHTML = '';
   updateRouteDownloadButtonState();
   modal.classList.add('hidden');
+  resetFloatingPanelToDefault('route-modal');
 }
 
 /**
  * Search for routes between the selected stops
  */
 async function searchRoutes() {
+  updateJourneySearchButtonState();
+
   // Only proceed if both stops are selected
   if (!selectedStops.from || !selectedStops.to) {
     console.warn('Both from and to stops must be selected');
@@ -3389,6 +3698,7 @@ async function searchRoutes() {
       const routeList = document.querySelector('.route-list');
       if (modal) {
         modal.classList.add('hidden');
+        resetFloatingPanelToDefault('route-modal');
       }
       if (routeList) {
         routeList.removeAttribute('aria-busy');
@@ -3447,6 +3757,7 @@ function displayRoutesModal(data) {
   updateRouteDownloadButtonState();
 
   // Show the modal by removing the hidden class
+  resetFloatingPanelToDefault('route-modal');
   modal.classList.remove('hidden');
   announceToScreenReader(t('announce.routesShowing', {
     count: Array.isArray(data.routes) ? data.routes.length : 0,
@@ -4255,6 +4566,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   // Set up swap button functionality
   setupSwapButton();
+  setupJourneySearchButton();
 
   document.querySelectorAll('.route-mode-filter').forEach(cb => {
     cb.addEventListener('change', () => {
@@ -4316,6 +4628,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   if (closeRouteModalBtn && routeModal) {
     closeRouteModalBtn.addEventListener('click', () => {
       routeModal.classList.add('hidden');
+      resetFloatingPanelToDefault('route-modal');
       announceToScreenReader(t('announce.routesModalClosed'));
     });
   }
@@ -4344,6 +4657,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     routeModal.addEventListener('click', (event) => {
       if (event.target === routeModal) {
         routeModal.classList.add('hidden');
+        resetFloatingPanelToDefault('route-modal');
         announceToScreenReader(t('announce.routesModalClosed'));
       }
     });
@@ -4362,6 +4676,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   attachAccountEventHandlers();
   initWeatherSearch();
   setupSidebarToggle();
+  initializeFloatingPanels();
+  clampVisibleFloatingPanels();
 
   // Restore accessibility settings from localStorage (account fetch may override)
   const savedAccessibility = JSON.parse(localStorage.getItem('accessibilitySettings') || 'null');
@@ -4402,6 +4718,7 @@ window.addEventListener('resize', () => {
   if (!sidebar) return;
   const isOpen = !sidebar.classList.contains('minimized');
   updateSidebarOverlay(isOpen);
+  clampVisibleFloatingPanels();
 
   // Invalidate map size after resize so tiles redraw correctly
   if (window.appMap && typeof window.appMap.invalidateSize === 'function') {
@@ -4461,6 +4778,11 @@ function setupSidebarToggle() {
       // allow CSS transition to complete
       setTimeout(() => window.appMap.invalidateSize(), 250);
     }
+
+    // Keep movable/resizable panels inside the new map-area bounds.
+    setTimeout(() => {
+      clampVisibleFloatingPanels();
+    }, 260);
   });
 
   // Overlay click closes sidebar on mobile

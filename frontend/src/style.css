@@ -93,6 +93,30 @@
   transform: translateY(calc(-50% - 15px)) scale(1.1);
 }
 
+.journey-search-btn {
+  margin-top: 6px;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--white);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 0.98rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.journey-search-btn:hover {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.72);
+}
+
+.journey-search-btn:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+
 /* Custom size for 'to' location search box */
 #to-input {
   width: 100%;
@@ -766,6 +790,33 @@ body.sidebar-minimized {
   display: flex;
   flex-direction: column;
   padding-bottom: 0;
+}
+
+.floating-panel-draggable {
+  will-change: left, top, width, height;
+}
+
+.floating-drag-handle {
+  cursor: move;
+}
+
+.floating-panel-resize-handle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  right: 4px;
+  bottom: 4px;
+  border-right: 2px solid rgba(255, 255, 255, 0.65);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.65);
+  opacity: 0.85;
+  cursor: nwse-resize;
+  z-index: 5;
+}
+
+.auth-modal .floating-panel-resize-handle,
+.faq-panel .floating-panel-resize-handle {
+  border-right-color: rgba(60, 60, 60, 0.6);
+  border-bottom-color: rgba(60, 60, 60, 0.6);
 }
 .route-modal-header {
   background: var(--red-main);
