@@ -6,6 +6,10 @@
     "ariaLabel": "Carte interactive du nord-ouest de l'Angleterre",
     "popupImageAlt": "Photo de {location}"
   },
+  "mapStyle": {
+    "label": "Style de carte",
+    "selectAria": "Style de carte (actuel : {style})"
+  },
   "navigation": {
     "primarySidebar": "Barre latérale principale",
     "main": "Navigation principale",
@@ -127,10 +131,13 @@
     "sortBy": "Trier par :",
     "sortByAria": "Trier les itinéraires par",
     "sort": {
+      "arriveSoonest": "Arrivée la plus proche",
       "startTime": "Heure de départ",
       "fastest": "Le plus rapide",
       "fewestChanges": "Moins de correspondances"
     },
+    "modeFiltersLabel": "Filtres de mode",
+    "modeRail": "Rail",
     "download": "Télécharger les itinéraires",
     "downloadAria": "Télécharger les itinéraires affichés en PDF",
     "downloadTooltipEnabled": "Télécharger toutes les options d'itinéraire affichées",
@@ -259,7 +266,16 @@
     "promptCurrentPassword": "Saisissez le mot de passe actuel :",
     "promptNewPassword": "Saisissez le nouveau mot de passe (8+ caractères) :",
     "confirmDelete": "Ce compte sera supprimé définitivement. Continuer ?",
-    "promptConfirmDeletePassword": "Confirmez votre mot de passe pour supprimer le compte :"
+    "promptConfirmDeletePassword": "Confirmez votre mot de passe pour supprimer le compte :",
+    "admin": {
+      "title": "Notifications administrateur",
+      "messageLabel": "Message",
+      "messagePlaceholder": "Rédigez une notification pour les utilisateurs...",
+      "send": "Envoyer la notification",
+      "sendAria": "Envoyer une notification administrateur",
+      "emptyMessage": "Saisissez d'abord un message de notification.",
+      "sentStatus": "Notification envoyée à {count} utilisateur(s)."
+    }
   },
   "alerts": {
     "loginToSaveAccessibility": "Veuillez vous connecter pour enregistrer les préférences d'accessibilité.",
@@ -318,6 +334,7 @@
     "routesShowing": "Affichage de {count} options d'itinéraire de {from} à {to}.",
     "routesAvailable": "{count} itinéraires disponibles. Utilisez Entrée ou Espace pour voir les détails.",
     "routeSaved": "Itinéraire enregistré dans votre compte.",
+    "mapStyleChanged": "Style de carte changé en {style}.",
     "routesModalClosed": "Fenêtre des itinéraires fermée.",
     "sidebarCollapsed": "Barre latérale réduite.",
     "sidebarExpanded": "Barre latérale développée."

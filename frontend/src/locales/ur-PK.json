@@ -194,7 +194,16 @@
     "promptCurrentPassword": "موجودہ پاس ورڈ درج کریں:",
     "promptNewPassword": "نیا پاس ورڈ درج کریں (8+ حروف):",
     "confirmDelete": "اس سے آپ کا اکاؤنٹ مستقل طور پر حذف ہو جائے گا۔ جاری رکھیں؟",
-    "promptConfirmDeletePassword": "اکاؤنٹ حذف کرنے کے لیے پاس ورڈ کی تصدیق کریں:"
+    "promptConfirmDeletePassword": "اکاؤنٹ حذف کرنے کے لیے پاس ورڈ کی تصدیق کریں:",
+    "admin": {
+      "title": "ایڈمن اطلاعات",
+      "messageLabel": "پیغام",
+      "messagePlaceholder": "صارفین کے لیے ایک اطلاع لکھیں...",
+      "send": "اطلاع بھیجیں",
+      "sendAria": "ایڈمن اطلاع بھیجیں",
+      "emptyMessage": "پہلے اطلاع کا پیغام درج کریں۔",
+      "sentStatus": "اطلاع {count} صارفین کو بھیج دی گئی۔"
+    }
   },
   "announce": {
     "languageChanged": "زبان {locale} میں تبدیل کر دی گئی ہے۔",
@@ -226,6 +235,7 @@
     "routesShowing": "{from} سے {to} تک {count} راستے کے اختیارات دکھا رہا ہے۔",
     "routesAvailable": "{count} راستے دستیاب ہیں۔ تفصیلات دیکھنے کے لیے روٹ پر Enter یا Space کا استعمال کریں۔",
     "routeSaved": "روٹ آپ کے اکاؤنٹ میں محفوظ ہو گیا۔",
+    "mapStyleChanged": "نقشے کا انداز {style} میں تبدیل کر دیا گیا۔",
     "routesModalClosed": "روٹس موڈل بند۔",
     "sidebarCollapsed": "سائڈبار منہدم ہو گیا۔",
     "sidebarExpanded": "سائڈبار کو پھیلا دیا گیا۔"
@@ -255,16 +265,23 @@
     "ariaLabel": "شمال مغربی انگلینڈ کا انٹرایکٹو نقشہ",
     "popupImageAlt": "{location} کی تصویر"
   },
+  "mapStyle": {
+    "label": "نقشے کا انداز",
+    "selectAria": "نقشے کا انداز (موجودہ: {style})"
+  },
   "route": {
     "defaultHeader": "لنکاسٹر سے بلیک پول تک کے راستے",
     "closeModal": "روٹس موڈل بند کریں۔",
     "sortBy": "ترتیب دیں:",
     "sortByAria": "راستوں کو ترتیب دیں۔",
     "sort": {
+      "arriveSoonest": "سب سے جلد پہنچنے والا",
       "startTime": "آغاز کا وقت",
       "fastest": "تیز ترین",
       "fewestChanges": "سب سے کم تبدیلیاں"
     },
+    "modeFiltersLabel": "موڈ فلٹرز",
+    "modeRail": "ریل",
     "download": "روٹس ڈاؤن لوڈ کریں۔",
     "downloadAria": "دکھائے گئے راستوں کو بطور PDF ڈاؤن لوڈ کریں۔",
     "downloadTooltipEnabled": "تمام دکھائے گئے راستے کے اختیارات ڈاؤن لوڈ کریں۔",

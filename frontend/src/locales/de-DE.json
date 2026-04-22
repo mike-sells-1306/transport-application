@@ -6,6 +6,10 @@
     "ariaLabel": "Interaktive Karte von Nordwestengland",
     "popupImageAlt": "Foto von {location}"
   },
+  "mapStyle": {
+    "label": "Kartenstil",
+    "selectAria": "Kartenstil (aktuell: {style})"
+  },
   "navigation": {
     "primarySidebar": "Primäre Seitenleiste",
     "main": "Hauptnavigation",
@@ -127,10 +131,13 @@
     "sortBy": "Sortieren nach:",
     "sortByAria": "Routen sortieren nach",
     "sort": {
+      "arriveSoonest": "Früheste Ankunft",
       "startTime": "Startzeit",
       "fastest": "Schnellste",
       "fewestChanges": "Wenigste Umstiege"
     },
+    "modeFiltersLabel": "Modusfilter",
+    "modeRail": "Bahn",
     "download": "Routen herunterladen",
     "downloadAria": "Angezeigte Routen als PDF herunterladen",
     "downloadTooltipEnabled": "Alle angezeigten Routenoptionen herunterladen",
@@ -259,7 +266,16 @@
     "promptCurrentPassword": "Aktuelles Passwort eingeben:",
     "promptNewPassword": "Neues Passwort eingeben (mind. 8 Zeichen):",
     "confirmDelete": "Dadurch wird Ihr Konto dauerhaft gelöscht. Fortfahren?",
-    "promptConfirmDeletePassword": "Passwort zur Kontolöschung bestätigen:"
+    "promptConfirmDeletePassword": "Passwort zur Kontolöschung bestätigen:",
+    "admin": {
+      "title": "Admin-Benachrichtigungen",
+      "messageLabel": "Nachricht",
+      "messagePlaceholder": "Eine Benachrichtigung für Nutzer verfassen...",
+      "send": "Benachrichtigung senden",
+      "sendAria": "Admin-Benachrichtigung senden",
+      "emptyMessage": "Bitte zuerst eine Benachrichtigung eingeben.",
+      "sentStatus": "Benachrichtigung an {count} Nutzer gesendet."
+    }
   },
   "alerts": {
     "loginToSaveAccessibility": "Bitte melden Sie sich an, um Barrierefreiheitseinstellungen zu speichern.",
@@ -318,6 +334,7 @@
     "routesShowing": "Es werden {count} Routenoptionen von {from} nach {to} angezeigt.",
     "routesAvailable": "{count} Routen verfügbar. Verwenden Sie Enter oder Leertaste für Details.",
     "routeSaved": "Route in Ihrem Konto gespeichert.",
+    "mapStyleChanged": "Kartenstil geändert zu {style}.",
     "routesModalClosed": "Routenfenster geschlossen.",
     "sidebarCollapsed": "Seitenleiste reduziert.",
     "sidebarExpanded": "Seitenleiste erweitert."

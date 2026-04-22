@@ -194,7 +194,16 @@
     "promptCurrentPassword": "Introduza a palavra-passe atual:",
     "promptNewPassword": "Introduza a nova palavra-passe (8+ caracteres):",
     "confirmDelete": "Isto irá eliminar a sua conta permanentemente. Continuar?",
-    "promptConfirmDeletePassword": "Confirme a palavra-passe para eliminar a conta:"
+    "promptConfirmDeletePassword": "Confirme a palavra-passe para eliminar a conta:",
+    "admin": {
+      "title": "Notificações de administrador",
+      "messageLabel": "Mensagem",
+      "messagePlaceholder": "Escreva uma notificação para os utilizadores...",
+      "send": "Enviar notificação",
+      "sendAria": "Enviar notificação de administrador",
+      "emptyMessage": "Introduza primeiro uma mensagem de notificação.",
+      "sentStatus": "Notificação enviada para {count} utilizador(es)."
+    }
   },
   "announce": {
     "languageChanged": "Idioma alterado para {locale}.",
@@ -226,6 +235,7 @@
     "routesShowing": "Mostrando opções de rota {count} de {from} a {to}.",
     "routesAvailable": "{count} rotas disponíveis. Use Enter ou Espaço em uma rota para visualizar detalhes.",
     "routeSaved": "Rota salva em sua conta.",
+    "mapStyleChanged": "Estilo do mapa alterado para {style}.",
     "routesModalClosed": "Modal de rotas fechado.",
     "sidebarCollapsed": "A barra lateral entrou em colapso.",
     "sidebarExpanded": "Barra lateral expandida."
@@ -255,16 +265,23 @@
     "ariaLabel": "Mapa interativo do Noroeste da Inglaterra",
     "popupImageAlt": "Foto de {location}"
   },
+  "mapStyle": {
+    "label": "Estilo do mapa",
+    "selectAria": "Estilo do mapa (atual: {style})"
+  },
   "route": {
     "defaultHeader": "Rotas de Lancaster para Blackpool",
     "closeModal": "Fechar modal de rotas",
     "sortBy": "Ordenar por:",
     "sortByAria": "Classificar rotas por",
     "sort": {
+      "arriveSoonest": "Chegada mais cedo",
       "startTime": "Hora de início",
       "fastest": "Mais rápido",
       "fewestChanges": "Menos alterações"
     },
+    "modeFiltersLabel": "Filtros de modo",
+    "modeRail": "Trem",
     "download": "Baixar rotas",
     "downloadAria": "Baixe as rotas exibidas como PDF",
     "downloadTooltipEnabled": "Baixe todas as opções de rota exibidas",

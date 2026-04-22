@@ -6,6 +6,10 @@
     "ariaLabel": "Interactive map of North West England",
     "popupImageAlt": "Photo of {location}"
   },
+  "mapStyle": {
+    "label": "Map style",
+    "selectAria": "Map style (current: {style})"
+  },
   "navigation": {
     "primarySidebar": "Primary sidebar",
     "main": "Main navigation",
@@ -127,10 +131,13 @@
     "sortBy": "Sort by:",
     "sortByAria": "Sort routes by",
     "sort": {
+      "arriveSoonest": "Arrive Soonest",
       "startTime": "Start Time",
       "fastest": "Fastest",
       "fewestChanges": "Fewest Changes"
     },
+    "modeFiltersLabel": "Mode filters",
+    "modeRail": "Rail",
     "download": "Download Routes",
     "downloadAria": "Download displayed routes as PDF",
     "downloadTooltipEnabled": "Download all displayed route options",
@@ -259,7 +266,16 @@
     "promptCurrentPassword": "Enter current password:",
     "promptNewPassword": "Enter new password (8+ characters):",
     "confirmDelete": "This will permanently delete your account. Continue?",
-    "promptConfirmDeletePassword": "Confirm your password to delete account:"
+    "promptConfirmDeletePassword": "Confirm your password to delete account:",
+    "admin": {
+      "title": "Admin notifications",
+      "messageLabel": "Message",
+      "messagePlaceholder": "Write a notification for users...",
+      "send": "Send notification",
+      "sendAria": "Send admin notification",
+      "emptyMessage": "Enter a notification message first.",
+      "sentStatus": "Notification sent to {count} user(s)."
+    }
   },
   "alerts": {
     "loginToSaveAccessibility": "Please log in to save accessibility preferences to your account.",
@@ -318,6 +334,7 @@
     "routesShowing": "Showing {count} route options from {from} to {to}.",
     "routesAvailable": "{count} routes available. Use Enter or Space on a route to view details.",
     "routeSaved": "Route saved to your account.",
+    "mapStyleChanged": "Map style changed to {style}.",
     "routesModalClosed": "Routes modal closed.",
     "sidebarCollapsed": "Sidebar collapsed.",
     "sidebarExpanded": "Sidebar expanded."

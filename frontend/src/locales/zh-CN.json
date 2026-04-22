@@ -194,7 +194,16 @@
     "promptCurrentPassword": "输入当前密码：",
     "promptNewPassword": "输入新密码（8位以上）：",
     "confirmDelete": "这将永久删除您的账户。是否继续？",
-    "promptConfirmDeletePassword": "确认密码以删除账户："
+    "promptConfirmDeletePassword": "确认密码以删除账户：",
+    "admin": {
+      "title": "管理员通知",
+      "messageLabel": "消息",
+      "messagePlaceholder": "为用户编写一条通知...",
+      "send": "发送通知",
+      "sendAria": "发送管理员通知",
+      "emptyMessage": "请先输入通知内容。",
+      "sentStatus": "通知已发送给 {count} 位用户。"
+    }
   },
   "announce": {
     "languageChanged": "语言已切换为 {locale}。",
@@ -226,6 +235,7 @@
     "routesShowing": "显示从 {from} 到 {to} 的 {count} 路线选项。",
     "routesAvailable": "{count} 可用路线。在路线上使用 Enter 或 Space 可查看详细信息。",
     "routeSaved": "路线已保存到您的帐户。",
+    "mapStyleChanged": "地图样式已切换为 {style}。",
     "routesModalClosed": "路线模式已关闭。",
     "sidebarCollapsed": "侧边栏崩溃了。",
     "sidebarExpanded": "侧边栏已展开。"
@@ -255,16 +265,23 @@
     "ariaLabel": "英格兰西北部互动地图",
     "popupImageAlt": "{location} 的照片"
   },
+  "mapStyle": {
+    "label": "地图样式",
+    "selectAria": "地图样式（当前：{style}）"
+  },
   "route": {
     "defaultHeader": "从 兰卡斯特 到 布莱克浦 的路线",
     "closeModal": "关闭路线模态",
     "sortBy": "排序方式：",
     "sortByAria": "路线排序依据",
     "sort": {
+      "arriveSoonest": "最早到达",
       "startTime": "开始时间",
       "fastest": "最快",
       "fewestChanges": "最少的变化"
     },
+    "modeFiltersLabel": "方式筛选",
+    "modeRail": "铁路",
     "download": "下载路线",
     "downloadAria": "将显示的路线下载为 PDF 格式",
     "downloadTooltipEnabled": "下载所有显示的路线选项",

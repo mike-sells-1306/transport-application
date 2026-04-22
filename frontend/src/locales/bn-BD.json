@@ -194,7 +194,16 @@
     "promptCurrentPassword": "বর্তমান পাসওয়ার্ড লিখুন:",
     "promptNewPassword": "নতুন পাসওয়ার্ড লিখুন (৮+ অক্ষর):",
     "confirmDelete": "এতে আপনার অ্যাকাউন্ট স্থায়ীভাবে মুছে যাবে। চালিয়ে যাবেন?",
-    "promptConfirmDeletePassword": "অ্যাকাউন্ট মুছতে পাসওয়ার্ড নিশ্চিত করুন:"
+    "promptConfirmDeletePassword": "অ্যাকাউন্ট মুছতে পাসওয়ার্ড নিশ্চিত করুন:",
+    "admin": {
+      "title": "অ্যাডমিন নোটিফিকেশন",
+      "messageLabel": "বার্তা",
+      "messagePlaceholder": "ব্যবহারকারীদের জন্য একটি নোটিফিকেশন লিখুন...",
+      "send": "নোটিফিকেশন পাঠান",
+      "sendAria": "অ্যাডমিন নোটিফিকেশন পাঠান",
+      "emptyMessage": "প্রথমে একটি নোটিফিকেশন বার্তা লিখুন।",
+      "sentStatus": "{count} জন ব্যবহারকারীর কাছে নোটিফিকেশন পাঠানো হয়েছে।"
+    }
   },
   "announce": {
     "languageChanged": "ভাষা {locale} এ পরিবর্তন করা হয়েছে।",
@@ -226,6 +235,7 @@
     "routesShowing": "{from} থেকে {to} পর্যন্ত {count} রুটের বিকল্প দেখানো হচ্ছে।",
     "routesAvailable": "{count} রুট উপলব্ধ। বিস্তারিত দেখতে একটি রুটে এন্টার বা স্পেস ব্যবহার করুন।",
     "routeSaved": "রুট আপনার অ্যাকাউন্টে সংরক্ষিত.",
+    "mapStyleChanged": "মানচিত্রের স্টাইল {style} এ পরিবর্তিত হয়েছে।",
     "routesModalClosed": "রুট মোডাল বন্ধ.",
     "sidebarCollapsed": "সাইডবার ভেঙে পড়েছে।",
     "sidebarExpanded": "সাইডবার প্রসারিত হয়েছে।"
@@ -255,16 +265,23 @@
     "ariaLabel": "উত্তর পশ্চিম ইংল্যান্ড ইন্টারেক্টিভ মানচিত্র",
     "popupImageAlt": "{location} এর ছবি"
   },
+  "mapStyle": {
+    "label": "মানচিত্রের স্টাইল",
+    "selectAria": "মানচিত্রের স্টাইল (বর্তমান: {style})"
+  },
   "route": {
     "defaultHeader": "ল্যাঙ্কাস্টার থেকে ব্ল্যাকপুল পর্যন্ত রুট",
     "closeModal": "রুট মোডাল বন্ধ করুন",
     "sortBy": "অনুসারে সাজান:",
     "sortByAria": "দ্বারা রুট বাছাই",
     "sort": {
+      "arriveSoonest": "সবচেয়ে আগে পৌঁছায়",
       "startTime": "শুরুর সময়",
       "fastest": "দ্রুততম",
       "fewestChanges": "সবচেয়ে কম পরিবর্তন"
     },
+    "modeFiltersLabel": "মোড ফিল্টার",
+    "modeRail": "রেল",
     "download": "রুট ডাউনলোড করুন",
     "downloadAria": "পিডিএফ হিসাবে প্রদর্শিত রুট ডাউনলোড করুন",
     "downloadTooltipEnabled": "সমস্ত প্রদর্শিত রুট বিকল্প ডাউনলোড করুন",

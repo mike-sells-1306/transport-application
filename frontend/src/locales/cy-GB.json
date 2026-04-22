@@ -6,6 +6,10 @@
     "ariaLabel": "Map rhyngweithiol o Ogledd Orllewin Lloegr",
     "popupImageAlt": "Llun o {location}"
   },
+  "mapStyle": {
+    "label": "Arddull map",
+    "selectAria": "Arddull map (cyfredol: {style})"
+  },
   "navigation": {
     "primarySidebar": "Bar ochr cynradd",
     "main": "Prif lywio",
@@ -127,10 +131,13 @@
     "sortBy": "Trefnu yn ôl:",
     "sortByAria": "Trefnu llwybrau yn ôl",
     "sort": {
+      "arriveSoonest": "Cyrraedd Cynharaf",
       "startTime": "Amser Cychwyn",
       "fastest": "Cyflymaf",
       "fewestChanges": "Y Lleiaf Newidiadau"
     },
+    "modeFiltersLabel": "Hidlwyr modd",
+    "modeRail": "Rheilffordd",
     "download": "Lawrlwytho Llwybrau",
     "downloadAria": "Lawrlwytho llwybrau a ddangosir fel PDF",
     "downloadTooltipEnabled": "Lawrlwytho pob opsiwn llwybr a ddangosir",
@@ -259,7 +266,16 @@
     "promptCurrentPassword": "Rhowch y cyfrinair presennol:",
     "promptNewPassword": "Rhowch gyfrinair newydd (8+ nod):",
     "confirmDelete": "Bydd hyn yn dileu eich cyfrif yn barhaol. Parhau?",
-    "promptConfirmDeletePassword": "Cadarnhewch eich cyfrinair i ddileu'r cyfrif:"
+    "promptConfirmDeletePassword": "Cadarnhewch eich cyfrinair i ddileu'r cyfrif:",
+    "admin": {
+      "title": "Hysbysiadau gweinyddwr",
+      "messageLabel": "Neges",
+      "messagePlaceholder": "Ysgrifennwch hysbysiad i ddefnyddwyr...",
+      "send": "Anfon hysbysiad",
+      "sendAria": "Anfon hysbysiad gweinyddwr",
+      "emptyMessage": "Rhowch neges hysbysiad yn gyntaf.",
+      "sentStatus": "Anfonwyd hysbysiad at {count} defnyddiwr."
+    }
   },
   "alerts": {
     "loginToSaveAccessibility": "Mewngofnodwch i gadw dewisiadau hygyrchedd i'ch cyfrif.",
@@ -318,6 +334,7 @@
     "routesShowing": "Yn dangos {count} opsiwn llwybr o {from} i {to}.",
     "routesAvailable": "Mae {count} llwybr ar gael. Defnyddiwch Enter neu Space i weld manylion.",
     "routeSaved": "Llwybr wedi'i gadw i'ch cyfrif.",
+    "mapStyleChanged": "Newidiwyd arddull y map i {style}.",
     "routesModalClosed": "Ffenestr llwybrau wedi'i chau.",
     "sidebarCollapsed": "Bar ochr wedi'i leihau.",
     "sidebarExpanded": "Bar ochr wedi'i ehangu."

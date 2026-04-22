@@ -194,7 +194,16 @@
     "promptCurrentPassword": "Введите текущий пароль:",
     "promptNewPassword": "Введите новый пароль (8+ символов):",
     "confirmDelete": "Это навсегда удалит ваш аккаунт. Продолжить?",
-    "promptConfirmDeletePassword": "Подтвердите пароль для удаления аккаунта:"
+    "promptConfirmDeletePassword": "Подтвердите пароль для удаления аккаунта:",
+    "admin": {
+      "title": "Уведомления администратора",
+      "messageLabel": "Сообщение",
+      "messagePlaceholder": "Напишите уведомление для пользователей...",
+      "send": "Отправить уведомление",
+      "sendAria": "Отправить уведомление администратора",
+      "emptyMessage": "Сначала введите текст уведомления.",
+      "sentStatus": "Уведомление отправлено {count} пользователям."
+    }
   },
   "announce": {
     "languageChanged": "Язык изменён на {locale}.",
@@ -226,6 +235,7 @@
     "routesShowing": "Показаны варианты маршрута {count} от {from} до {to}.",
     "routesAvailable": "Доступно {count} маршрутов. Используйте Enter или пробел на маршруте, чтобы просмотреть подробную информацию.",
     "routeSaved": "Маршрут сохранен в вашем аккаунте.",
+    "mapStyleChanged": "Стиль карты изменён на {style}.",
     "routesModalClosed": "Маршруты модально закрыты.",
     "sidebarCollapsed": "Боковая панель свернута.",
     "sidebarExpanded": "Боковая панель расширена."
@@ -255,16 +265,23 @@
     "ariaLabel": "Интерактивная карта Северо-Западной Англии",
     "popupImageAlt": "Фотография {location}"
   },
+  "mapStyle": {
+    "label": "Стиль карты",
+    "selectAria": "Стиль карты (текущий: {style})"
+  },
   "route": {
     "defaultHeader": "Маршруты из Ланкастера в Блэкпул",
     "closeModal": "Модальное окно закрытия маршрутов",
     "sortBy": "Сортировать по:",
     "sortByAria": "Сортировать маршруты по",
     "sort": {
+      "arriveSoonest": "Скорейшее прибытие",
       "startTime": "Время начала",
       "fastest": "Самый быстрый",
       "fewestChanges": "Наименьшее количество изменений"
     },
+    "modeFiltersLabel": "Фильтры транспорта",
+    "modeRail": "Поезд",
     "download": "Скачать маршруты",
     "downloadAria": "Скачать отображаемые маршруты в формате PDF",
     "downloadTooltipEnabled": "Загрузите все отображаемые варианты маршрута",

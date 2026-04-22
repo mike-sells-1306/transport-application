@@ -194,7 +194,16 @@
     "promptCurrentPassword": "أدخل كلمة المرور الحالية:",
     "promptNewPassword": "أدخل كلمة مرور جديدة (8+ أحرف):",
     "confirmDelete": "سيتم حذف حسابك نهائيًا. هل تريد المتابعة؟",
-    "promptConfirmDeletePassword": "أكد كلمة المرور لحذف الحساب:"
+    "promptConfirmDeletePassword": "أكد كلمة المرور لحذف الحساب:",
+    "admin": {
+      "title": "إشعارات المسؤول",
+      "messageLabel": "الرسالة",
+      "messagePlaceholder": "اكتب إشعارًا للمستخدمين...",
+      "send": "إرسال الإشعار",
+      "sendAria": "إرسال إشعار مسؤول",
+      "emptyMessage": "أدخل رسالة الإشعار أولاً.",
+      "sentStatus": "تم إرسال الإشعار إلى {count} مستخدم."
+    }
   },
   "announce": {
     "languageChanged": "تم تغيير اللغة إلى {locale}.",
@@ -226,6 +235,7 @@
     "routesShowing": "عرض خيارات مسار {count} من {from} إلى {to}.",
     "routesAvailable": "{count} الطرق المتاحة. استخدم Enter أو Space على الطريق لعرض التفاصيل.",
     "routeSaved": "تم حفظ المسار في حسابك.",
+    "mapStyleChanged": "تم تغيير نمط الخريطة إلى {style}.",
     "routesModalClosed": "الطرق مشروط مغلقة.",
     "sidebarCollapsed": "انهار الشريط الجانبي.",
     "sidebarExpanded": "تم توسيع الشريط الجانبي."
@@ -255,16 +265,23 @@
     "ariaLabel": "خريطة تفاعلية لشمال غرب إنجلترا",
     "popupImageAlt": "صورة {location}"
   },
+  "mapStyle": {
+    "label": "نمط الخريطة",
+    "selectAria": "نمط الخريطة (الحالي: {style})"
+  },
   "route": {
     "defaultHeader": "الرحلات من لانكستر إلى بلاكبول",
     "closeModal": "إغلاق الطرق مشروط",
     "sortBy": "الترتيب حسب:",
     "sortByAria": "فرز المسارات حسب",
     "sort": {
+      "arriveSoonest": "الأقرب وصولاً",
       "startTime": "وقت البدء",
       "fastest": "الأسرع",
       "fewestChanges": "أقل التغييرات"
     },
+    "modeFiltersLabel": "فلاتر الوسيلة",
+    "modeRail": "القطار",
     "download": "تحميل الطرق",
     "downloadAria": "قم بتنزيل الطرق المعروضة بصيغة PDF",
     "downloadTooltipEnabled": "قم بتنزيل جميع خيارات المسار المعروضة",

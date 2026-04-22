@@ -194,7 +194,16 @@
     "promptCurrentPassword": "वर्तमान पासवर्ड दर्ज करें:",
     "promptNewPassword": "नया पासवर्ड दर्ज करें (8+ अक्षर):",
     "confirmDelete": "यह आपका खाता स्थायी रूप से हटा देगा। जारी रखें?",
-    "promptConfirmDeletePassword": "खाता हटाने के लिए पासवर्ड पुष्टि करें:"
+    "promptConfirmDeletePassword": "खाता हटाने के लिए पासवर्ड पुष्टि करें:",
+    "admin": {
+      "title": "एडमिन सूचनाएँ",
+      "messageLabel": "संदेश",
+      "messagePlaceholder": "उपयोगकर्ताओं के लिए सूचना लिखें...",
+      "send": "सूचना भेजें",
+      "sendAria": "एडमिन सूचना भेजें",
+      "emptyMessage": "पहले सूचना संदेश दर्ज करें।",
+      "sentStatus": "सूचना {count} उपयोगकर्ता(ओं) को भेजी गई।"
+    }
   },
   "announce": {
     "languageChanged": "भाषा {locale} में बदल दी गई है।",
@@ -226,6 +235,7 @@
     "routesShowing": "{from} से {to} तक {count} मार्ग विकल्प दिखा रहा है।",
     "routesAvailable": "{count} मार्ग उपलब्ध हैं। विवरण देखने के लिए रूट पर एंटर या स्पेस का उपयोग करें।",
     "routeSaved": "रूट आपके खाते में सहेजा गया.",
+    "mapStyleChanged": "मानचित्र शैली {style} में बदल दी गई।",
     "routesModalClosed": "रूट मोडल बंद.",
     "sidebarCollapsed": "साइडबार ढह गया.",
     "sidebarExpanded": "साइडबार का विस्तार हुआ."
@@ -255,16 +265,23 @@
     "ariaLabel": "उत्तर पश्चिम इंग्लैंड का इंटरैक्टिव मानचित्र",
     "popupImageAlt": "{location} का फोटो"
   },
+  "mapStyle": {
+    "label": "मानचित्र शैली",
+    "selectAria": "मानचित्र शैली (वर्तमान: {style})"
+  },
   "route": {
     "defaultHeader": "लैंकेस्टर से ब्लैकपूल तक मार्ग",
     "closeModal": "मार्ग बंद करें मोडल",
     "sortBy": "इसके अनुसार क्रमबद्ध करें:",
     "sortByAria": "मार्गों को क्रमबद्ध करें",
     "sort": {
+      "arriveSoonest": "सबसे जल्दी आगमन",
       "startTime": "समय शुरू",
       "fastest": "सबसे तेजी से",
       "fewestChanges": "सबसे कम परिवर्तन"
     },
+    "modeFiltersLabel": "मोड फ़िल्टर",
+    "modeRail": "रेल",
     "download": "रूट डाउनलोड करें",
     "downloadAria": "प्रदर्शित मार्गों को पीडीएफ के रूप में डाउनलोड करें",
     "downloadTooltipEnabled": "सभी प्रदर्शित मार्ग विकल्प डाउनलोड करें",

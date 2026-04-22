@@ -211,6 +211,9 @@ async function setLocale(locale, options = {}) {
 
   applyTranslations();
   refreshMapPopupTranslations();
+  if (window.appMap && typeof window.appMap.getCurrentMapStyle === 'function') {
+    updateMapStyleButtonUI(window.appMap.getCurrentMapStyle());
+  }
   weatherCache = null;
   weatherCacheTimestamp = 0;
   updateRouteModalHeader();
@@ -1103,16 +1106,23 @@ function updateMapMarkerColors() {
   });
 }
 
+function getMapStyleA11yLabel(style) {
+  const styleLabel = style?.label || '';
+  return t('mapStyle.selectAria', { style: styleLabel });
+}
+
 function updateMapStyleButtonUI(style) {
   if (!style) return;
 
   const compactLabel = style.shortLabel || style.label;
+  const mapStyleLabel = t('mapStyle.label');
+  const a11yLabel = getMapStyleA11yLabel(style);
 
   const mapStyleBtn = document.getElementById('map-style-btn');
   if (mapStyleBtn) {
-    mapStyleBtn.textContent = `Map Style: ${compactLabel}`;
-    mapStyleBtn.title = style.title;
-    mapStyleBtn.setAttribute('aria-label', style.title);
+    mapStyleBtn.textContent = `${mapStyleLabel}: ${compactLabel}`;
+    mapStyleBtn.title = a11yLabel;
+    mapStyleBtn.setAttribute('aria-label', a11yLabel);
   }
 
   const mapStyleSelect = document.getElementById('map-style-select');
@@ -1121,12 +1131,14 @@ function updateMapStyleButtonUI(style) {
     if (!mapStyleSelect.options || mapStyleSelect.options.length === 0) {
       if (window.appMap && typeof window.appMap.getAvailableMapStyles === 'function') {
         const presets = window.appMap.getAvailableMapStyles();
-        mapStyleSelect.innerHTML = presets.map(p => `<option value="${p.id}" title="${p.title}">${p.shortLabel || p.label}</option>`).join('');
+        mapStyleSelect.innerHTML = presets
+          .map(p => `<option value="${p.id}" title="${getMapStyleA11yLabel(p)}">${p.shortLabel || p.label}</option>`)
+          .join('');
       }
     }
     mapStyleSelect.value = style.id;
-    mapStyleSelect.title = style.title;
-    mapStyleSelect.setAttribute('aria-label', style.title);
+    mapStyleSelect.title = a11yLabel;
+    mapStyleSelect.setAttribute('aria-label', a11yLabel);
   }
 
   // Toggle a body-level class so CSS can adapt UI elements (popups/info cards)
@@ -2525,7 +2537,7 @@ async function handleAdminNotificationSubmit(event) {
 
   if (!message) {
     if (statusNode) {
-      statusNode.textContent = 'Enter a notification message first.';
+      statusNode.textContent = t('account.admin.emptyMessage');
     }
     return;
   }
@@ -2537,14 +2549,16 @@ async function handleAdminNotificationSubmit(event) {
     });
 
     if (statusNode) {
-      statusNode.textContent = `Notification sent to ${response.count || 0} user(s).`;
+      statusNode.textContent = t('account.admin.sentStatus', {
+        count: formatLocalizedNumber(response.count || 0),
+      });
     }
     if (messageInput) {
       messageInput.value = '';
     }
   } catch (error) {
     if (statusNode) {
-      statusNode.textContent = error.message;
+      statusNode.textContent = localizeApiErrorMessage(error.message);
     }
   }
 }
@@ -3416,7 +3430,7 @@ function exportRoutesToPdf() {
   const contentWidth = pageWidth - (marginX * 2);
   const sortSelect = document.getElementById('sort');
   const sortLabelText = sortSelect?.options?.[sortSelect.selectedIndex]?.textContent?.trim()
-    || 'Arrive Soonest';
+    || t('route.sort.arriveSoonest');
   const exportedAt = new Date();
   const colors = {
     maroon: [139, 17, 17],
@@ -4009,12 +4023,14 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   if (mapStyleSelect && window.appMap && typeof window.appMap.getAvailableMapStyles === 'function') {
     const presets = window.appMap.getAvailableMapStyles();
-    mapStyleSelect.innerHTML = presets.map(p => `<option value="${p.id}" title="${p.title}">${p.shortLabel || p.label}</option>`).join('');
+    mapStyleSelect.innerHTML = presets
+      .map(p => `<option value="${p.id}" title="${getMapStyleA11yLabel(p)}">${p.shortLabel || p.label}</option>`)
+      .join('');
     const current = window.appMap.getCurrentMapStyle();
     if (current) {
       mapStyleSelect.value = current.id;
-      mapStyleSelect.title = current.title;
-      mapStyleSelect.setAttribute('aria-label', `Map style (current: ${current.label})`);
+      mapStyleSelect.title = getMapStyleA11yLabel(current);
+      mapStyleSelect.setAttribute('aria-label', getMapStyleA11yLabel(current));
       // Ensure UI reflects the currently active map style on initial load
       try {
         updateMapStyleButtonUI(current);
@@ -4028,7 +4044,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       const applied = window.appMap.setMapStyleById(this.value);
       if (applied) {
         updateMapStyleButtonUI(applied);
-        announceToScreenReader(`Map style changed to ${applied.label}`);
+        announceToScreenReader(t('announce.mapStyleChanged', { style: applied.label }));
       }
     });
   }

@@ -80,8 +80,8 @@
 
     <!-- Top-right icon buttons -->
     <div class="top-right-icons">
-      <label for="map-style-select" class="visually-hidden">Map Style</label>
-      <select class="icon-btn map-style-select" id="map-style-select" aria-label="Map style selector" title="Map style">
+      <label for="map-style-select" class="visually-hidden" data-i18n="mapStyle.label">Map Style</label>
+      <select class="icon-btn map-style-select" id="map-style-select" aria-label="Map style" title="Map style" data-i18n-aria-label="mapStyle.label" data-i18n-title="mapStyle.label">
       </select>
       <button class="icon-btn" id="weather-btn" type="button" title="View weather updates" aria-label="View weather updates" data-i18n-title="weather.openPanel" data-i18n-aria-label="weather.openPanel" aria-expanded="false" aria-controls="weather-panel">
         <span class="icon-cloud" aria-hidden="true"></span>
@@ -100,14 +100,14 @@
       <div class="route-modal-sort">
         <label for="sort" data-i18n="route.sortBy">Sort by:</label>
         <select id="sort" aria-label="Sort routes by" data-i18n-aria-label="route.sortByAria">
-          <option value="soonest_arrival" selected>Arrive Soonest</option>
+          <option value="soonest_arrival" data-i18n="route.sort.arriveSoonest" selected>Arrive Soonest</option>
           <option value="fewest_changes" data-i18n="route.sort.fewestChanges">Fewest Changes</option>
         </select>
-        <fieldset class="route-mode-filters" aria-label="Mode filters">
-          <legend class="visually-hidden">Mode filters</legend>
-          <label><input type="checkbox" class="route-mode-filter" value="walk" checked /> Walk</label>
-          <label><input type="checkbox" class="route-mode-filter" value="bus" checked /> Bus</label>
-          <label><input type="checkbox" class="route-mode-filter" value="rail" checked /> Rail</label>
+        <fieldset class="route-mode-filters" aria-label="Mode filters" data-i18n-aria-label="route.modeFiltersLabel">
+          <legend class="visually-hidden" data-i18n="route.modeFiltersLabel">Mode filters</legend>
+          <label><input type="checkbox" class="route-mode-filter" value="walk" checked /> <span data-i18n="transport.walk">Walk</span></label>
+          <label><input type="checkbox" class="route-mode-filter" value="bus" checked /> <span data-i18n="transport.bus">Bus</span></label>
+          <label><input type="checkbox" class="route-mode-filter" value="rail" checked /> <span data-i18n="route.modeRail">Rail</span></label>
         </fieldset>
         <button id="download-routes-pdf" class="route-download-btn" type="button" aria-label="Download displayed routes as PDF" data-i18n="route.download" data-i18n-aria-label="route.downloadAria" disabled>
           Download Routes
@@ -376,11 +376,11 @@
         </div>
 
         <section class="admin-notification-panel hidden" id="admin-notification-panel" aria-labelledby="admin-notification-title">
-          <h3 id="admin-notification-title">Admin notifications</h3>
+          <h3 id="admin-notification-title" data-i18n="account.admin.title">Admin notifications</h3>
           <form id="admin-notification-form" class="admin-notification-form">
-            <label for="admin-notification-message">Message</label>
-            <textarea id="admin-notification-message" rows="4" maxlength="500" placeholder="Write a notification for users..."></textarea>
-            <button type="submit" class="action-btn" id="admin-notification-send-btn">Send notification</button>
+            <label for="admin-notification-message" data-i18n="account.admin.messageLabel">Message</label>
+            <textarea id="admin-notification-message" rows="4" maxlength="500" placeholder="Write a notification for users..." data-i18n-placeholder="account.admin.messagePlaceholder"></textarea>
+            <button type="submit" class="action-btn" id="admin-notification-send-btn" data-i18n="account.admin.send" data-i18n-aria-label="account.admin.sendAria">Send notification</button>
             <p id="admin-notification-status" class="field-error" aria-live="polite"></p>
           </form>
         </section>

@@ -2191,6 +2191,15 @@ body.accessibility-mode-achromatopsia .sidebar-links {
   background: #141414;
 }
 
+body.accessibility-mode-achromatopsia .sidebar,
+body.accessibility-mode-achromatopsia .sidebar-toggle,
+body.accessibility-mode-achromatopsia .sidebar-overlay,
+body.accessibility-mode-achromatopsia .map-area,
+body.accessibility-mode-achromatopsia .auth-modal,
+body.accessibility-mode-achromatopsia .account-modal {
+  filter: grayscale(1) contrast(1.2);
+}
+
 body.colorblind-mode .action-btn.danger {
   background: #B7410E;
 }
@@ -2333,13 +2342,6 @@ body.accessibility-mode-tritanopia .route-modal,
 body.accessibility-mode-tritanopia .weather-panel,
 body.accessibility-mode-tritanopia .notif-panel {
   filter: saturate(0.8) hue-rotate(28deg);
-}
-
-body.accessibility-mode-achromatopsia .leaflet-map,
-body.accessibility-mode-achromatopsia .route-modal,
-body.accessibility-mode-achromatopsia .weather-panel,
-body.accessibility-mode-achromatopsia .notif-panel {
-  filter: grayscale(1) contrast(1.25);
 }
 
 /* Utility */

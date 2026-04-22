@@ -6,6 +6,10 @@
     "ariaLabel": "Mapa interactivo del noroeste de Inglaterra",
     "popupImageAlt": "Foto de {location}"
   },
+  "mapStyle": {
+    "label": "Estilo del mapa",
+    "selectAria": "Estilo del mapa (actual: {style})"
+  },
   "navigation": {
     "primarySidebar": "Barra lateral principal",
     "main": "Navegación principal",
@@ -77,7 +81,7 @@
     },
     "q2": {
       "question": "¿Qué área cubre el mapa?",
-      "answer": "Este mapa se centra en el corredor costero entre Preston y Lancaster, incluyendo Blackpool, Fylde y la costa de Wyre."
+      "answer": "Este mapa se centra en el corredor costero entre Preston y Lancaster, incluidas Blackpool, Fylde y la costa de Wyre."
     },
     "q3": {
       "question": "¿Cómo compro un billete para un viaje?",
@@ -127,10 +131,13 @@
     "sortBy": "Ordenar por:",
     "sortByAria": "Ordenar rutas por",
     "sort": {
+      "arriveSoonest": "Llegada más próxima",
       "startTime": "Hora de salida",
       "fastest": "Más rápida",
       "fewestChanges": "Menos cambios"
     },
+    "modeFiltersLabel": "Filtros de modo",
+    "modeRail": "Tren",
     "download": "Descargar rutas",
     "downloadAria": "Descargar rutas mostradas en PDF",
     "downloadTooltipEnabled": "Descargar todas las opciones de ruta mostradas",
@@ -259,7 +266,16 @@
     "promptCurrentPassword": "Introduce la contraseña actual:",
     "promptNewPassword": "Introduce una nueva contraseña (8+ caracteres):",
     "confirmDelete": "Esto eliminará tu cuenta permanentemente. ¿Continuar?",
-    "promptConfirmDeletePassword": "Confirma tu contraseña para eliminar la cuenta:"
+    "promptConfirmDeletePassword": "Confirma tu contraseña para eliminar la cuenta:",
+    "admin": {
+      "title": "Notificaciones de administrador",
+      "messageLabel": "Mensaje",
+      "messagePlaceholder": "Escribe una notificación para los usuarios...",
+      "send": "Enviar notificación",
+      "sendAria": "Enviar notificación de administrador",
+      "emptyMessage": "Primero introduce un mensaje de notificación.",
+      "sentStatus": "Notificación enviada a {count} usuario(s)."
+    }
   },
   "alerts": {
     "loginToSaveAccessibility": "Inicia sesión para guardar preferencias de accesibilidad en tu cuenta.",
@@ -318,6 +334,7 @@
     "routesShowing": "Mostrando {count} opciones de ruta de {from} a {to}.",
     "routesAvailable": "{count} rutas disponibles. Usa Enter o Espacio para ver detalles.",
     "routeSaved": "Ruta guardada en tu cuenta.",
+    "mapStyleChanged": "Estilo de mapa cambiado a {style}.",
     "routesModalClosed": "Ventana de rutas cerrada.",
     "sidebarCollapsed": "Barra lateral contraída.",
     "sidebarExpanded": "Barra lateral expandida."
