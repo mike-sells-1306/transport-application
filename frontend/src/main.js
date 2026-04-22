@@ -304,6 +304,10 @@ let currentOpenPopup = null;
 
 // Store map marker references for theme updates
 let mapMarkers = [];
+const selectedStopMapMarkers = {
+  from: null,
+  to: null,
+};
 let activeMapStyleId = 'osm-standard';
 
 const LOCATION_CATALOG = [
@@ -469,6 +473,146 @@ function refreshMapPopupTranslations() {
   });
 }
 
+function getActiveLeafletMap() {
+  if (!window.appMap || typeof window.appMap.addLayer !== 'function') {
+    return null;
+  }
+  return window.appMap;
+}
+
+function getStopCoordinates(stop) {
+  if (!stop) {
+    return null;
+  }
+  const lat = Number(stop.lat);
+  const lng = Number(stop.lon ?? stop.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+  return [lat, lng];
+}
+
+function removeSelectedStopMarker(inputType) {
+  const map = getActiveLeafletMap();
+  const marker = selectedStopMapMarkers[inputType];
+  if (!marker) {
+    return;
+  }
+
+  if (map && map.hasLayer(marker)) {
+    map.removeLayer(marker);
+  }
+  selectedStopMapMarkers[inputType] = null;
+}
+
+function focusMapOnSelectedStopMarkers() {
+  const map = getActiveLeafletMap();
+  if (!map) {
+    return;
+  }
+
+  const activeMarkers = ['from', 'to']
+    .map(key => selectedStopMapMarkers[key])
+    .filter(marker => marker && map.hasLayer(marker));
+
+  if (activeMarkers.length === 0) {
+    return;
+  }
+
+  if (activeMarkers.length === 1) {
+    map.flyTo(activeMarkers[0].getLatLng(), Math.max(13, map.getZoom()), {
+      duration: 0.45,
+    });
+    return;
+  }
+
+  const bounds = L.latLngBounds(activeMarkers.map(marker => marker.getLatLng()));
+  map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
+}
+
+function createStopMarkerIcon(number, color, label) {
+  const html = `
+    <div style="
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background-color: ${color};
+      border: 3px solid white;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      cursor: pointer;
+      font-weight: bold;
+      color: white;
+      font-size: 18px;
+      position: relative;
+    ">
+      <span>${number}</span>
+      <div style="
+        position: absolute;
+        bottom: -10px;
+        width: 0;
+        height: 0;
+        border-left: 7px solid transparent;
+        border-right: 7px solid transparent;
+        border-top: 10px solid ${color};
+      "></div>
+    </div>
+  `;
+
+  return L.divIcon({
+    html: html,
+    iconSize: [40, 50],
+    iconAnchor: [20, 50],
+    popupAnchor: [0, -50],
+    className: 'custom-stop-marker',
+  });
+}
+
+function syncSelectedStopMapMarkers(options = {}) {
+  const { focus = false } = options;
+  const map = getActiveLeafletMap();
+  if (!map) {
+    return;
+  }
+
+  const stopConfigs = [
+    { key: 'from', color: '#0ea5e9', number: '1', popupLabel: 'Start' },
+    { key: 'to', color: '#f97316', number: '2', popupLabel: 'End' },
+  ];
+
+  stopConfigs.forEach(({ key, color, number, popupLabel }) => {
+    const stop = selectedStops[key];
+    const coordinates = getStopCoordinates(stop);
+
+    if (!coordinates) {
+      removeSelectedStopMarker(key);
+      return;
+    }
+
+    let marker = selectedStopMapMarkers[key];
+    const icon = createStopMarkerIcon(number, color, popupLabel);
+
+    if (!marker) {
+      marker = L.marker(coordinates, { icon: icon }).addTo(map);
+      selectedStopMapMarkers[key] = marker;
+    } else {
+      marker.setLatLng(coordinates);
+      marker.setIcon(icon);
+      if (!map.hasLayer(marker)) {
+        marker.addTo(map);
+      }
+    }
+
+    marker.bindPopup(`<strong>${popupLabel}:</strong> ${stop.name || ''}`);
+  });
+
+  if (focus) {
+    focusMapOnSelectedStopMarkers();
+  }
+}
+
 // Store current routes data for sorting
 let currentRoutesData = null;
 const activeRouteSearchControllers = new Set();
@@ -504,6 +648,7 @@ function setupSwapButton() {
 
       setFieldError('from-input', 'from-input-error', '');
       setFieldError('to-input', 'to-input-error', '');
+      syncSelectedStopMapMarkers({ focus: true });
       syncRouteModalWithInputState();
       announceToScreenReader(t('announce.journeySwapped'));
       
@@ -2058,6 +2203,7 @@ async function viewSavedRoute(savedRoute) {
   ]);
   selectedStops.from = fromResolved;
   selectedStops.to = toResolved;
+  syncSelectedStopMapMarkers({ focus: true });
   setFieldError('from-input', 'from-input-error', '');
   setFieldError('to-input', 'to-input-error', '');
 
@@ -2075,6 +2221,7 @@ async function viewSavedRoute(savedRoute) {
 
     selectedStops.from = resolvedFrom;
     selectedStops.to = resolvedTo;
+    syncSelectedStopMapMarkers({ focus: true });
 
     // Use the standard route search flow so all journeys for this origin/destination
     // are fetched and rendered consistently with normal autocomplete searches.
@@ -2551,6 +2698,7 @@ function setupAutocomplete(input, suggestionsContainer, inputType) {
     
     // Clear selected stop when user modifies input
     selectedStops[inputType] = null;
+    syncSelectedStopMapMarkers();
     setFieldError(
       inputType === 'from' ? 'from-input' : 'to-input',
       inputType === 'from' ? 'from-input-error' : 'to-input-error',
@@ -2782,6 +2930,7 @@ function displayError(suggestionsContainer) {
 function selectStop(stop, input, suggestionsContainer, inputType) {
   input.value = stop.name;
   selectedStops[inputType] = stop;
+  syncSelectedStopMapMarkers({ focus: true });
   hideSuggestions(suggestionsContainer);
   input.removeAttribute('aria-activedescendant');
   setFieldError(
