@@ -639,8 +639,10 @@ function openStopServicesModal(stopName) {
     return;
   }
   title.textContent = stopName || 'Stop';
-  resetFloatingPanelToDefault('stop-services-modal');
-  modal.classList.remove('hidden');
+  if (modal.classList.contains('hidden')) {
+    resetFloatingPanelToDefault('stop-services-modal');
+    modal.classList.remove('hidden');
+  }
   announceToScreenReader(`Opened service details for ${stopName || 'selected stop'}.`);
 }
 
@@ -650,7 +652,6 @@ function closeStopServicesModal() {
     return;
   }
   modal.classList.add('hidden');
-  resetFloatingPanelToDefault('stop-services-modal');
   announceToScreenReader('Closed stop service details.');
 }
 
@@ -866,6 +867,8 @@ const FLOATING_PANEL_CONFIGS = [
   { id: 'auth-modal', headerSelector: '.auth-modal-header', minWidth: 420, minHeight: 260, resizable: true },
   { id: 'support-panel', headerSelector: '.faq-header', minWidth: 540, minHeight: 300, resizable: true },
   { id: 'accessibility-panel', headerSelector: '.faq-header', minWidth: 500, minHeight: 320, resizable: true },
+  { id: 'faq-panel', headerSelector: '.faq-header', minWidth: 540, minHeight: 400, resizable: true },
+  { id: 'account-modal', headerSelector: '.account-modal-header', minWidth: 600, minHeight: 400, resizable: true },
 ];
 
 const floatingPanelDefaults = new Map();
@@ -1135,53 +1138,84 @@ function makeFloatingPanelDraggableAndResizable(panelId, config) {
   }
 
   if (config.resizable) {
-    const resizeHandle = document.createElement('div');
-    resizeHandle.className = 'floating-panel-resize-handle';
-    resizeHandle.setAttribute('aria-hidden', 'true');
-    panel.appendChild(resizeHandle);
+    ['nw', 'ne', 'sw', 'se'].forEach(pos => {
+      const resizeHandle = document.createElement('div');
+      resizeHandle.className = `floating-panel-resize-handle resize-${pos}`;
+      resizeHandle.setAttribute('aria-hidden', 'true');
+      panel.appendChild(resizeHandle);
 
-    resizeHandle.addEventListener('mousedown', event => {
-      if (event.button !== 0) {
-        return;
-      }
-
-      pinFloatingPanelToCurrentRect(panel, panelId);
-
-      const startWidth = panel.offsetWidth;
-      const startHeight = panel.offsetHeight;
-      const startX = event.clientX;
-      const startY = event.clientY;
-      const startLeft = panel.offsetLeft;
-      const startTop = panel.offsetTop;
-
-      const handleMouseMove = moveEvent => {
-        const bounds = getMapAreaBounds();
-        if (!bounds) {
+      resizeHandle.addEventListener('mousedown', event => {
+        if (event.button !== 0) {
           return;
         }
 
-        const rawWidth = startWidth + (moveEvent.clientX - startX);
-        const rawHeight = startHeight + (moveEvent.clientY - startY);
+        pinFloatingPanelToCurrentRect(panel, panelId);
 
-        const nextRect = clampFloatingPanelRect({
-          left: startLeft,
-          top: startTop,
-          width: rawWidth,
-          height: rawHeight,
-        }, bounds, config);
+        const startWidth = panel.offsetWidth;
+        const startHeight = panel.offsetHeight;
+        const startX = event.clientX;
+        const startY = event.clientY;
+        const startLeft = panel.offsetLeft;
+        const startTop = panel.offsetTop;
 
-        setFloatingPanelRect(panel, nextRect);
-      };
+        const handleMouseMove = moveEvent => {
+          const bounds = getMapAreaBounds();
+          if (!bounds) {
+            return;
+          }
 
-      const stopResize = () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', stopResize);
-      };
+          let deltaX = moveEvent.clientX - startX;
+          let deltaY = moveEvent.clientY - startY;
 
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', stopResize);
-      event.preventDefault();
-      event.stopPropagation();
+          let rawWidth = startWidth;
+          let rawHeight = startHeight;
+          let rawLeft = startLeft;
+          let rawTop = startTop;
+
+          if (pos.includes('e')) {
+            rawWidth = startWidth + deltaX;
+          } else if (pos.includes('w')) {
+            rawWidth = startWidth - deltaX;
+            const effectiveMinWidth = Math.min(Math.max(320, Number(config.minWidth || 320)), Math.max(180, bounds.maxWidth - bounds.minLeft));
+            if (rawWidth < effectiveMinWidth) {
+              deltaX = startWidth - effectiveMinWidth;
+              rawWidth = effectiveMinWidth;
+            }
+            rawLeft = startLeft + deltaX;
+          }
+
+          if (pos.includes('s')) {
+            rawHeight = startHeight + deltaY;
+          } else if (pos.includes('n')) {
+            rawHeight = startHeight - deltaY;
+            const effectiveMinHeight = Math.min(Math.max(200, Number(config.minHeight || 200)), Math.max(160, bounds.maxHeight - bounds.minTop));
+            if (rawHeight < effectiveMinHeight) {
+              deltaY = startHeight - effectiveMinHeight;
+              rawHeight = effectiveMinHeight;
+            }
+            rawTop = startTop + deltaY;
+          }
+
+          const nextRect = clampFloatingPanelRect({
+            left: rawLeft,
+            top: rawTop,
+            width: rawWidth,
+            height: rawHeight,
+          }, bounds, config);
+
+          setFloatingPanelRect(panel, nextRect);
+        };
+
+        const stopResize = () => {
+          document.removeEventListener('mousemove', handleMouseMove);
+          document.removeEventListener('mouseup', stopResize);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', stopResize);
+        event.preventDefault();
+        event.stopPropagation();
+      });
     });
   }
 }
@@ -2319,7 +2353,10 @@ function openFaqPanel() {
   const accountModal = document.getElementById('account-modal');
   
   if (faqPanel) {
-    faqPanel.classList.remove('hidden');
+    if (faqPanel.classList.contains('hidden')) {
+      resetFloatingPanelToDefault('faq-panel');
+      faqPanel.classList.remove('hidden');
+    }
     faqPanel.setAttribute('aria-hidden', 'false');
     
     // Close other panels when FAQ is opened
@@ -2401,8 +2438,10 @@ function openSupportPanel() {
   const accountModal = document.getElementById('account-modal');
 
   if (supportPanel) {
-    resetFloatingPanelToDefault('support-panel');
-    supportPanel.classList.remove('hidden');
+    if (supportPanel.classList.contains('hidden')) {
+      resetFloatingPanelToDefault('support-panel');
+      supportPanel.classList.remove('hidden');
+    }
     supportPanel.setAttribute('aria-hidden', 'false');
 
     // Close other panels when support is opened
@@ -2424,7 +2463,6 @@ function closeSupportPanel() {
   if (supportPanel) {
     supportPanel.classList.add('hidden');
     supportPanel.setAttribute('aria-hidden', 'true');
-    resetFloatingPanelToDefault('support-panel');
     announceToScreenReader(t('announce.supportClosed'));
   }
 }
@@ -2452,8 +2490,10 @@ function openAccessibilityPanel() {
     return;
   }
 
-  resetFloatingPanelToDefault('accessibility-panel');
-  panel.classList.remove('hidden');
+  if (panel.classList.contains('hidden')) {
+    resetFloatingPanelToDefault('accessibility-panel');
+    panel.classList.remove('hidden');
+  }
   panel.setAttribute('aria-hidden', 'false');
   faqPanel?.classList.add('hidden');
   supportPanel?.classList.add('hidden');
@@ -2475,7 +2515,6 @@ function closeAccessibilityPanel() {
 
   panel.classList.add('hidden');
   panel.setAttribute('aria-hidden', 'true');
-  resetFloatingPanelToDefault('accessibility-panel');
   updateAccessibilityLinkState(false);
   announceToScreenReader(t('announce.accessibilityClosed'));
 }
@@ -2564,8 +2603,11 @@ function openAuthModal() {
   const faqPanel = document.getElementById('faq-panel');
   const supportPanel = document.getElementById('support-panel');
   
-  resetFloatingPanelToDefault('auth-modal');
-  document.getElementById('auth-modal')?.classList.remove('hidden');
+  const authModal = document.getElementById('auth-modal');
+  if (authModal && authModal.classList.contains('hidden')) {
+    resetFloatingPanelToDefault('auth-modal');
+    authModal.classList.remove('hidden');
+  }
   document.getElementById('account-modal')?.classList.add('hidden');
   showLoginAuthView();
   
@@ -2582,7 +2624,6 @@ function openAuthModal() {
 
 function closeAuthModal() {
   document.getElementById('auth-modal')?.classList.add('hidden');
-  resetFloatingPanelToDefault('auth-modal');
   showLoginAuthView();
   announceToScreenReader(t('announce.authClosed'));
 }
@@ -2612,7 +2653,11 @@ function openAccountModal() {
   const faqPanel = document.getElementById('faq-panel');
   const supportPanel = document.getElementById('support-panel');
   
-  document.getElementById('account-modal')?.classList.remove('hidden');
+  const accountModal = document.getElementById('account-modal');
+  if (accountModal && accountModal.classList.contains('hidden')) {
+    resetFloatingPanelToDefault('account-modal');
+    accountModal.classList.remove('hidden');
+  }
   document.getElementById('auth-modal')?.classList.add('hidden');
   
   // Close other panels when account modal is opened
@@ -3609,7 +3654,10 @@ function showRouteLoadingState() {
       </div>
     </div>
   `;
-  modal.classList.remove('hidden');
+  if (modal.classList.contains('hidden')) {
+    resetFloatingPanelToDefault('route-modal');
+    modal.classList.remove('hidden');
+  }
   updateRouteDownloadButtonState();
 }
 
@@ -3634,7 +3682,6 @@ function syncRouteModalWithInputState() {
   routeList.innerHTML = '';
   updateRouteDownloadButtonState();
   modal.classList.add('hidden');
-  resetFloatingPanelToDefault('route-modal');
 }
 
 /**
@@ -3757,8 +3804,10 @@ function displayRoutesModal(data) {
   updateRouteDownloadButtonState();
 
   // Show the modal by removing the hidden class
-  resetFloatingPanelToDefault('route-modal');
-  modal.classList.remove('hidden');
+  if (modal.classList.contains('hidden')) {
+    resetFloatingPanelToDefault('route-modal');
+    modal.classList.remove('hidden');
+  }
   announceToScreenReader(t('announce.routesShowing', {
     count: Array.isArray(data.routes) ? data.routes.length : 0,
     from: data.from,
@@ -4628,7 +4677,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   if (closeRouteModalBtn && routeModal) {
     closeRouteModalBtn.addEventListener('click', () => {
       routeModal.classList.add('hidden');
-      resetFloatingPanelToDefault('route-modal');
       announceToScreenReader(t('announce.routesModalClosed'));
     });
   }
@@ -4657,7 +4705,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     routeModal.addEventListener('click', (event) => {
       if (event.target === routeModal) {
         routeModal.classList.add('hidden');
-        resetFloatingPanelToDefault('route-modal');
         announceToScreenReader(t('announce.routesModalClosed'));
       }
     });
