@@ -504,6 +504,7 @@ function setupSwapButton() {
 
       setFieldError('from-input', 'from-input-error', '');
       setFieldError('to-input', 'to-input-error', '');
+      syncRouteModalWithInputState();
       announceToScreenReader(t('announce.journeySwapped'));
       
       // Search for routes if both stops are selected
@@ -2555,6 +2556,7 @@ function setupAutocomplete(input, suggestionsContainer, inputType) {
       inputType === 'from' ? 'from-input-error' : 'to-input-error',
       ''
     );
+    syncRouteModalWithInputState();
 
     // Debounce the search
     clearTimeout(debounceTimer);
@@ -2787,6 +2789,7 @@ function selectStop(stop, input, suggestionsContainer, inputType) {
     inputType === 'from' ? 'from-input-error' : 'to-input-error',
     ''
   );
+  syncRouteModalWithInputState();
   
   console.log(`Selected ${inputType} stop:`, stop);
   
@@ -2856,6 +2859,66 @@ function getSelectedStops() {
   return selectedStops;
 }
 
+function getRouteInputLabels() {
+  const fromInputValue = document.getElementById('from-input')?.value?.trim() || '';
+  const toInputValue = document.getElementById('to-input')?.value?.trim() || '';
+
+  return {
+    fromLabel: selectedStops.from?.name || fromInputValue || t('route.unknownFrom'),
+    toLabel: selectedStops.to?.name || toInputValue || t('route.unknownTo'),
+    hasBothStopsSelected: Boolean(selectedStops.from && selectedStops.to),
+  };
+}
+
+function showRouteLoadingState() {
+  const modal = document.getElementById('route-modal');
+  const routeList = document.querySelector('.route-list');
+  if (!modal || !routeList) {
+    return;
+  }
+
+  const { fromLabel, toLabel } = getRouteInputLabels();
+  currentRoutesData = {
+    from: fromLabel,
+    to: toLabel,
+    routes: [],
+  };
+
+  updateRouteModalHeader();
+  routeList.setAttribute('aria-busy', 'true');
+  routeList.innerHTML = `
+    <div class="route-loading" role="status" aria-live="polite">
+      <span class="route-loading-spinner" aria-hidden="true"></span>
+      <div class="route-loading-texts">
+        <strong>${t('route.loadingTitle')}</strong>
+        <span>${t('route.loadingSubtitle')}</span>
+      </div>
+    </div>
+  `;
+  modal.classList.remove('hidden');
+  updateRouteDownloadButtonState();
+}
+
+function syncRouteModalWithInputState() {
+  const modal = document.getElementById('route-modal');
+  const routeList = document.querySelector('.route-list');
+  if (!modal || !routeList) {
+    return;
+  }
+
+  const { hasBothStopsSelected } = getRouteInputLabels();
+  if (hasBothStopsSelected) {
+    showRouteLoadingState();
+    return;
+  }
+
+  currentRoutesData = null;
+  routeList.removeAttribute('aria-busy');
+  routeList.innerHTML = '';
+  updateRouteDownloadButtonState();
+  modal.classList.add('hidden');
+}
+
 /**
  * Search for routes between the selected stops
  */
@@ -2875,6 +2938,9 @@ async function searchRoutes() {
 
   setFieldError('from-input', 'from-input-error', '');
   setFieldError('to-input', 'to-input-error', '');
+
+  showRouteLoadingState();
+  announceToScreenReader(t('announce.searchingRoutes'));
 
   const requestFrom = selectedStops.from;
   const requestTo = selectedStops.to;
@@ -2926,8 +2992,12 @@ async function searchRoutes() {
       console.error('Error searching routes:', errorData.error);
       announceToScreenReader(errorData.error || t('alerts.unableToFindRoutes'), 'assertive');
       const modal = document.getElementById('route-modal');
+      const routeList = document.querySelector('.route-list');
       if (modal) {
         modal.classList.add('hidden');
+      }
+      if (routeList) {
+        routeList.removeAttribute('aria-busy');
       }
       return;
     }
@@ -2939,6 +3009,10 @@ async function searchRoutes() {
     displayRoutesModal(data);
   } catch (error) {
     console.error('Error fetching routes:', error);
+    const routeList = document.querySelector('.route-list');
+    if (routeList) {
+      routeList.removeAttribute('aria-busy');
+    }
     if (error && error.name === 'AbortError') {
       announceToScreenReader('Route search timed out. Please try again with different stops.', 'assertive');
     } else {
@@ -2957,10 +3031,15 @@ async function searchRoutes() {
  */
 function displayRoutesModal(data) {
   const modal = document.getElementById('route-modal');
+  const routeList = document.querySelector('.route-list');
   
   if (!modal) {
     console.error('Route modal not found');
     return;
+  }
+
+  if (routeList) {
+    routeList.removeAttribute('aria-busy');
   }
 
   // Store the routes data globally for sorting
@@ -3575,6 +3654,8 @@ function renderRoutesTable(routes) {
     console.error('Route list not found');
     return;
   }
+
+  routeList.removeAttribute('aria-busy');
 
   // Clear existing routes (including any open details)
   routeList.innerHTML = '';
