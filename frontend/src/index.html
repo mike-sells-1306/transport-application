@@ -118,6 +118,20 @@
       </div>
     </section>
 
+    <!-- Stop Services Modal (hidden by default) -->
+    <section class="route-modal hidden stop-services-modal" id="stop-services-modal" role="dialog" aria-modal="true" aria-labelledby="stop-services-modal-title-text">
+      <div class="route-modal-header" id="stop-services-modal-title">
+        <span id="stop-services-modal-title-text">Stop services</span>
+        <button id="close-stop-services-modal" class="route-modal-close" type="button" aria-label="Close stop services modal">×</button>
+      </div>
+      <div class="route-modal-sort stop-services-modal-subtitle" aria-hidden="true">
+        Upcoming services
+      </div>
+      <div id="stop-services-list" class="route-list stop-services-list" aria-live="polite" aria-relevant="additions text">
+        <!-- Stop service rows are populated dynamically by main.js -->
+      </div>
+    </section>
+
     <!-- Weather Panel (hidden by default) - populated dynamically from API -->
     <section class="weather-panel hidden" id="weather-panel" role="region" aria-labelledby="weather-panel-title">
       <div class="panel-header" id="weather-panel-title" data-i18n="weather.title">Weather</div>

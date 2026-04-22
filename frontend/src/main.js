@@ -309,6 +309,13 @@ const selectedStopMapMarkers = {
   to: null,
 };
 let activeMapStyleId = 'osm-standard';
+let stopOverlayLayer = null;
+let stopOverlayMarkers = new Map();
+let stopOverlayRequestToken = 0;
+let stopOverlayDebounceTimer = null;
+const STOP_OVERLAY_ZOOM_THRESHOLD = 14;
+const STOP_OVERLAY_FETCH_LIMIT = 450;
+const STOP_NO_DATA_MESSAGE = 'Service information is currently unavailable for this stop. Please check again shortly.';
 
 const LOCATION_CATALOG = [
   {
@@ -613,6 +620,234 @@ function syncSelectedStopMapMarkers(options = {}) {
   }
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function openStopServicesModal(stopName) {
+  const modal = document.getElementById('stop-services-modal');
+  const title = document.getElementById('stop-services-modal-title-text');
+  if (!modal || !title) {
+    return;
+  }
+  title.textContent = stopName || 'Stop';
+  modal.classList.remove('hidden');
+  announceToScreenReader(`Opened service details for ${stopName || 'selected stop'}.`);
+}
+
+function closeStopServicesModal() {
+  const modal = document.getElementById('stop-services-modal');
+  if (!modal || modal.classList.contains('hidden')) {
+    return;
+  }
+  modal.classList.add('hidden');
+  announceToScreenReader('Closed stop service details.');
+}
+
+function renderStopServicesModalLoading(stop) {
+  const list = document.getElementById('stop-services-list');
+  if (!list) {
+    return;
+  }
+  list.innerHTML = `
+    <div class="route-loading" role="status" aria-live="polite">
+      <div class="route-loading-spinner" aria-hidden="true"></div>
+      <div class="route-loading-texts">
+        <strong>Loading services…</strong>
+        <span>${escapeHtml(stop?.name || 'Stop')}</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderStopServicesModalNoData() {
+  const list = document.getElementById('stop-services-list');
+  if (!list) {
+    return;
+  }
+  list.innerHTML = `<div class="route-row stop-modal-empty">${escapeHtml(STOP_NO_DATA_MESSAGE)}</div>`;
+}
+
+function buildStopServiceRow(service) {
+  const mode = String(service?.mode || '').trim().toLowerCase();
+  const icon = mode === 'train'
+    ? '<span class="icon-train" aria-hidden="true"></span>'
+    : '<span class="icon-bus" aria-hidden="true"></span>';
+  const serviceName = String(service?.service || '').trim() || 'Service';
+  const finalDestination = String(service?.finalDestination || '').trim();
+  const arrivalAtStop = String(service?.arrivalAtStop || '').trim();
+  const arrivalAtFinalDestination = String(service?.arrivalAtFinalDestination || '').trim();
+
+  if (!finalDestination || !arrivalAtStop || !arrivalAtFinalDestination) {
+    return '';
+  }
+
+  return `
+    <tr class="stop-service-row" role="row" aria-label="${escapeHtml(serviceName)} to ${escapeHtml(finalDestination)}">
+      <td class="stop-service-col-mode" role="cell">${icon}</td>
+      <td class="stop-service-col-stop-time" role="cell">${escapeHtml(formatLocalizedClockTime(arrivalAtStop))}</td>
+      <td class="stop-service-col-final-time" role="cell">${escapeHtml(formatLocalizedClockTime(arrivalAtFinalDestination))}</td>
+      <td class="stop-service-col-service" role="cell">${escapeHtml(serviceName)}</td>
+      <td class="stop-service-col-destination" role="cell">${escapeHtml(finalDestination)}</td>
+    </tr>
+  `;
+}
+
+function renderStopServicesModal(stop, services) {
+  const list = document.getElementById('stop-services-list');
+  if (!list) {
+    return;
+  }
+
+  if (!Array.isArray(services) || services.length === 0) {
+    renderStopServicesModalNoData();
+    return;
+  }
+
+  const rows = services.map(buildStopServiceRow).filter(Boolean).join('');
+
+  if (!rows) {
+    renderStopServicesModalNoData();
+    return;
+  }
+
+  list.innerHTML = `
+    <table class="stop-services-table" role="table" aria-label="Upcoming services for ${escapeHtml(stop?.name || 'stop')}">
+      <thead>
+        <tr>
+          <th aria-hidden="true"></th>
+          <th>At stop</th>
+          <th>Final arrival</th>
+          <th>Service</th>
+          <th>Final destination</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+  `;
+}
+
+function createStopMarker(stop) {
+  const marker = L.circleMarker([stop.lat, stop.lon], {
+    radius: 5,
+    fillColor: '#1D6FD6',
+    color: '#0D3B80',
+    weight: 1.3,
+    opacity: 0.95,
+    fillOpacity: 0.8,
+  });
+
+  marker.on('click', async () => {
+    openStopServicesModal(stop.name || 'Stop');
+    renderStopServicesModalLoading(stop);
+
+    try {
+      const response = await fetch(`/api/stops/${encodeURIComponent(stop.atcoCode)}/services?limit=10`);
+      if (!response.ok) {
+        renderStopServicesModalNoData();
+        return;
+      }
+
+      const data = await response.json();
+      renderStopServicesModal(stop, data?.services || []);
+    } catch (error) {
+      renderStopServicesModalNoData();
+    }
+  });
+
+  return marker;
+}
+
+function clearStopOverlayMarkers() {
+  if (stopOverlayLayer) {
+    stopOverlayLayer.clearLayers();
+  }
+  stopOverlayMarkers.clear();
+}
+
+async function updateStopOverlayMarkers(map) {
+  if (!map || !stopOverlayLayer) {
+    return;
+  }
+
+  const currentZoom = map.getZoom();
+  if (currentZoom < STOP_OVERLAY_ZOOM_THRESHOLD) {
+    clearStopOverlayMarkers();
+    return;
+  }
+
+  const bounds = map.getBounds();
+  const params = new URLSearchParams({
+    minLat: String(bounds.getSouth()),
+    maxLat: String(bounds.getNorth()),
+    minLon: String(bounds.getWest()),
+    maxLon: String(bounds.getEast()),
+    limit: String(STOP_OVERLAY_FETCH_LIMIT),
+  });
+
+  const requestToken = ++stopOverlayRequestToken;
+
+  try {
+    const response = await fetch(`/api/stops/in-bounds?${params.toString()}`);
+    if (!response.ok) {
+      return;
+    }
+
+    const payload = await response.json();
+    if (requestToken !== stopOverlayRequestToken) {
+      return;
+    }
+
+    const stops = Array.isArray(payload?.stops) ? payload.stops : [];
+    const nextKeys = new Set();
+
+    stops.forEach(stop => {
+      const key = String(stop?.atcoCode || '').trim();
+      if (!key || !Number.isFinite(Number(stop?.lat)) || !Number.isFinite(Number(stop?.lon))) {
+        return;
+      }
+
+      nextKeys.add(key);
+      if (stopOverlayMarkers.has(key)) {
+        return;
+      }
+
+      const marker = createStopMarker(stop);
+      stopOverlayMarkers.set(key, marker);
+      marker.addTo(stopOverlayLayer);
+    });
+
+    Array.from(stopOverlayMarkers.keys()).forEach(existingKey => {
+      if (nextKeys.has(existingKey)) {
+        return;
+      }
+      const marker = stopOverlayMarkers.get(existingKey);
+      if (marker && stopOverlayLayer.hasLayer(marker)) {
+        stopOverlayLayer.removeLayer(marker);
+      }
+      stopOverlayMarkers.delete(existingKey);
+    });
+  } catch (error) {
+    // Keep the previous visible markers when a fetch fails.
+  }
+}
+
+function scheduleStopOverlayUpdate(map) {
+  if (stopOverlayDebounceTimer) {
+    clearTimeout(stopOverlayDebounceTimer);
+  }
+  stopOverlayDebounceTimer = setTimeout(() => {
+    updateStopOverlayMarkers(map);
+  }, 180);
+}
+
 // Store current routes data for sorting
 let currentRoutesData = null;
 const activeRouteSearchControllers = new Set();
@@ -810,6 +1045,9 @@ function initializeMap() {
   // Create Leaflet map instance
   const map = L.map('map', { zoomControl: false }).setView(mapCenter, initialZoom);
   L.control.zoom({ position: 'bottomright' }).addTo(map);
+  stopOverlayLayer = L.layerGroup().addTo(map);
+  stopOverlayMarkers = new Map();
+  stopOverlayRequestToken = 0;
 
   // Add default tile layer and expose a cycle helper for quick in-app style testing.
   let currentMapStyleIndex = 0;
@@ -915,6 +1153,16 @@ function initializeMap() {
   window.addEventListener('resize', function() {
     map.fitBounds(locationBounds, { padding: [50, 50] });
   });
+
+  map.on('zoomend', () => {
+    scheduleStopOverlayUpdate(map);
+  });
+
+  map.on('moveend', () => {
+    scheduleStopOverlayUpdate(map);
+  });
+
+  scheduleStopOverlayUpdate(map);
 
   return map;
 }
@@ -4044,6 +4292,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Set up route modal close button
   const closeRouteModalBtn = document.getElementById('close-route-modal');
   const routeModal = document.getElementById('route-modal');
+  const stopServicesModal = document.getElementById('stop-services-modal');
+  const closeStopServicesModalBtn = document.getElementById('close-stop-services-modal');
   const sortSelect = document.getElementById('sort');
   const downloadRoutesPdfBtn = document.getElementById('download-routes-pdf');
   
@@ -4052,6 +4302,10 @@ document.addEventListener('DOMContentLoaded', async function() {
       routeModal.classList.add('hidden');
       announceToScreenReader(t('announce.routesModalClosed'));
     });
+  }
+
+  if (closeStopServicesModalBtn && stopServicesModal) {
+    closeStopServicesModalBtn.addEventListener('click', closeStopServicesModal);
   }
 
   // Set up sort dropdown for routes
@@ -4075,6 +4329,14 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (event.target === routeModal) {
         routeModal.classList.add('hidden');
         announceToScreenReader(t('announce.routesModalClosed'));
+      }
+    });
+  }
+
+  if (stopServicesModal) {
+    stopServicesModal.addEventListener('click', (event) => {
+      if (event.target === stopServicesModal) {
+        closeStopServicesModal();
       }
     });
   }
