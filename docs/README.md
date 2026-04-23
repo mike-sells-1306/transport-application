@@ -4,6 +4,7 @@ Primary entry point for project documentation.
 
 ## Start here
 
+- [User Manual](USER_MANUAL.md) — step-by-step guide for end users with screenshots
 - [Backend API Documentation](api/API_DOCUMENTATION.md) — implemented REST endpoints and auth model
 - [Backend Status](api/BACKEND_STATUS.md) — current implementation status summary
 

@@ -130,6 +130,7 @@ STATIC_DATA_ONLY=false make refresh-static-force
 Start here:
 
 - [Documentation Index](docs/README.md)
+- [User Manual](docs/USER_MANUAL.md)
 - [Backend API Documentation](docs/api/API_DOCUMENTATION.md)
 
 ## License
