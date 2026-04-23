@@ -32,6 +32,8 @@ make install
 make run
 ```
 
+If your filesystem blocks Python venv symlinks, `make install` automatically retries with copied binaries.
+
 Open: `http://localhost:5000`
 
 ## Local development (Windows PowerShell)
