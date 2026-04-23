@@ -1,9 +1,9 @@
-Transport Application Build and Run Instructions (from repository root)
+Transport Application Build and Run Shell Command Instructions (from repository root)
 
 1) Build/setup backend dependencies:
 make install
 
-2) Load bus stops:
+2) Load stops & stations:
 make refresh-static
 
 3) Start the application:
