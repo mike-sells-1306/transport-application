@@ -230,7 +230,7 @@ async function setLocale(locale, options = {}) {
     renderWeatherPanel({ announce: false });
   }
 
-  renderNotifications(latestNotifications, { announce: false });
+  renderNotificationsPanel();
 
   if (announce) {
     announceToScreenReader(t('announce.languageChanged', { locale: getLocaleDisplayName(requested) }));
@@ -859,7 +859,12 @@ let currentRoutesData = null;
 const activeRouteSearchControllers = new Set();
 const ROUTE_SEARCH_TIMEOUT_MS = 30000;
 const DEFAULT_ROUTE_MODES = new Set(['walk', 'bus', 'rail', 'train', 'wait']);
-let latestNotifications = [];
+let latestSystemAnnouncements = [];
+let latestTransportUpdates = [];
+let latestTransportUpdatesSignature = '';
+const TRANSPORT_PINNED_STORAGE_KEY = 'transportPinnedNotifications';
+const pinnedTransportNotificationIds = new Set(loadPinnedTransportNotificationIds());
+const transportNotificationExpandedState = new Map();
 
 const FLOATING_PANEL_CONFIGS = [
   { id: 'route-modal', headerSelector: '.route-modal-header', minWidth: 500, minHeight: 300, resizable: true },
@@ -1771,6 +1776,10 @@ const WEATHER_FETCH_MAX_ATTEMPTS = 2;
 // Auto-refresh interval ID (runs while panel is open)
 let weatherRefreshInterval = null;
 
+const NOTIFICATIONS_REFRESH_INTERVAL_MS = 60 * 1000;
+const NOTIFICATION_TTL_MS = 2 * 60 * 60 * 1000;
+let notificationsRefreshInterval = null;
+
 // Debounce timer for weather search
 let weatherSearchTimer = null;
 let weatherRenderInFlight = false;
@@ -2270,6 +2279,8 @@ function toggleWeatherPanel() {
   
   weatherPanel.classList.toggle('hidden');
   notifPanel.classList.add('hidden');
+  clearInterval(notificationsRefreshInterval);
+  notificationsRefreshInterval = null;
 
   // Update aria-expanded states for screen readers
   const weatherBtn = document.getElementById('weather-btn');
@@ -2309,6 +2320,601 @@ function toggleWeatherPanel() {
   }
 }
 
+function parseNotificationTimestamp(notification) {
+  const candidates = [
+    notification?.issuedAt,
+    notification?.createdAt,
+    notification?.timestamp,
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) {
+      continue;
+    }
+    const parsed = new Date(candidate);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function normalizeNotificationItem(notification, fallbackType = 'system') {
+  const issuedAt = parseNotificationTimestamp(notification);
+  const expiresAt = (() => {
+    if (notification?.expiresAt) {
+      const parsed = new Date(notification.expiresAt);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+    if (!issuedAt) {
+      return null;
+    }
+    return new Date(issuedAt.getTime() + NOTIFICATION_TTL_MS);
+  })();
+
+  return {
+    ...notification,
+    notificationID: notification?.notificationID || notification?.id || notification?.key || '',
+    category: notification?.category || fallbackType,
+    transportType: notification?.transportType || fallbackType,
+    issuedAt,
+    expiresAt,
+  };
+}
+
+function filterActiveNotifications(notifications, fallbackType = 'system') {
+  const now = Date.now();
+  return (Array.isArray(notifications) ? notifications : [])
+    .map(item => normalizeNotificationItem(item, fallbackType))
+    .filter(item => !item.expiresAt || item.expiresAt.getTime() > now)
+    .sort((a, b) => {
+      const aTime = a.issuedAt ? a.issuedAt.getTime() : 0;
+      const bTime = b.issuedAt ? b.issuedAt.getTime() : 0;
+      return bTime - aTime;
+    });
+}
+
+function formatNotificationIssuedAt(notification) {
+  const issuedAt = notification?.issuedAt || parseNotificationTimestamp(notification);
+  return issuedAt ? formatLocalizedDateTime(issuedAt) : '';
+}
+
+function clearNode(node) {
+  if (node) {
+    node.innerHTML = '';
+  }
+}
+
+function loadPinnedTransportNotificationIds() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(TRANSPORT_PINNED_STORAGE_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed.map(value => String(value)).filter(Boolean) : [];
+  } catch (_error) {
+    return [];
+  }
+}
+
+function persistPinnedTransportNotificationIds() {
+  try {
+    localStorage.setItem(TRANSPORT_PINNED_STORAGE_KEY, JSON.stringify(Array.from(pinnedTransportNotificationIds)));
+  } catch (_error) {
+    // Ignore storage errors.
+  }
+}
+
+function notificationDetailSignatureValue(value) {
+  if (Array.isArray(value)) {
+    return value.map(notificationDetailSignatureValue);
+  }
+  if (value && typeof value === 'object') {
+    return Object.keys(value).sort().reduce((acc, key) => {
+      acc[key] = notificationDetailSignatureValue(value[key]);
+      return acc;
+    }, {});
+  }
+  return value;
+}
+
+function transportNotificationSignature(notification) {
+  const details = notification?.details || {};
+  return JSON.stringify({
+    id: notification?.notificationID || '',
+    area: notification?.area || '',
+    category: notification?.category || '',
+    type: notification?.transportType || '',
+    title: notification?.title || '',
+    summary: notification?.summary || '',
+    message: notification?.message || '',
+    issuedAt: notification?.issuedAt || '',
+    expiresAt: notification?.expiresAt || '',
+    details: notificationDetailSignatureValue({
+      service: details.service || '',
+      operator: details.operator || '',
+      origin: details.origin || '',
+      destination: details.destination || '',
+      nextStop: details.nextStop || '',
+      platform: details.platform || '',
+      scheduledDeparture: details.scheduledDeparture || '',
+      estimatedDeparture: details.estimatedDeparture || '',
+      delayMinutes: details.delayMinutes ?? null,
+      expectedDurationMinutes: details.expectedDurationMinutes ?? null,
+      liveDurationMinutes: details.liveDurationMinutes ?? null,
+      upcomingDepartures: details.upcomingDepartures || [],
+      serviceStops: details.serviceStops || details.callingPoints || [],
+      callingPoints: details.callingPoints || [],
+    }),
+  });
+}
+
+function transportFeedSignature(notifications) {
+  return (Array.isArray(notifications) ? notifications : [])
+    .map(transportNotificationSignature)
+    .sort()
+    .join('|');
+}
+
+function getTransportCollapsedSummary(notification) {
+  const details = notification?.details || {};
+  const origin = String(details.origin || notification?.origin || notification?.title || '').trim();
+  const destination = String(details.destination || notification?.destination || '').trim();
+  const provider = String(details.operator || notification?.provider || '').trim();
+  const delayMinutes = Number(details.delayMinutes ?? 0);
+  const liveMinutes = Number(details.liveDurationMinutes ?? 0);
+
+  const routeLine = origin && destination ? `${origin} → ${destination}` : (notification?.title || notification?.summary || 'Live update');
+  const delayText = delayMinutes > 0
+    ? `${delayMinutes} min delay`
+    : (notification?.category === 'delay' ? 'Delay' : (liveMinutes > 0 ? `Live journey ${liveMinutes} min` : 'Live update'));
+
+  return {
+    routeLine,
+    provider,
+    delayText,
+  };
+}
+
+function getTransportDetailEntries(notification) {
+  const details = notification?.details || {};
+  const entries = [];
+
+  const push = (label, value) => {
+    if (value == null || value === '') {
+      return;
+    }
+    entries.push({ label, value: String(value) });
+  };
+
+  push('Provider', details.operator || notification?.provider || '');
+  push('Service', details.service || details.serviceId || '');
+  push('Origin', details.origin || '');
+  push('Destination', details.destination || '');
+  push('Next stop', details.nextStop || '');
+  push('Platform', details.platform || '');
+  push('Scheduled', details.scheduledDeparture || '');
+  push('Estimated', details.estimatedDeparture || '');
+  push('Delay', details.delayMinutes != null ? `${details.delayMinutes} min` : '');
+  push('Expected journey', details.expectedDurationMinutes != null ? `${details.expectedDurationMinutes} min` : '');
+  push('Live journey', details.liveDurationMinutes != null ? `${details.liveDurationMinutes} min` : '');
+  push('Issued', formatNotificationIssuedAt(notification));
+
+  const serviceStops = Array.isArray(details.serviceStops) ? details.serviceStops : Array.isArray(details.callingPoints) ? details.callingPoints : [];
+  if (serviceStops.length) {
+    const stopsText = serviceStops
+      .map(stop => {
+        const stopName = String(stop?.name || '').trim();
+        const stopTime = String(stop?.estimated || stop?.scheduled || '').trim();
+        if (!stopName) {
+          return '';
+        }
+        return stopTime ? `${stopName} (${stopTime})` : stopName;
+      })
+      .filter(Boolean)
+      .join(' · ');
+    push('Stops', stopsText);
+  }
+
+  if (Array.isArray(details.upcomingDepartures) && details.upcomingDepartures.length) {
+    push('Upcoming departures', details.upcomingDepartures.join(', '));
+  }
+
+  push('Source', details.source || '');
+  return entries;
+}
+
+function buildLiveTransportNotificationItem(notification) {
+  const normalized = normalizeNotificationItem(notification, 'transport');
+  const itemId = normalized.notificationID || notification?.notificationID || notification?.id || '';
+  const isPinned = pinnedTransportNotificationIds.has(String(itemId));
+  const li = document.createElement('div');
+  li.className = 'notif-item notif-transport-item';
+  li.dataset.notificationId = String(itemId);
+  li.classList.toggle('notif-item-pinned', isPinned);
+
+  const row = document.createElement('div');
+  row.className = 'notif-row notif-transport-row';
+  row.setAttribute('role', 'button');
+  row.setAttribute('tabindex', '0');
+  row.setAttribute('aria-expanded', 'false');
+
+  const detailId = `notif-detail-${String(itemId || normalized.title || normalized.summary).replace(/[^a-z0-9_-]+/gi, '-').toLowerCase()}`;
+  row.setAttribute('aria-controls', detailId);
+
+  const main = document.createElement('span');
+  main.className = 'notif-main';
+
+  const collapsed = getTransportCollapsedSummary(normalized);
+  const routeLine = document.createElement('span');
+  routeLine.className = 'notif-route-line';
+  routeLine.textContent = collapsed.routeLine;
+  main.appendChild(routeLine);
+
+  const providerLine = document.createElement('span');
+  providerLine.className = 'notif-provider-line';
+  providerLine.textContent = [collapsed.provider, collapsed.delayText].filter(Boolean).join(' · ');
+  main.appendChild(providerLine);
+
+  row.appendChild(main);
+
+  const meta = document.createElement('span');
+  meta.className = 'notif-meta';
+
+  const pinButton = document.createElement('button');
+  pinButton.type = 'button';
+  pinButton.className = 'notif-pin-btn';
+  pinButton.setAttribute('aria-pressed', String(isPinned));
+  pinButton.setAttribute('aria-label', isPinned ? 'Unpin transport update' : 'Pin transport update');
+  pinButton.textContent = isPinned ? '★' : '☆';
+  pinButton.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopPropagation();
+    const key = String(itemId);
+    if (!key) {
+      return;
+    }
+    if (pinnedTransportNotificationIds.has(key)) {
+      pinnedTransportNotificationIds.delete(key);
+    } else {
+      pinnedTransportNotificationIds.add(key);
+    }
+    persistPinnedTransportNotificationIds();
+    renderLiveTransportUpdatesList(latestTransportUpdates);
+  });
+  meta.appendChild(pinButton);
+
+  const timeNode = document.createElement('span');
+  timeNode.className = 'notif-time';
+  timeNode.textContent = formatNotificationIssuedAt(normalized);
+  meta.appendChild(timeNode);
+
+  const chevron = document.createElement('span');
+  chevron.className = 'notif-chevron';
+  chevron.textContent = '\u25B8';
+  meta.appendChild(chevron);
+
+  row.appendChild(meta);
+
+  const detail = document.createElement('div');
+  detail.className = 'notif-detail';
+  detail.id = detailId;
+
+  const entries = getTransportDetailEntries(normalized);
+  if (entries.length) {
+    const list = document.createElement('div');
+    list.className = 'notif-detail-list';
+    entries.forEach(entry => {
+      const label = document.createElement('div');
+      label.className = 'notif-detail-label';
+      label.textContent = entry.label;
+      const value = document.createElement('div');
+      value.className = 'notif-detail-value';
+      value.textContent = entry.value;
+      list.appendChild(label);
+      list.appendChild(value);
+    });
+    detail.appendChild(list);
+  }
+
+  const initiallyOpen = !!transportNotificationExpandedState.get(String(itemId));
+  if (initiallyOpen) {
+    li.classList.add('notif-item-open');
+    row.setAttribute('aria-expanded', 'true');
+  }
+
+  row.addEventListener('click', () => {
+    const isOpen = li.classList.toggle('notif-item-open');
+    row.setAttribute('aria-expanded', String(isOpen));
+    transportNotificationExpandedState.set(String(itemId), isOpen);
+  });
+
+  row.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      row.click();
+    }
+  });
+
+  li.appendChild(row);
+  li.appendChild(detail);
+  return li;
+}
+
+function buildNotificationItem(notification, options = {}) {
+  const {
+    variant = 'system',
+    itemId = '',
+    title = '',
+    summary = '',
+    detailText = '',
+    detailEntries = [],
+    area = '',
+    badge = '',
+  } = options;
+
+  const li = document.createElement('div');
+  li.className = `notif-item notif-${variant}-item`;
+  if (itemId) {
+    li.dataset.notificationId = itemId;
+  }
+
+  const row = document.createElement('button');
+  row.type = 'button';
+  row.className = 'notif-row';
+  row.setAttribute('aria-expanded', 'false');
+
+  const itemKey = itemId || notification?.notificationID || title || summary || Math.random().toString(36).slice(2);
+  const detailId = `notif-detail-${String(itemKey).replace(/[^a-z0-9_-]+/gi, '-').toLowerCase()}`;
+  row.setAttribute('aria-controls', detailId);
+
+  const main = document.createElement('span');
+  main.className = 'notif-main';
+
+  if (badge || variant === 'transport') {
+    const badgeNode = document.createElement('span');
+    badgeNode.className = 'notif-area-tag';
+    badgeNode.textContent = badge || (variant === 'transport' ? 'Live update' : 'Announcement');
+    main.appendChild(badgeNode);
+  }
+
+  const titleNode = document.createElement('span');
+  titleNode.className = 'notif-title';
+  titleNode.textContent = title || summary || localizeNotificationMessage(notification);
+  main.appendChild(titleNode);
+
+  if (summary && summary !== title) {
+    const summaryNode = document.createElement('span');
+    summaryNode.className = 'notif-summary';
+    summaryNode.textContent = summary;
+    main.appendChild(summaryNode);
+  }
+
+  row.appendChild(main);
+
+  const meta = document.createElement('span');
+  meta.className = 'notif-meta';
+
+  if (area) {
+    const areaNode = document.createElement('span');
+    areaNode.className = 'notif-area-tag';
+    areaNode.textContent = area;
+    meta.appendChild(areaNode);
+  }
+
+  const timeNode = document.createElement('span');
+  timeNode.className = 'notif-time';
+  timeNode.textContent = formatNotificationIssuedAt(notification);
+  meta.appendChild(timeNode);
+
+  const chevron = document.createElement('span');
+  chevron.className = 'notif-chevron';
+  chevron.textContent = '\u25B8';
+  meta.appendChild(chevron);
+
+  row.appendChild(meta);
+
+  const detail = document.createElement('div');
+  detail.className = 'notif-detail';
+  detail.id = detailId;
+
+  if (detailText) {
+    const detailTextNode = document.createElement('div');
+    detailTextNode.className = 'notif-detail-text';
+    detailTextNode.textContent = detailText;
+    detail.appendChild(detailTextNode);
+  }
+
+  if (detailEntries.length) {
+    const list = document.createElement('div');
+    list.className = 'notif-detail-list';
+    detailEntries.forEach(entry => {
+      const label = document.createElement('div');
+      label.className = 'notif-detail-label';
+      label.textContent = entry.label;
+      const value = document.createElement('div');
+      value.className = 'notif-detail-value';
+      value.textContent = entry.value;
+      list.appendChild(label);
+      list.appendChild(value);
+    });
+    detail.appendChild(list);
+  }
+
+  row.addEventListener('click', () => {
+    const isOpen = li.classList.toggle('notif-item-open');
+    row.setAttribute('aria-expanded', String(isOpen));
+  });
+
+  row.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      row.click();
+    }
+  });
+
+  li.appendChild(row);
+  li.appendChild(detail);
+  return li;
+}
+
+function renderSystemAnnouncementsList(notifications) {
+  const list = document.getElementById('system-announcements-list');
+  if (!list) {
+    return;
+  }
+
+  clearNode(list);
+  const activeNotifications = filterActiveNotifications(notifications);
+  if (!authState.token) {
+    const emptyNode = document.createElement('div');
+    emptyNode.className = 'notif-empty';
+    emptyNode.textContent = 'Sign in to view system announcements.';
+    list.appendChild(emptyNode);
+    return;
+  }
+
+  if (!activeNotifications.length) {
+    const emptyNode = document.createElement('div');
+    emptyNode.className = 'notif-empty';
+    emptyNode.textContent = 'No system announcements right now.';
+    list.appendChild(emptyNode);
+    return;
+  }
+
+  activeNotifications.forEach(notification => {
+    list.appendChild(
+      buildNotificationItem(notification, {
+        variant: 'system',
+        itemId: notification.notificationID,
+        title: localizeNotificationMessage(notification),
+        summary: localizeNotificationMessage(notification),
+        detailText: notification.message || '',
+        detailEntries: [
+          { label: 'Issued', value: formatNotificationIssuedAt(notification) },
+          { label: 'Source', value: 'System announcement' },
+        ],
+        badge: 'System Announcement',
+      })
+    );
+  });
+}
+
+function renderLiveTransportUpdatesList(notifications) {
+  const container = document.getElementById('live-transport-updates');
+  if (!container) {
+    return;
+  }
+
+  clearNode(container);
+  const activeNotifications = filterActiveNotifications(notifications, 'transport');
+  const activeIds = new Set(activeNotifications.map(item => String(item.notificationID || '')));
+  Array.from(pinnedTransportNotificationIds).forEach(id => {
+    if (!activeIds.has(id)) {
+      pinnedTransportNotificationIds.delete(id);
+      transportNotificationExpandedState.delete(id);
+    }
+  });
+
+  const sortedNotifications = [...activeNotifications].sort((a, b) => {
+    const aPinned = pinnedTransportNotificationIds.has(String(a.notificationID || '')) ? 1 : 0;
+    const bPinned = pinnedTransportNotificationIds.has(String(b.notificationID || '')) ? 1 : 0;
+    if (aPinned !== bPinned) {
+      return bPinned - aPinned;
+    }
+    const aTime = a.issuedAt ? a.issuedAt.getTime() : 0;
+    const bTime = b.issuedAt ? b.issuedAt.getTime() : 0;
+    return bTime - aTime;
+  });
+
+  if (!sortedNotifications.length) {
+    const emptyNode = document.createElement('div');
+    emptyNode.className = 'notif-empty';
+    emptyNode.textContent = 'No live transport updates right now.';
+    container.appendChild(emptyNode);
+    return;
+  }
+
+  const groups = new Map();
+  sortedNotifications.forEach(notification => {
+    const area = String(notification?.area || 'Unspecified area').trim() || 'Unspecified area';
+    if (!groups.has(area)) {
+      groups.set(area, []);
+    }
+    groups.get(area).push(notification);
+  });
+
+  groups.forEach((items, area) => {
+    const group = document.createElement('div');
+    group.className = 'notif-area-group';
+
+    const heading = document.createElement('h4');
+    heading.className = 'notif-area-heading';
+    heading.textContent = area;
+    group.appendChild(heading);
+
+    const list = document.createElement('div');
+    list.className = 'notif-live-groups';
+    items.forEach(notification => {
+      list.appendChild(buildLiveTransportNotificationItem(notification));
+    });
+
+    group.appendChild(list);
+    container.appendChild(group);
+  });
+}
+
+function renderNotificationsPanel() {
+  renderSystemAnnouncementsList(latestSystemAnnouncements);
+  renderLiveTransportUpdatesList(latestTransportUpdates);
+}
+
+async function refreshNotificationsPanel(options = {}) {
+  const { announce = false } = options;
+
+  const systemAnnouncementsPromise = authState.token
+    ? apiRequest('/api/account/notifications').then(response => response.notifications || [])
+    : Promise.resolve([]);
+
+  const transportUpdatesPromise = fetch('/api/transport/notifications')
+    .then(async response => {
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || `Request failed (${response.status})`);
+      }
+      return data.notifications || [];
+    })
+    .catch(error => {
+      console.warn('Failed to load live transport updates:', error.message);
+      return [];
+    });
+
+  const [systemAnnouncements, transportUpdates] = await Promise.all([
+    systemAnnouncementsPromise.catch(error => {
+      console.warn('Failed to load system announcements:', error.message);
+      return [];
+    }),
+    transportUpdatesPromise,
+  ]);
+
+  latestSystemAnnouncements = systemAnnouncements;
+  const nextTransportUpdates = filterActiveNotifications(transportUpdates, 'transport');
+  const nextTransportSignature = transportFeedSignature(nextTransportUpdates);
+  const transportChanged = nextTransportSignature !== latestTransportUpdatesSignature;
+  latestTransportUpdates = nextTransportUpdates;
+  latestTransportUpdatesSignature = nextTransportSignature;
+
+  renderSystemAnnouncementsList(latestSystemAnnouncements);
+  if (transportChanged) {
+    renderLiveTransportUpdatesList(latestTransportUpdates);
+  }
+
+  if (announce) {
+    const totalCount = latestSystemAnnouncements.length + latestTransportUpdates.length;
+    announceToScreenReader(t('announce.notificationsLoaded', { count: totalCount }), 'assertive');
+  }
+}
+
 // Toggle notifications panel visibility
 function toggleNotificationsPanel() {
   const weatherPanel = document.querySelector('.weather-panel');
@@ -2318,7 +2924,11 @@ function toggleNotificationsPanel() {
   const supportPanel = document.getElementById('support-panel');
   const authModal = document.getElementById('auth-modal');
   const accountModal = document.getElementById('account-modal');
-  
+
+  if (!notifPanel) {
+    return;
+  }
+
   notifPanel.classList.toggle('hidden');
   weatherPanel.classList.add('hidden');
 
@@ -2337,8 +2947,17 @@ function toggleNotificationsPanel() {
     authModal?.classList.add('hidden');
     accountModal?.classList.add('hidden');
     updateAccessibilityLinkState(false);
+    refreshNotificationsPanel({ announce: true });
+    clearInterval(notificationsRefreshInterval);
+    notificationsRefreshInterval = setInterval(() => {
+      if (!document.getElementById('notif-panel')?.classList.contains('hidden')) {
+        refreshNotificationsPanel({ announce: false });
+      }
+    }, NOTIFICATIONS_REFRESH_INTERVAL_MS);
     announceToScreenReader(t('announce.notificationsPanelOpened'), 'assertive');
   } else {
+    clearInterval(notificationsRefreshInterval);
+    notificationsRefreshInterval = null;
     announceToScreenReader(t('announce.notificationsPanelClosed'));
   }
 }
@@ -2366,6 +2985,8 @@ function openFaqPanel() {
     accessibilityPanel?.setAttribute('aria-hidden', 'true');
     weatherPanel?.classList.add('hidden');
     notifPanel?.classList.add('hidden');
+    clearInterval(notificationsRefreshInterval);
+    notificationsRefreshInterval = null;
     authModal?.classList.add('hidden');
     accountModal?.classList.add('hidden');
     updateAccessibilityLinkState(false);
@@ -2451,6 +3072,8 @@ function openSupportPanel() {
     accessibilityPanel?.setAttribute('aria-hidden', 'true');
     weatherPanel?.classList.add('hidden');
     notifPanel?.classList.add('hidden');
+    clearInterval(notificationsRefreshInterval);
+    notificationsRefreshInterval = null;
     authModal?.classList.add('hidden');
     accountModal?.classList.add('hidden');
     updateAccessibilityLinkState(false);
@@ -2499,6 +3122,8 @@ function openAccessibilityPanel() {
   supportPanel?.classList.add('hidden');
   weatherPanel?.classList.add('hidden');
   notifPanel?.classList.add('hidden');
+  clearInterval(notificationsRefreshInterval);
+  notificationsRefreshInterval = null;
   authModal?.classList.add('hidden');
   accountModal?.classList.add('hidden');
 
@@ -2614,6 +3239,8 @@ function openAuthModal() {
   // Close other panels when auth modal is opened
   weatherPanel?.classList.add('hidden');
   notifPanel?.classList.add('hidden');
+  clearInterval(notificationsRefreshInterval);
+  notificationsRefreshInterval = null;
   accessibilityPanel?.classList.add('hidden');
   accessibilityPanel?.setAttribute('aria-hidden', 'true');
   faqPanel?.classList.add('hidden');
@@ -2663,6 +3290,8 @@ function openAccountModal() {
   // Close other panels when account modal is opened
   weatherPanel?.classList.add('hidden');
   notifPanel?.classList.add('hidden');
+  clearInterval(notificationsRefreshInterval);
+  notificationsRefreshInterval = null;
   accessibilityPanel?.classList.add('hidden');
   accessibilityPanel?.setAttribute('aria-hidden', 'true');
   faqPanel?.classList.add('hidden');
@@ -2716,7 +3345,8 @@ async function refreshAccountView() {
     renderSavedRoutes(savedRoutesResponse.savedRoutes || []);
 
     const notificationResponse = await apiRequest('/api/account/notifications');
-    renderNotifications(notificationResponse.notifications || []);
+    latestSystemAnnouncements = notificationResponse.notifications || [];
+    renderNotificationsPanel();
   } catch (error) {
     console.warn(error.message);
     setAuthToken(null);
@@ -2983,35 +3613,10 @@ function localizeNotificationMessage(notification) {
 }
 
 function renderNotifications(notifications, options = {}) {
-  const { announce = true } = options;
-  const notifList = document.querySelector('.notif-list');
-  if (!notifList) {
-    return;
-  }
-
-  latestNotifications = Array.isArray(notifications) ? notifications : [];
-
-  notifList.innerHTML = '';
-  if (!latestNotifications.length) {
-    const emptyNode = document.createElement('div');
-    emptyNode.className = 'notif-item';
-    emptyNode.textContent = t('notifications.none');
-    notifList.appendChild(emptyNode);
-    if (announce) {
-      announceToScreenReader(t('announce.noNotifications'));
-    }
-    return;
-  }
-
-  latestNotifications.slice(0, 5).forEach(item => {
-    const row = document.createElement('div');
-    row.className = 'notif-item';
-    row.textContent = localizeNotificationMessage(item);
-    notifList.appendChild(row);
-  });
-
-  if (announce) {
-    announceToScreenReader(t('announce.notificationsLoaded', { count: Math.min(latestNotifications.length, 5) }), 'assertive');
+  latestSystemAnnouncements = Array.isArray(notifications) ? notifications : [];
+  renderNotificationsPanel();
+  if (options.announce) {
+    announceToScreenReader(t('announce.notificationsLoaded', { count: latestSystemAnnouncements.length }), 'assertive');
   }
 }
 

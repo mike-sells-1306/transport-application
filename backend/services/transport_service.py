@@ -3,7 +3,7 @@ from adapters.transport_adapters import (
     RailDeparturesAdapter, RoutePlannerAdapter,
 )
 from adapters.weather_adapter import WeatherAdapter
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 
 from routing.aggregator import RouteAggregator
@@ -129,3 +129,201 @@ class TransportService:
     def get_weather(self, latitude: float, longitude: float):
         raw_data = self.weather.fetch_weather(latitude, longitude)
         return self.weather.parse_weather(raw_data)
+
+    def get_transport_notifications(self, limit: int = 30):
+        """Return a live notification feed derived from SCC transport data.
+
+        The feed combines rail departure board delay notices with bus live
+        journey-time updates. Results are sorted by severity and truncated to
+        *limit* items.
+        """
+
+        def _hhmm_to_minutes(value):
+            value = str(value or '').strip()
+            if not value or ':' not in value:
+                return None
+            try:
+                hour_str, minute_str = value.split(':', 1)
+                return int(hour_str) * 60 + int(minute_str)
+            except Exception:
+                return None
+
+        def _fmt_minutes(total_minutes):
+            total_minutes = int(total_minutes or 0)
+            return f"{(total_minutes // 60) % 24:02d}:{total_minutes % 60:02d}"
+
+        def _iso_now(dt_value):
+            return dt_value.replace(microsecond=0).isoformat().replace('+00:00', 'Z')
+
+        def _format_area(start, end):
+            start = str(start or '').strip()
+            end = str(end or '').strip()
+            if start and end and start != end:
+                return f"{start} → {end}"
+            return start or end or 'Unknown area'
+
+        def _build_service_stops(stops, segment_mins, depart_mins, max_count=None):
+            service_stops = []
+            if not stops:
+                return service_stops
+
+            limit = len(stops) if max_count is None else min(len(stops), max(0, int(max_count)))
+            elapsed = 0
+            for idx, stop in enumerate(stops[:limit]):
+                if idx > 0 and segment_mins:
+                    segment_index = min(idx - 1, len(segment_mins) - 1)
+                    elapsed += int(segment_mins[segment_index] or 0)
+                service_stops.append({
+                    'name': str(stop.get('name') or '').strip(),
+                    'estimated': _fmt_minutes(depart_mins + elapsed),
+                })
+            return service_stops
+
+        now = datetime.now(timezone.utc)
+        now_iso = _iso_now(now)
+        expires_iso = _iso_now(now + timedelta(hours=2))
+        updates = []
+
+        # Rail delays from departure boards.
+        for crs_code, station in self.route_planner.STATIONS.items():
+            try:
+                departures = self.route_planner._fetch_rail_departures_cached(crs_code)
+            except Exception:
+                continue
+
+            station_name = station.get('name') or crs_code
+            for service in departures.get('services', []):
+                std = str(service.get('std') or '').strip()
+                etd = str(service.get('etd') or '').strip()
+                std_mins = _hhmm_to_minutes(std)
+                etd_mins = _hhmm_to_minutes(etd)
+
+                delay_mins = None
+                status_text = ''
+                if std_mins is not None and etd_mins is not None:
+                    delay_mins = etd_mins - std_mins
+                    if delay_mins < -12 * 60:
+                        delay_mins += 24 * 60
+                    delay_mins = max(0, delay_mins)
+                    if delay_mins == 0:
+                        continue
+                    if delay_mins > 12 * 60:
+                        continue
+                    status_text = f"Delayed by {delay_mins} min"
+                elif etd and etd.lower() not in {'on time', 'due', 'now'}:
+                    status_text = etd
+                else:
+                    continue
+
+                origin = (service.get('origin') or {}).get('name') or station_name
+                destination = (service.get('destination') or {}).get('name') or ''
+                operator = service.get('operator') or service.get('operator_code') or 'Rail'
+                platform = str(service.get('platform') or '').strip()
+                calling_points = service.get('calling_points') or []
+                next_stop = calling_points[0] if calling_points else {}
+                detail_points = [
+                    {
+                        'name': point.get('name') or '',
+                        'scheduled': point.get('scheduled') or '',
+                        'estimated': point.get('estimated') or '',
+                    }
+                    for point in calling_points[:4]
+                    if point
+                ]
+
+                updates.append({
+                    'notificationID': f"rail-{crs_code}-{service.get('service_id') or std or etd}",
+                    'area': station_name,
+                    'category': 'delay',
+                    'transportType': 'rail',
+                    'title': f"{origin} → {destination}".strip(' →'),
+                    'summary': f"{operator} · {status_text}".strip(' ·'),
+                    'message': f"{operator} service {std or 'unknown'} → {etd or 'unknown'} at {station_name}",
+                    'issuedAt': now_iso,
+                    'expiresAt': expires_iso,
+                    'details': {
+                        'station': station_name,
+                        'origin': origin,
+                        'destination': destination,
+                        'nextStop': next_stop.get('name') or destination,
+                        'serviceId': service.get('service_id') or '',
+                        'serviceType': service.get('service_type') or 'rail',
+                        'operator': operator,
+                        'platform': platform,
+                        'scheduledDeparture': std,
+                        'estimatedDeparture': etd,
+                        'delayMinutes': delay_mins,
+                        'serviceStops': detail_points,
+                        'callingPoints': detail_points,
+                        'source': 'SCC rail departures',
+                    },
+                    'priority': 100 + min(int(delay_mins or 0), 60),
+                })
+
+        # Bus live journey-time updates.
+        try:
+            current_mins = now.hour * 60 + now.minute
+        except Exception:
+            current_mins = 0
+
+        for service in getattr(self.route_planner, 'BUS_SERVICES', []):
+            live_origin_deps, live_total_duration = self.route_planner._live_departures_for_service(
+                service.get('service', ''),
+                current_mins,
+            )
+            if live_total_duration is None:
+                continue
+
+            expected_total_duration = sum(self.route_planner._estimate_segment_mins(service))
+            duration_delta = int(live_total_duration - expected_total_duration)
+            stops = service.get('stops') or []
+            start_stop = (stops[0].get('name') if stops else '') or service.get('service', '')
+            end_stop = (stops[-1].get('name') if len(stops) > 1 else '') or start_stop
+            area = _format_area(start_stop, end_stop)
+            operator = service.get('operator') or 'Bus'
+            route_label = service.get('service') or operator
+            upcoming_departures = [_fmt_minutes(dep) for dep in live_origin_deps[:3]]
+            segment_mins = self.route_planner._estimate_segment_mins(service)
+            base_depart_mins = live_origin_deps[0] if live_origin_deps else current_mins
+            service_stops = _build_service_stops(stops, segment_mins, base_depart_mins)
+            next_stop = service_stops[1]['name'] if len(service_stops) > 1 else end_stop
+
+            is_delay = duration_delta > 4
+            category = 'delay' if is_delay else 'travel-info'
+            delay_text = f"{duration_delta} min delay" if is_delay else f"live journey {live_total_duration} min"
+
+            updates.append({
+                'notificationID': f"bus-{route_label.replace(' ', '-').lower()}-{area.replace(' ', '-').lower()}",
+                'area': area,
+                'category': category,
+                'transportType': 'bus',
+                'title': f"{start_stop} → {end_stop}",
+                'summary': f"{operator} · {delay_text}",
+                'message': f"{operator} live feed reports {live_total_duration} minutes for {route_label}.",
+                'issuedAt': now_iso,
+                'expiresAt': expires_iso,
+                'details': {
+                    'service': route_label,
+                    'operator': operator,
+                    'area': area,
+                    'origin': start_stop,
+                    'destination': end_stop,
+                    'nextStop': next_stop,
+                    'expectedDurationMinutes': expected_total_duration,
+                    'liveDurationMinutes': live_total_duration,
+                    'delayMinutes': duration_delta if duration_delta > 4 else None,
+                    'upcomingDepartures': upcoming_departures,
+                    'serviceStops': service_stops,
+                    'source': 'SCC live bus feed',
+                },
+                'priority': 70 + min(max(duration_delta, 0), 40),
+            })
+
+        updates.sort(
+            key=lambda item: (
+                -int(item.get('priority', 0) or 0),
+                item.get('issuedAt', ''),
+                item.get('notificationID', ''),
+            )
+        )
+        return updates[:max(0, int(limit))]

@@ -1250,6 +1250,16 @@ def create_admin_notification():
     return jsonify({"message": "Notification created", "count": len(notifications)}), 201
 
 
+@app.route("/api/transport/notifications", methods=["GET"])
+def get_transport_notifications():
+    try:
+        updates = transport_service.get_transport_notifications(limit=30)
+        return jsonify({"notifications": updates})
+    except Exception as exc:
+        app.logger.error(f"Transport notifications error: {exc}")
+        return jsonify({"notifications": [], "error": str(exc)}), 500
+
+
 @app.route("/api/account/weather-locations", methods=["GET"])
 @auth_required
 def get_weather_locations():

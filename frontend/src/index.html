@@ -148,18 +148,24 @@
     <!-- Notifications Panel (hidden by default) -->
     <section class="notif-panel hidden" id="notif-panel" role="region" aria-labelledby="notif-panel-title">
       <div class="panel-header" id="notif-panel-title" data-i18n="notifications.title">Notifications</div>
-      <div class="notif-list" role="log" aria-live="assertive" aria-relevant="additions text" aria-atomic="false">
-        <div class="notif-item">
-          <strong data-i18n="notifications.announcementPrefix">ANNOUNCEMENT:</strong>
-          <span data-i18n="notifications.sample.one">Train to Blackpool delayed by 12 minutes.</span>
-          <span class="notif-time" data-i18n="notifications.sample.oneTime">12m ago</span>
-        </div>
-        <div class="notif-item">
-          <strong data-i18n="notifications.announcementPrefix">ANNOUNCEMENT:</strong>
-          <span data-i18n="notifications.sample.two">Snow warning in Barrow-in-Furness.</span>
-          <span class="notif-time" data-i18n="notifications.sample.twoTime">4h ago</span>
-        </div>
-        <div class="notif-item more" data-i18n="notifications.viewMore">View more…</div>
+      <div class="notif-panel-body">
+        <section class="notif-section" aria-labelledby="system-announcements-title">
+          <div class="notif-section-header">
+            <h3 class="notif-section-title" id="system-announcements-title">System Announcements</h3>
+          </div>
+          <div class="notif-list notif-system-list" id="system-announcements-list" role="log" aria-live="polite" aria-relevant="additions text" aria-atomic="false">
+            <div class="notif-loading">Loading system announcements…</div>
+          </div>
+        </section>
+
+        <section class="notif-section" aria-labelledby="live-transport-updates-title">
+          <div class="notif-section-header">
+            <h3 class="notif-section-title" id="live-transport-updates-title">Live Transport Updates</h3>
+          </div>
+          <div class="notif-live-groups" id="live-transport-updates" role="log" aria-live="polite" aria-relevant="additions text" aria-atomic="false">
+            <div class="notif-loading">Loading live transport updates…</div>
+          </div>
+        </section>
       </div>
     </section>
 
