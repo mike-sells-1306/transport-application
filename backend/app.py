@@ -879,6 +879,17 @@ def _parse_iso_datetime(value):
         return None
 
 
+def _normalise_saved_route_name(route_name: str) -> str:
+    """Normalize saved-route names to route templates (not timed journey instances)."""
+    name = (route_name or '').strip()
+    if not name:
+        return ''
+
+    # Drop trailing time-instance suffixes like "(08:10–09:05)" if present.
+    name = re.sub(r"\s*\(\s*\d{1,2}:\d{2}\s*[–-]\s*\d{1,2}:\d{2}\s*\)\s*$", "", name)
+    return re.sub(r"\s+", " ", name).strip()
+
+
 def auth_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
@@ -1119,24 +1130,19 @@ def get_saved_routes():
 def save_route():
     data = request.get_json(silent=True) or {}
 
-    route_name = (data.get("routeName") or "").strip()
+    route_name = _normalise_saved_route_name((data.get("routeName") or "").strip())
     route_start = (data.get("routeStart") or "").strip()
     route_end = (data.get("routeEnd") or "").strip()
-    start_time = _parse_iso_datetime(data.get("startTime"))
-    end_time = _parse_iso_datetime(data.get("endTime"))
     disruption = data.get("disruption")
 
     if not route_name or not route_start or not route_end:
         return _json_error("routeName, routeStart and routeEnd are required")
 
     route = (
-        Route.query.filter_by(
-            route_name=route_name,
-            route_start=route_start,
-            route_end=route_end,
-            start_time=start_time,
-            end_time=end_time,
-        ).first()
+        Route.query.filter(
+            Route.route_start == route_start,
+            Route.route_end == route_end,
+        ).order_by(Route.id.asc()).first()
     )
 
     if not route:
@@ -1144,12 +1150,18 @@ def save_route():
             route_name=route_name,
             route_start=route_start,
             route_end=route_end,
-            start_time=start_time,
-            end_time=end_time,
+            start_time=None,
+            end_time=None,
             disruption=disruption,
         )
         db.session.add(route)
         db.session.flush()
+    else:
+        # Keep saved routes as reusable templates, not single dated departures.
+        route.route_name = route_name
+        route.start_time = None
+        route.end_time = None
+        route.disruption = disruption
 
     existing_save = Save.query.filter_by(user_id=g.current_user.id, route_id=route.id).first()
     if not existing_save:

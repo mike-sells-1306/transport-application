@@ -6,6 +6,7 @@
 const authState = {
   token: localStorage.getItem('authToken') || null,
   user: null,
+  savedRoutes: [],
 };
 
 const ACCESSIBILITY_DEFAULTS = {
@@ -3430,7 +3431,9 @@ async function refreshAccountView() {
     }
 
     const savedRoutesResponse = await apiRequest('/api/account/saved-routes');
-    renderSavedRoutes(savedRoutesResponse.savedRoutes || []);
+    authState.savedRoutes = savedRoutesResponse.savedRoutes || [];
+    renderSavedRoutes(authState.savedRoutes);
+    updateVisibleRouteSaveButtons();
 
     const notificationResponse = await apiRequest('/api/account/notifications');
     latestSystemAnnouncements = notificationResponse.notifications || [];
@@ -3448,8 +3451,18 @@ function renderSavedRoutes(savedRoutes) {
     return;
   }
 
+  const uniqueByPair = [];
+  const seenPairs = new Set();
+  (savedRoutes || []).forEach(route => {
+    const key = buildSavedRouteKey(route.routeStart, route.routeEnd);
+    if (!seenPairs.has(key)) {
+      seenPairs.add(key);
+      uniqueByPair.push(route);
+    }
+  });
+
   list.innerHTML = '';
-  if (!savedRoutes.length) {
+  if (!uniqueByPair.length) {
     const emptyItem = document.createElement('li');
     emptyItem.className = 'saved-route-item empty';
     emptyItem.textContent = t('account.noSavedRoutes');
@@ -3458,7 +3471,7 @@ function renderSavedRoutes(savedRoutes) {
     return;
   }
 
-  savedRoutes.forEach((route, index) => {
+  uniqueByPair.forEach((route, index) => {
     const item = document.createElement('li');
     item.className = 'saved-route-item clickable';
     item.setAttribute('role', 'button');
@@ -3508,35 +3521,6 @@ async function viewSavedRoute(savedRoute) {
   if (fromInput) fromInput.value = savedRoute.routeStart;
   if (toInput) toInput.value = savedRoute.routeEnd;
 
-  const resolveSavedRouteStop = async (name) => {
-    if (!name || typeof name !== 'string') {
-      return { name: name || '' };
-    }
-    try {
-      const response = await fetch(`/api/stops/search?q=${encodeURIComponent(name)}&limit=1`);
-      if (!response.ok) {
-        return { name };
-      }
-      const data = await response.json();
-      if (Array.isArray(data?.stops) && data.stops.length > 0) {
-        return data.stops[0];
-      }
-      return { name };
-    } catch (_error) {
-      return { name };
-    }
-  };
-
-  const [fromResolved, toResolved] = await Promise.all([
-    resolveSavedRouteStop(savedRoute.routeStart),
-    resolveSavedRouteStop(savedRoute.routeEnd),
-  ]);
-  selectedStops.from = fromResolved;
-  selectedStops.to = toResolved;
-  syncSelectedStopMapMarkers({ focus: true });
-  setFieldError('from-input', 'from-input-error', '');
-  setFieldError('to-input', 'to-input-error', '');
-
   try {
     const [resolvedFrom, resolvedTo] = await Promise.all([
       resolveSavedRouteStop(savedRoute.routeStart),
@@ -3564,6 +3548,38 @@ async function viewSavedRoute(savedRoute) {
       alert(t('alerts.couldNotLoadRoutesTryAgain'));
     }
   }
+}
+
+function buildSavedRouteKey(routeStart, routeEnd) {
+  return `${normalizeStopNameForMatching(routeStart)}__${normalizeStopNameForMatching(routeEnd)}`;
+}
+
+function getCurrentRoutePairKey() {
+  const fromName = (currentRoutesData && currentRoutesData.from) || selectedStops.from?.name || '';
+  const toName = (currentRoutesData && currentRoutesData.to) || selectedStops.to?.name || '';
+  return buildSavedRouteKey(fromName, toName);
+}
+
+function getSavedRoutesForCurrentPair() {
+  const key = getCurrentRoutePairKey();
+  if (!key || key === '__') {
+    return [];
+  }
+  return (authState.savedRoutes || []).filter(route =>
+    buildSavedRouteKey(route.routeStart, route.routeEnd) === key
+  );
+}
+
+function updateVisibleRouteSaveButtons() {
+  const isPairSaved = getSavedRoutesForCurrentPair().length > 0;
+  document.querySelectorAll('.route-save-btn').forEach(button => {
+    button.classList.toggle('saved', isPairSaved);
+    button.disabled = false;
+    button.textContent = isPairSaved ? t('route.saved') : t('route.save');
+    if (isPairSaved) {
+      button.setAttribute('aria-label', t('route.savedAria'));
+    }
+  });
 }
 
 function normalizeStopNameForMatching(name) {
@@ -3758,6 +3774,7 @@ async function handleLogout() {
 
   setAuthToken(null);
   authState.user = null;
+  authState.savedRoutes = [];
   closeAccountModal();
   openAuthModal();
 }
@@ -3809,6 +3826,7 @@ async function handleDeleteAccount() {
     });
     setAuthToken(null);
     authState.user = null;
+    authState.savedRoutes = [];
     closeAccountModal();
     openAuthModal();
     alert(t('alerts.accountDeleted'));
@@ -4432,16 +4450,18 @@ async function searchRoutes() {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('Error searching routes:', errorData.error);
-      announceToScreenReader(errorData.error || t('alerts.unableToFindRoutes'), 'assertive');
+      const errorMessage = errorData.error || t('alerts.unableToFindRoutes');
+      console.error('Error searching routes:', errorMessage);
+      announceToScreenReader(errorMessage, 'assertive');
       const modal = document.getElementById('route-modal');
       const routeList = document.querySelector('.route-list');
-      if (modal) {
-        modal.classList.add('hidden');
-        resetFloatingPanelToDefault('route-modal');
-      }
       if (routeList) {
         routeList.removeAttribute('aria-busy');
+        routeList.innerHTML = `<div class="route-row">${escapeHtml(errorMessage)}</div>`;
+      }
+      if (modal && modal.classList.contains('hidden')) {
+        resetFloatingPanelToDefault('route-modal');
+        modal.classList.remove('hidden');
       }
       return;
     }
@@ -4990,7 +5010,7 @@ function buildRouteSavePayload(route) {
     .join(' + ') || t('route.genericName');
 
   return {
-    routeName: `${transportLabel} (${route.start_time}–${route.end_time})`,
+    routeName: transportLabel,
     routeStart: fromName,
     routeEnd: toName,
   };
@@ -5047,14 +5067,34 @@ async function handleSaveSearchedRoute(route, saveButton) {
       method: 'POST',
       body: payload,
     });
-
-    saveButton.textContent = t('route.saved');
-    saveButton.classList.add('saved');
-    saveButton.disabled = true;
-    saveButton.setAttribute('aria-label', t('route.savedAria'));
     announceToScreenReader(t('announce.routeSaved'));
 
     await refreshAccountView();
+    updateVisibleRouteSaveButtons();
+  } catch (error) {
+    alert(localizeApiErrorMessage(error.message, 'alerts.saveRouteFailed'));
+  }
+}
+
+async function handleUnsaveCurrentRoute(saveButton) {
+  if (!authState.token) {
+    return;
+  }
+
+  const matches = getSavedRoutesForCurrentPair();
+  if (!matches.length) {
+    saveButton.classList.remove('saved');
+    saveButton.textContent = t('route.save');
+    return;
+  }
+
+  try {
+    await Promise.all(matches.map(route =>
+      apiRequest(`/api/account/saved-routes/${route.routeID}`, { method: 'DELETE' })
+    ));
+    announceToScreenReader('Saved route removed.');
+    await refreshAccountView();
+    updateVisibleRouteSaveButtons();
   } catch (error) {
     alert(localizeApiErrorMessage(error.message, 'alerts.saveRouteFailed'));
   }
@@ -5273,7 +5313,11 @@ function renderRoutesTable(routes) {
     }));
     saveBtn.addEventListener('click', event => {
       event.stopPropagation();
-      handleSaveSearchedRoute(route, saveBtn);
+      if (saveBtn.classList.contains('saved')) {
+        handleUnsaveCurrentRoute(saveBtn);
+      } else {
+        handleSaveSearchedRoute(route, saveBtn);
+      }
     });
 
     // Expand indicator
@@ -5300,6 +5344,8 @@ function renderRoutesTable(routes) {
 
     routeList.appendChild(routeRow);
   });
+
+  updateVisibleRouteSaveButtons();
 
   announceToScreenReader(t('announce.routesAvailable', { count: modeFilteredRoutes.length }));
 }
