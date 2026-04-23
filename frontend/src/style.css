@@ -1097,7 +1097,7 @@ body.sidebar-minimized {
   font-size: 1.12rem;
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   flex-shrink: 0;
-
+      transition: background 0.15s ease;
 }
 .route-row.alt {
   background: rgba(255,255,255,0.13);
@@ -1179,9 +1179,6 @@ body.sidebar-minimized {
 }
 .route-row.expanded .route-expand-icon {
   transform: rotate(180deg);
-}
-.route-row {
-  transition: background 0.15s ease;
 }
 .route-row:hover {
   background: rgba(255,255,255,0.18);
@@ -1478,11 +1475,6 @@ body.sidebar-minimized {
 .icon-sun {
   width: 22px; height: 22px;
   background: url('data:image/svg+xml;utf8,<svg fill="orange" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><g stroke="orange" stroke-width="2"><line x1="12" y1="1" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="23"/><line x1="1" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="23" y2="12"/><line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/><line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/></g></svg>') center/contain no-repeat;
-  display: inline-block;
-}
-.icon-cloud {
-  width: 22px; height: 22px;
-  background: url('data:image/svg+xml;utf8,<svg fill="%23444" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 18H6a4 4 0 010-8 5.5 5.5 0 0110.9 1.1A4.5 4.5 0 0119 18z"/></svg>') center/contain no-repeat;
   display: inline-block;
 }
 .icon-rain {
