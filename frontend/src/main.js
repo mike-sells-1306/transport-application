@@ -30,12 +30,11 @@ const accessibilityState = {
 };
 
 const DEFAULT_LOCALE = 'en-GB';
-const SUPPORTED_LOCALES = ['en-GB', 'en-US', 'cy-GB', 'fr-FR', 'de-DE', 'es-ES', 'zh-CN', 'hi-IN', 'ar', 'bn-BD', 'pt-BR', 'ru-RU', 'ur-PK'];
+const SUPPORTED_LOCALES = ['en-GB', 'cy-GB', 'fr-FR', 'de-DE', 'es-ES', 'zh-CN', 'hi-IN', 'ar', 'bn-BD', 'pt-BR', 'ru-RU', 'ur-PK'];
 const RESOURCE_LOCALES = ['en-GB', 'cy-GB', 'fr-FR', 'de-DE', 'es-ES', 'zh-CN', 'hi-IN', 'ar', 'bn-BD', 'pt-BR', 'ru-RU', 'ur-PK'];
 const LOCALE_STORAGE_KEY = 'preferredLocale';
 const LOCALE_DISPLAY_LABELS = {
   'en-GB': '🇬🇧 English (United Kingdom)',
-  'en-US': '🇺🇸 English (United States)',
   'cy-GB': '🏴 Cymraeg (Y Deyrnas Unedig)',
   'fr-FR': '🇫🇷 Français (France)',
   'de-DE': '🇩🇪 Deutsch (Deutschland)',
@@ -318,7 +317,6 @@ let stopOverlayRequestToken = 0;
 let stopOverlayDebounceTimer = null;
 const STOP_OVERLAY_ZOOM_THRESHOLD = 14;
 const STOP_OVERLAY_FETCH_LIMIT = 450;
-const STOP_NO_DATA_MESSAGE = 'Service information is currently unavailable for this stop. Please check again shortly.';
 
 const LOCATION_CATALOG = [
   {
@@ -588,8 +586,8 @@ function syncSelectedStopMapMarkers(options = {}) {
   }
 
   const stopConfigs = [
-    { key: 'from', color: '#0ea5e9', number: '1', popupLabel: 'Start' },
-    { key: 'to', color: '#f97316', number: '2', popupLabel: 'End' },
+    { key: 'from', color: '#0ea5e9', number: '1', popupLabel: t('stopServices.startMarker') },
+    { key: 'to', color: '#f97316', number: '2', popupLabel: t('stopServices.endMarker') },
   ];
 
   stopConfigs.forEach(({ key, color, number, popupLabel }) => {
@@ -638,12 +636,14 @@ function openStopServicesModal(stopName) {
   if (!modal || !title) {
     return;
   }
-  title.textContent = stopName || 'Stop';
+  title.textContent = stopName || t('stopServices.defaultStopName');
   if (modal.classList.contains('hidden')) {
     resetFloatingPanelToDefault('stop-services-modal');
     modal.classList.remove('hidden');
   }
-  announceToScreenReader(`Opened service details for ${stopName || 'selected stop'}.`);
+  announceToScreenReader(
+    t('announce.stopServicesOpened', { stop: stopName || t('stopServices.selectedStop') })
+  );
 }
 
 function closeStopServicesModal() {
@@ -652,7 +652,7 @@ function closeStopServicesModal() {
     return;
   }
   modal.classList.add('hidden');
-  announceToScreenReader('Closed stop service details.');
+  announceToScreenReader(t('announce.stopServicesClosed'));
 }
 
 function renderStopServicesModalLoading(stop) {
@@ -664,8 +664,8 @@ function renderStopServicesModalLoading(stop) {
     <div class="route-loading" role="status" aria-live="polite">
       <div class="route-loading-spinner" aria-hidden="true"></div>
       <div class="route-loading-texts">
-        <strong>Loading services…</strong>
-        <span>${escapeHtml(stop?.name || 'Stop')}</span>
+        <strong>${escapeHtml(t('stopServices.loading'))}</strong>
+        <span>${escapeHtml(stop?.name || t('stopServices.defaultStopName'))}</span>
       </div>
     </div>
   `;
@@ -676,7 +676,7 @@ function renderStopServicesModalNoData() {
   if (!list) {
     return;
   }
-  list.innerHTML = `<div class="route-row stop-modal-empty">${escapeHtml(STOP_NO_DATA_MESSAGE)}</div>`;
+  list.innerHTML = `<div class="route-row stop-modal-empty">${escapeHtml(t('stopServices.noDataMessage'))}</div>`;
 }
 
 function buildStopServiceRow(service) {
@@ -684,7 +684,7 @@ function buildStopServiceRow(service) {
   const icon = mode === 'train'
     ? '<span class="icon-train" aria-hidden="true"></span>'
     : '<span class="icon-bus" aria-hidden="true"></span>';
-  const serviceName = String(service?.service || '').trim() || 'Service';
+  const serviceName = String(service?.service || '').trim() || t('stopServices.genericServiceName');
   const finalDestination = String(service?.finalDestination || '').trim();
   const arrivalAtStop = String(service?.arrivalAtStop || '').trim();
   const arrivalAtFinalDestination = String(service?.arrivalAtFinalDestination || '').trim();
@@ -694,7 +694,7 @@ function buildStopServiceRow(service) {
   }
 
   return `
-    <tr class="stop-service-row" role="row" aria-label="${escapeHtml(serviceName)} to ${escapeHtml(finalDestination)}">
+    <tr class="stop-service-row" role="row" aria-label="${escapeHtml(t('stopServices.rowAria', { service: serviceName, destination: finalDestination }))}">
       <td class="stop-service-col-mode" role="cell">${icon}</td>
       <td class="stop-service-col-stop-time" role="cell">${escapeHtml(formatLocalizedClockTime(arrivalAtStop))}</td>
       <td class="stop-service-col-final-time" role="cell">${escapeHtml(formatLocalizedClockTime(arrivalAtFinalDestination))}</td>
@@ -723,14 +723,14 @@ function renderStopServicesModal(stop, services) {
   }
 
   list.innerHTML = `
-    <table class="stop-services-table" role="table" aria-label="Upcoming services for ${escapeHtml(stop?.name || 'stop')}">
+    <table class="stop-services-table" role="table" aria-label="${escapeHtml(t('stopServices.tableAria', { stop: stop?.name || t('stopServices.defaultStopName') }))}">
       <thead>
         <tr>
           <th aria-hidden="true"></th>
-          <th>At stop</th>
-          <th>Final arrival</th>
-          <th>Service</th>
-          <th>Final destination</th>
+          <th>${escapeHtml(t('stopServices.headers.atStop'))}</th>
+          <th>${escapeHtml(t('stopServices.headers.finalArrival'))}</th>
+          <th>${escapeHtml(t('stopServices.headers.service'))}</th>
+          <th>${escapeHtml(t('stopServices.headers.finalDestination'))}</th>
         </tr>
       </thead>
       <tbody>
@@ -2464,10 +2464,14 @@ function getTransportCollapsedSummary(notification) {
   const delayMinutes = Number(details.delayMinutes ?? 0);
   const liveMinutes = Number(details.liveDurationMinutes ?? 0);
 
-  const routeLine = origin && destination ? `${origin} → ${destination}` : (notification?.title || notification?.summary || 'Live update');
+  const routeLine = origin && destination ? `${origin} → ${destination}` : (notification?.title || notification?.summary || t('notifications.live.statusUpdate'));
   const delayText = delayMinutes > 0
-    ? `${delayMinutes} min delay`
-    : (notification?.category === 'delay' ? 'Delay' : (liveMinutes > 0 ? `Live journey ${liveMinutes} min` : 'Live update'));
+    ? t('notifications.live.statusDelayMinutes', { minutes: delayMinutes })
+    : (notification?.category === 'delay'
+      ? t('notifications.live.statusDelay')
+      : (liveMinutes > 0
+        ? t('notifications.live.statusLiveJourneyMinutes', { minutes: liveMinutes })
+        : t('notifications.live.statusUpdate')));
 
   return {
     routeLine,
@@ -2487,18 +2491,27 @@ function getTransportDetailEntries(notification) {
     entries.push({ label, value: String(value) });
   };
 
-  push('Provider', details.operator || notification?.provider || '');
-  push('Service', details.service || details.serviceId || '');
-  push('Origin', details.origin || '');
-  push('Destination', details.destination || '');
-  push('Next stop', details.nextStop || '');
-  push('Platform', details.platform || '');
-  push('Scheduled', details.scheduledDeparture || '');
-  push('Estimated', details.estimatedDeparture || '');
-  push('Delay', details.delayMinutes != null ? `${details.delayMinutes} min` : '');
-  push('Expected journey', details.expectedDurationMinutes != null ? `${details.expectedDurationMinutes} min` : '');
-  push('Live journey', details.liveDurationMinutes != null ? `${details.liveDurationMinutes} min` : '');
-  push('Issued', formatNotificationIssuedAt(notification));
+  push(t('notifications.live.detailLabels.provider'), details.operator || notification?.provider || '');
+  push(t('notifications.live.detailLabels.service'), details.service || details.serviceId || '');
+  push(t('notifications.live.detailLabels.origin'), details.origin || '');
+  push(t('notifications.live.detailLabels.destination'), details.destination || '');
+  push(t('notifications.live.detailLabels.nextStop'), details.nextStop || '');
+  push(t('notifications.live.detailLabels.platform'), details.platform || '');
+  push(t('notifications.live.detailLabels.scheduled'), details.scheduledDeparture || '');
+  push(t('notifications.live.detailLabels.estimated'), details.estimatedDeparture || '');
+  push(
+    t('notifications.live.detailLabels.delay'),
+    details.delayMinutes != null ? t('notifications.live.minutesValue', { minutes: details.delayMinutes }) : ''
+  );
+  push(
+    t('notifications.live.detailLabels.expectedJourney'),
+    details.expectedDurationMinutes != null ? t('notifications.live.minutesValue', { minutes: details.expectedDurationMinutes }) : ''
+  );
+  push(
+    t('notifications.live.detailLabels.liveJourney'),
+    details.liveDurationMinutes != null ? t('notifications.live.minutesValue', { minutes: details.liveDurationMinutes }) : ''
+  );
+  push(t('notifications.live.detailLabels.issued'), formatNotificationIssuedAt(notification));
 
   const serviceStops = Array.isArray(details.serviceStops) ? details.serviceStops : Array.isArray(details.callingPoints) ? details.callingPoints : [];
   if (serviceStops.length) {
@@ -2513,14 +2526,14 @@ function getTransportDetailEntries(notification) {
       })
       .filter(Boolean)
       .join(' · ');
-    push('Stops', stopsText);
+    push(t('notifications.live.detailLabels.stops'), stopsText);
   }
 
   if (Array.isArray(details.upcomingDepartures) && details.upcomingDepartures.length) {
-    push('Upcoming departures', details.upcomingDepartures.join(', '));
+    push(t('notifications.live.detailLabels.upcomingDepartures'), details.upcomingDepartures.join(', '));
   }
 
-  push('Source', details.source || '');
+  push(t('notifications.live.detailLabels.source'), details.source || '');
   return entries;
 }
 
@@ -2565,7 +2578,8 @@ function buildLiveTransportNotificationItem(notification) {
   pinButton.type = 'button';
   pinButton.className = 'notif-pin-btn';
   pinButton.setAttribute('aria-pressed', String(isPinned));
-  pinButton.setAttribute('aria-label', isPinned ? 'Unpin transport update' : 'Pin transport update');
+  pinButton.setAttribute('aria-label', isPinned ? t('notifications.live.unpinAria') : t('notifications.live.pinAria'));
+  pinButton.setAttribute('title', isPinned ? t('notifications.live.unpinAria') : t('notifications.live.pinAria'));
   pinButton.textContent = isPinned ? '★' : '☆';
   pinButton.addEventListener('click', event => {
     event.preventDefault();
@@ -2592,6 +2606,7 @@ function buildLiveTransportNotificationItem(notification) {
   const chevron = document.createElement('span');
   chevron.className = 'notif-chevron';
   chevron.textContent = '\u25B8';
+  chevron.setAttribute('aria-hidden', 'true');
   meta.appendChild(chevron);
 
   row.appendChild(meta);
@@ -2622,6 +2637,15 @@ function buildLiveTransportNotificationItem(notification) {
     li.classList.add('notif-item-open');
     row.setAttribute('aria-expanded', 'true');
   }
+
+  row.setAttribute(
+    'aria-label',
+    t('notifications.live.toggleRowAria', {
+      route: collapsed.routeLine,
+      provider: collapsed.provider || t('notifications.live.unknownProvider'),
+      status: collapsed.delayText,
+    })
+  );
 
   row.addEventListener('click', () => {
     const isOpen = li.classList.toggle('notif-item-open');
@@ -2674,7 +2698,9 @@ function buildNotificationItem(notification, options = {}) {
   if (badge || variant === 'transport') {
     const badgeNode = document.createElement('span');
     badgeNode.className = 'notif-area-tag';
-    badgeNode.textContent = badge || (variant === 'transport' ? 'Live update' : 'Announcement');
+    badgeNode.textContent = badge || (variant === 'transport'
+      ? t('notifications.live.badge')
+      : t('notifications.system.badge'));
     main.appendChild(badgeNode);
   }
 
@@ -2710,6 +2736,7 @@ function buildNotificationItem(notification, options = {}) {
   const chevron = document.createElement('span');
   chevron.className = 'notif-chevron';
   chevron.textContent = '\u25B8';
+  chevron.setAttribute('aria-hidden', 'true');
   meta.appendChild(chevron);
 
   row.appendChild(meta);
@@ -2769,7 +2796,7 @@ function renderSystemAnnouncementsList(notifications) {
   if (!authState.token) {
     const emptyNode = document.createElement('div');
     emptyNode.className = 'notif-empty';
-    emptyNode.textContent = 'Sign in to view system announcements.';
+    emptyNode.textContent = t('notifications.system.signInToView');
     list.appendChild(emptyNode);
     return;
   }
@@ -2777,7 +2804,7 @@ function renderSystemAnnouncementsList(notifications) {
   if (!activeNotifications.length) {
     const emptyNode = document.createElement('div');
     emptyNode.className = 'notif-empty';
-    emptyNode.textContent = 'No system announcements right now.';
+    emptyNode.textContent = t('notifications.system.none');
     list.appendChild(emptyNode);
     return;
   }
@@ -2791,10 +2818,10 @@ function renderSystemAnnouncementsList(notifications) {
         summary: localizeNotificationMessage(notification),
         detailText: notification.message || '',
         detailEntries: [
-          { label: 'Issued', value: formatNotificationIssuedAt(notification) },
-          { label: 'Source', value: 'System announcement' },
+          { label: t('notifications.live.detailLabels.issued'), value: formatNotificationIssuedAt(notification) },
+          { label: t('notifications.live.detailLabels.source'), value: t('notifications.system.sourceValue') },
         ],
-        badge: 'System Announcement',
+        badge: t('notifications.system.badge'),
       })
     );
   });
@@ -2830,14 +2857,14 @@ function renderLiveTransportUpdatesList(notifications) {
   if (!sortedNotifications.length) {
     const emptyNode = document.createElement('div');
     emptyNode.className = 'notif-empty';
-    emptyNode.textContent = 'No live transport updates right now.';
+    emptyNode.textContent = t('notifications.live.none');
     container.appendChild(emptyNode);
     return;
   }
 
   const groups = new Map();
   sortedNotifications.forEach(notification => {
-    const area = String(notification?.area || 'Unspecified area').trim() || 'Unspecified area';
+    const area = String(notification?.area || t('notifications.live.unspecifiedArea')).trim() || t('notifications.live.unspecifiedArea');
     if (!groups.has(area)) {
       groups.set(area, []);
     }

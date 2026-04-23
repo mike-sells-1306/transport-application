@@ -61,6 +61,49 @@
     "none": "Noch keine Benachrichtigungen.",
     "announcementPrefix": "HINWEIS:",
     "viewMore": "Mehr anzeigen…",
+    "sections": {
+      "systemAnnouncements": "Systemmeldungen",
+      "liveTransportUpdates": "Live-Verkehrsupdates"
+    },
+    "loadingSystemAnnouncements": "Systemmeldungen werden geladen…",
+    "loadingLiveTransportUpdates": "Live-Verkehrsupdates werden geladen…",
+    "system": {
+      "signInToView": "Melden Sie sich an, um Systemmeldungen zu sehen.",
+      "none": "Derzeit keine Systemmeldungen.",
+      "badge": "Systemmeldung",
+      "sourceValue": "Systemmeldung"
+    },
+    "live": {
+      "none": "Derzeit keine Live-Verkehrsupdates.",
+      "unspecifiedArea": "Nicht spezifizierter Bereich",
+      "statusUpdate": "Live-Update",
+      "statusDelay": "Verspätung",
+      "statusDelayMinutes": "{minutes} Min Verspätung",
+      "statusLiveJourneyMinutes": "Live-Fahrt {minutes} Min",
+      "minutesValue": "{minutes} Min",
+      "pinAria": "Verkehrsupdate anheften",
+      "unpinAria": "Verkehrsupdate lösen",
+      "toggleRowAria": "Details für {route} umschalten. Anbieter: {provider}. Status: {status}.",
+      "badge": "Live-Update",
+      "unknownProvider": "Unbekannter Anbieter",
+      "detailLabels": {
+        "provider": "Anbieter",
+        "service": "Dienst",
+        "origin": "Start",
+        "destination": "Ziel",
+        "nextStop": "Nächster Halt",
+        "platform": "Bahnsteig",
+        "scheduled": "Geplant",
+        "estimated": "Prognose",
+        "delay": "Verspätung",
+        "expectedJourney": "Erwartete Fahrt",
+        "liveJourney": "Live-Fahrt",
+        "issued": "Veröffentlicht",
+        "stops": "Halte",
+        "upcomingDepartures": "Nächste Abfahrten",
+        "source": "Quelle"
+      }
+    },
     "sample": {
       "one": "Zug nach Blackpool ist 12 Minuten verspätet.",
       "oneTime": "vor 12 Min.",
@@ -168,6 +211,26 @@
       "stops": "{from} → {to}"
     }
   },
+  "stopServices": {
+    "title": "Haltestellenabfahrten",
+    "subtitle": "Bevorstehende Verbindungen",
+    "closeAria": "Fenster Haltestellenabfahrten schließen",
+    "startMarker": "Start",
+    "endMarker": "Ziel",
+    "defaultStopName": "Haltestelle",
+    "selectedStop": "ausgewählte Haltestelle",
+    "loading": "Verbindungen werden geladen…",
+    "noDataMessage": "Für diese Haltestelle sind derzeit keine Verbindungsinformationen verfügbar. Bitte versuchen Sie es in Kürze erneut.",
+    "genericServiceName": "Verbindung",
+    "rowAria": "{service} nach {destination}",
+    "tableAria": "Bevorstehende Verbindungen für {stop}",
+    "headers": {
+      "atStop": "An Haltestelle",
+      "finalArrival": "Ankunft Ziel",
+      "service": "Verbindung",
+      "finalDestination": "Endziel"
+    }
+  },
   "transport": {
     "bus": "Bus",
     "train": "Zug",
@@ -209,7 +272,6 @@
   },
   "locale": {
     "en-GB": "English (United Kingdom)",
-    "en-US": "English (United States)",
     "cy-GB": "Cymraeg (Y Deyrnas Unedig)",
     "fr-FR": "Français (France)",
     "de-DE": "Deutsch (Deutschland)",
@@ -337,7 +399,9 @@
     "mapStyleChanged": "Kartenstil geändert zu {style}.",
     "routesModalClosed": "Routenfenster geschlossen.",
     "sidebarCollapsed": "Seitenleiste reduziert.",
-    "sidebarExpanded": "Seitenleiste erweitert."
+    "sidebarExpanded": "Seitenleiste erweitert.",
+    "stopServicesOpened": "Verbindungsdetails für {stop} geöffnet.",
+    "stopServicesClosed": "Verbindungsdetails geschlossen."
   },
   "autocomplete": {
     "noStops": "Keine Haltestellen in der Region gefunden",

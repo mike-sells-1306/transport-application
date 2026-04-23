@@ -74,12 +74,16 @@ test.describe('Accessibility smoke checks', () => {
   test('live regions announce notification panel updates', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('#sr-alert-region')).toHaveCount(1);
-    await expect(page.locator('.notif-list')).toHaveAttribute('aria-live', 'assertive');
+    await expect(page.locator('#system-announcements-list')).toHaveAttribute('aria-live', 'polite');
+    await expect(page.locator('#live-transport-updates')).toHaveAttribute('aria-live', 'polite');
 
     await page.locator('#notif-btn').click();
 
     await expect(page.locator('#notif-btn')).toHaveAttribute('aria-expanded', 'true');
-    await expect(page.locator('.notif-list')).toBeVisible();
+    await expect(page.locator('#system-announcements-title')).toBeVisible();
+    await expect(page.locator('#live-transport-updates-title')).toBeVisible();
+    await expect(page.locator('#system-announcements-list')).toBeVisible();
+    await expect(page.locator('#live-transport-updates')).toBeVisible();
   });
 
   test('language selection updates locale and translated labels', async ({ page }) => {
@@ -105,8 +109,8 @@ test.describe('Accessibility smoke checks', () => {
     await expect(page.locator('html')).toHaveAttribute('lang', 'cy-GB');
     await expect(page.locator('#accessibility-panel-title')).toHaveText('Hygyrchedd');
 
-    await page.locator('#accessibility-language').selectOption('en-US');
-    await expect(page.locator('html')).toHaveAttribute('lang', 'en-US');
+    await page.locator('#accessibility-language').selectOption('en-GB');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en-GB');
     await expect(page.locator('#accessibility-panel-title')).toHaveText('Accessibility');
   });
 });

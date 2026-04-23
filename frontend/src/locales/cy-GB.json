@@ -61,6 +61,49 @@
     "none": "Dim hysbysiadau eto.",
     "announcementPrefix": "CYHOEDDIAD:",
     "viewMore": "Gweld mwy…",
+    "sections": {
+      "systemAnnouncements": "Cyhoeddiadau system",
+      "liveTransportUpdates": "Diweddariadau trafnidiaeth byw"
+    },
+    "loadingSystemAnnouncements": "Loading system announcements…",
+    "loadingLiveTransportUpdates": "Loading live transport updates…",
+    "system": {
+      "signInToView": "Mewngofnodwch i weld cyhoeddiadau system.",
+      "none": "Dim cyhoeddiadau system ar hyn o bryd.",
+      "badge": "Cyhoeddiad system",
+      "sourceValue": "Cyhoeddiad system"
+    },
+    "live": {
+      "none": "Dim diweddariadau trafnidiaeth byw ar hyn o bryd.",
+      "unspecifiedArea": "Ardal amhenodol",
+      "statusUpdate": "Diweddariad byw",
+      "statusDelay": "Oedi",
+      "statusDelayMinutes": "{minutes} mun o oedi",
+      "statusLiveJourneyMinutes": "Taith fyw {minutes} mun",
+      "minutesValue": "{minutes} mun",
+      "pinAria": "Pinio diweddariad trafnidiaeth",
+      "unpinAria": "Dat-binio diweddariad trafnidiaeth",
+      "toggleRowAria": "Toglo manylion ar gyfer {route}. Darparwr: {provider}. Statws: {status}.",
+      "badge": "Diweddariad byw",
+      "unknownProvider": "Darparwr anhysbys",
+      "detailLabels": {
+        "provider": "Darparwr",
+        "service": "Gwasanaeth",
+        "origin": "Tarddiad",
+        "destination": "Cyrchfan",
+        "nextStop": "Arosfan nesaf",
+        "platform": "Platfform",
+        "scheduled": "Wedi'i drefnu",
+        "estimated": "Amcangyfrif",
+        "delay": "Oedi",
+        "expectedJourney": "Taith ddisgwyliedig",
+        "liveJourney": "Taith fyw",
+        "issued": "Cyhoeddwyd",
+        "stops": "Arosfannau",
+        "upcomingDepartures": "Ymadaeliadau nesaf",
+        "source": "Ffynhonnell"
+      }
+    },
     "sample": {
       "one": "Trên i Blackpool wedi'i ohirio 12 munud.",
       "oneTime": "12m yn ôl",
@@ -168,6 +211,26 @@
       "stops": "{from} → {to}"
     }
   },
+  "stopServices": {
+    "title": "Stop services",
+    "subtitle": "Upcoming services",
+    "closeAria": "Close stop services modal",
+    "startMarker": "Start",
+    "endMarker": "End",
+    "defaultStopName": "Stop",
+    "selectedStop": "selected stop",
+    "loading": "Loading services…",
+    "noDataMessage": "Service information is currently unavailable for this stop. Please check again shortly.",
+    "genericServiceName": "Service",
+    "rowAria": "{service} to {destination}",
+    "tableAria": "Upcoming services for {stop}",
+    "headers": {
+      "atStop": "At stop",
+      "finalArrival": "Final arrival",
+      "service": "Service",
+      "finalDestination": "Final destination"
+    }
+  },
   "transport": {
     "bus": "Bws",
     "train": "Trên",
@@ -209,7 +272,6 @@
   },
   "locale": {
     "en-GB": "English (United Kingdom)",
-    "en-US": "English (United States)",
     "cy-GB": "Cymraeg (Y Deyrnas Unedig)",
     "fr-FR": "Français (France)",
     "de-DE": "Deutsch (Deutschland)",
@@ -313,6 +375,8 @@
     "weatherShowingResults": "Yn dangos canlyniadau tywydd ar gyfer {count} lleoliad.",
     "weatherPanelOpened": "Panel tywydd wedi'i agor. Mae diweddariadau byw ar gael.",
     "weatherPanelClosed": "Panel tywydd wedi'i gau.",
+    "stopServicesOpened": "Opened service details for {stop}.",
+    "stopServicesClosed": "Closed stop service details.",
     "notificationsPanelOpened": "Panel hysbysiadau wedi'i agor. Bydd cyhoeddiadau'n cael eu darllen yn awtomatig.",
     "notificationsPanelClosed": "Panel hysbysiadau wedi'i gau.",
     "notificationsLoaded": "Llwythwyd {count} hysbysiad.",

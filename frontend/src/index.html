@@ -122,10 +122,10 @@
     <!-- Stop Services Modal (hidden by default) -->
     <section class="route-modal hidden stop-services-modal" id="stop-services-modal" role="dialog" aria-modal="true" aria-labelledby="stop-services-modal-title-text">
       <div class="route-modal-header" id="stop-services-modal-title">
-        <span id="stop-services-modal-title-text">Stop services</span>
-        <button id="close-stop-services-modal" class="route-modal-close" type="button" aria-label="Close stop services modal">×</button>
+        <span id="stop-services-modal-title-text" data-i18n="stopServices.title">Stop services</span>
+        <button id="close-stop-services-modal" class="route-modal-close" type="button" aria-label="Close stop services modal" data-i18n-aria-label="stopServices.closeAria">×</button>
       </div>
-      <div class="route-modal-sort stop-services-modal-subtitle" aria-hidden="true">
+      <div class="route-modal-sort stop-services-modal-subtitle" aria-hidden="true" data-i18n="stopServices.subtitle">
         Upcoming services
       </div>
       <div id="stop-services-list" class="route-list stop-services-list" aria-live="polite" aria-relevant="additions text">
@@ -151,19 +151,19 @@
       <div class="notif-panel-body">
         <section class="notif-section" aria-labelledby="system-announcements-title">
           <div class="notif-section-header">
-            <h3 class="notif-section-title" id="system-announcements-title">System Announcements</h3>
+            <h3 class="notif-section-title" id="system-announcements-title" data-i18n="notifications.sections.systemAnnouncements">System Announcements</h3>
           </div>
           <div class="notif-list notif-system-list" id="system-announcements-list" role="log" aria-live="polite" aria-relevant="additions text" aria-atomic="false">
-            <div class="notif-loading">Loading system announcements…</div>
+            <div class="notif-loading" data-i18n="notifications.loadingSystemAnnouncements">Loading system announcements…</div>
           </div>
         </section>
 
         <section class="notif-section" aria-labelledby="live-transport-updates-title">
           <div class="notif-section-header">
-            <h3 class="notif-section-title" id="live-transport-updates-title">Live Transport Updates</h3>
+            <h3 class="notif-section-title" id="live-transport-updates-title" data-i18n="notifications.sections.liveTransportUpdates">Live Transport Updates</h3>
           </div>
           <div class="notif-live-groups" id="live-transport-updates" role="log" aria-live="polite" aria-relevant="additions text" aria-atomic="false">
-            <div class="notif-loading">Loading live transport updates…</div>
+            <div class="notif-loading" data-i18n="notifications.loadingLiveTransportUpdates">Loading live transport updates…</div>
           </div>
         </section>
       </div>
@@ -281,7 +281,6 @@
           <label for="accessibility-language" class="visually-hidden" data-i18n="accessibility.languageLabel">Application language</label>
           <select id="accessibility-language" class="accessibility-select" aria-label="Application language" data-i18n-aria-label="accessibility.languageLabel">
             <option value="en-GB">🇬🇧 English (United Kingdom)</option>
-            <option value="en-US">🇺🇸 English (United States)</option>
             <option value="cy-GB">🏴 Cymraeg (Y Deyrnas Unedig)</option>
             <option value="fr-FR">🇫🇷 Français (France)</option>
             <option value="de-DE">🇩🇪 Deutsch (Deutschland)</option>

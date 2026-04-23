@@ -1529,7 +1529,7 @@ body.sidebar-minimized {
   border-color: #d6d6d6;
 }
 .notif-item-open {
-  border-color: rgba(211, 47, 47, 0.32);
+  border-color: color-mix(in srgb, var(--red-main) 40%, #d0d0d0);
 }
 .notif-transport-item .notif-row {
   padding: 8px 10px;
@@ -1557,8 +1557,8 @@ body.sidebar-minimized {
   overflow: hidden;
 }
 .notif-pin-btn {
-  border: none;
-  background: rgba(211, 47, 47, 0.08);
+  border: 1px solid currentColor;
+  background: #fff;
   color: var(--red-main);
   width: 28px;
   height: 28px;
@@ -1572,12 +1572,16 @@ body.sidebar-minimized {
   transition: background-color 0.15s, transform 0.15s;
 }
 .notif-pin-btn:hover {
-  background: rgba(211, 47, 47, 0.16);
+  background: #f2f2f2;
   transform: translateY(-1px);
 }
+.notif-pin-btn:focus-visible {
+  outline: 2px solid var(--red-light);
+  outline-offset: 1px;
+}
 .notif-item-pinned {
-  border-color: rgba(211, 47, 47, 0.45);
-  box-shadow: 0 0 0 1px rgba(211, 47, 47, 0.08);
+  border-color: var(--red-main);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--red-main) 25%, transparent);
 }
 .notif-row {
   width: 100%;
@@ -1627,7 +1631,8 @@ body.sidebar-minimized {
   max-width: 140px;
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgba(211, 47, 47, 0.08);
+  background: #fff;
+  border: 1px solid currentColor;
   color: var(--red-main);
   font-size: 0.8rem;
   font-weight: 700;
@@ -2615,8 +2620,25 @@ body.colorblind-mode .action-btn.danger {
   background: #B7410E;
 }
 
-body.colorblind-mode .notif-item strong {
-  color: #0057B7;
+body.colorblind-mode .notif-area-tag,
+body.colorblind-mode .notif-pin-btn,
+body.colorblind-mode .notif-area-heading,
+body.colorblind-mode .notif-item-pinned {
+  color: var(--cb-link);
+  border-color: var(--cb-link);
+}
+
+body.colorblind-mode .notif-pin-btn {
+  background: #fff;
+}
+
+body.colorblind-mode .notif-pin-btn:hover {
+  background: #eef5ff;
+}
+
+body.colorblind-mode .notif-item-open,
+body.colorblind-mode .notif-item-pinned {
+  box-shadow: 0 0 0 1px rgba(0, 87, 183, 0.22);
 }
 
 body.colorblind-mode .popup-description {

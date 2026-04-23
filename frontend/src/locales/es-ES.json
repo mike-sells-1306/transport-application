@@ -61,6 +61,49 @@
     "none": "Aún no hay notificaciones.",
     "announcementPrefix": "ANUNCIO:",
     "viewMore": "Ver más…",
+    "sections": {
+      "systemAnnouncements": "Anuncios del sistema",
+      "liveTransportUpdates": "Actualizaciones de transporte en vivo"
+    },
+    "loadingSystemAnnouncements": "Cargando anuncios del sistema…",
+    "loadingLiveTransportUpdates": "Cargando actualizaciones de transporte en vivo…",
+    "system": {
+      "signInToView": "Inicia sesión para ver los anuncios del sistema.",
+      "none": "No hay anuncios del sistema ahora mismo.",
+      "badge": "Anuncio del sistema",
+      "sourceValue": "Anuncio del sistema"
+    },
+    "live": {
+      "none": "No hay actualizaciones de transporte en vivo ahora mismo.",
+      "unspecifiedArea": "Área no especificada",
+      "statusUpdate": "Actualización en vivo",
+      "statusDelay": "Retraso",
+      "statusDelayMinutes": "{minutes} min de retraso",
+      "statusLiveJourneyMinutes": "Trayecto en vivo {minutes} min",
+      "minutesValue": "{minutes} min",
+      "pinAria": "Fijar actualización de transporte",
+      "unpinAria": "Quitar actualización fijada",
+      "toggleRowAria": "Mostrar u ocultar detalles de {route}. Proveedor: {provider}. Estado: {status}.",
+      "badge": "Actualización en vivo",
+      "unknownProvider": "Proveedor desconocido",
+      "detailLabels": {
+        "provider": "Proveedor",
+        "service": "Servicio",
+        "origin": "Origen",
+        "destination": "Destino",
+        "nextStop": "Próxima parada",
+        "platform": "Andén",
+        "scheduled": "Programado",
+        "estimated": "Estimado",
+        "delay": "Retraso",
+        "expectedJourney": "Trayecto previsto",
+        "liveJourney": "Trayecto en vivo",
+        "issued": "Emitido",
+        "stops": "Paradas",
+        "upcomingDepartures": "Próximas salidas",
+        "source": "Fuente"
+      }
+    },
     "sample": {
       "one": "Tren a Blackpool con 12 minutos de retraso.",
       "oneTime": "hace 12 min",
@@ -168,6 +211,26 @@
       "stops": "{from} → {to}"
     }
   },
+  "stopServices": {
+    "title": "Servicios de parada",
+    "subtitle": "Próximos servicios",
+    "closeAria": "Cerrar modal de servicios de parada",
+    "startMarker": "Inicio",
+    "endMarker": "Fin",
+    "defaultStopName": "Parada",
+    "selectedStop": "parada seleccionada",
+    "loading": "Cargando servicios…",
+    "noDataMessage": "La información de servicio no está disponible actualmente para esta parada. Vuelve a intentarlo en breve.",
+    "genericServiceName": "Servicio",
+    "rowAria": "{service} hacia {destination}",
+    "tableAria": "Próximos servicios para {stop}",
+    "headers": {
+      "atStop": "En parada",
+      "finalArrival": "Llegada final",
+      "service": "Servicio",
+      "finalDestination": "Destino final"
+    }
+  },
   "transport": {
     "bus": "Autobús",
     "train": "Tren",
@@ -209,7 +272,6 @@
   },
   "locale": {
     "en-GB": "English (United Kingdom)",
-    "en-US": "English (United States)",
     "cy-GB": "Cymraeg (Y Deyrnas Unedig)",
     "fr-FR": "Français (France)",
     "de-DE": "Deutsch (Deutschland)",
@@ -337,7 +399,9 @@
     "mapStyleChanged": "Estilo de mapa cambiado a {style}.",
     "routesModalClosed": "Ventana de rutas cerrada.",
     "sidebarCollapsed": "Barra lateral contraída.",
-    "sidebarExpanded": "Barra lateral expandida."
+    "sidebarExpanded": "Barra lateral expandida.",
+    "stopServicesOpened": "Se abrieron los detalles de servicio para {stop}.",
+    "stopServicesClosed": "Se cerraron los detalles de servicio de parada."
   },
   "autocomplete": {
     "noStops": "No se encontraron paradas en la región",

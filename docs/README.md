@@ -4,8 +4,8 @@ Primary entry point for project documentation.
 
 ## Start here
 
-- [Project README](../README.md) — setup, run, test, and environment basics
 - [Backend API Documentation](api/API_DOCUMENTATION.md) — implemented REST endpoints and auth model
+- [Backend Status](api/BACKEND_STATUS.md) — current implementation status summary
 
 ## Design documents
 
@@ -18,6 +18,7 @@ Primary entry point for project documentation.
 - [Route Planning](features/ROUTE_PLANNING.md)
 - [Account Management](features/account-management.md)
 - [Static Data Refresh](features/static-data-refresh.md)
+- [Localization and Accessibility Maintenance](features/LOCALIZATION_ACCESSIBILITY.md)
 - [Live Weather Feature](LIVE_WEATHER_FEATURE.md)
 - [Autocomplete Feature](features/AUTOCOMPLETE_FEATURE.md)
 - [Autocomplete Quick Reference](features/AUTOCOMPLETE_QUICK_REFERENCE.md)
@@ -29,10 +30,6 @@ Primary entry point for project documentation.
 - [Account Management Progress](features/ACCOUNT_MANAGEMENT_PROGRESS.md)
 - [Progress Report — Feb 26](reports/progress_report_feb_26.md)
 - [Progress Report — Mar 10](reports/progress_report_mar_10.md)
-
-## Frontend reference
-
-- [Frontend UI Notes](../frontend/src/index.md)
 
 ## Notes on documentation quality
 

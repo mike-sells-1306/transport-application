@@ -53,6 +53,49 @@
     "none": "এখনও কোনো নোটিফিকেশন নেই।",
     "announcementPrefix": "ঘোষণা:",
     "viewMore": "আরও দেখুন…",
+    "sections": {
+      "systemAnnouncements": "সিস্টেম ঘোষণা",
+      "liveTransportUpdates": "লাইভ পরিবহন আপডেট"
+    },
+    "loadingSystemAnnouncements": "Loading system announcements…",
+    "loadingLiveTransportUpdates": "Loading live transport updates…",
+    "system": {
+      "signInToView": "সিস্টেম ঘোষণা দেখতে সাইন ইন করুন।",
+      "none": "এই মুহূর্তে কোনো সিস্টেম ঘোষণা নেই।",
+      "badge": "সিস্টেম ঘোষণা",
+      "sourceValue": "সিস্টেম ঘোষণা"
+    },
+    "live": {
+      "none": "এই মুহূর্তে কোনো লাইভ পরিবহন আপডেট নেই।",
+      "unspecifiedArea": "অনির্দিষ্ট এলাকা",
+      "statusUpdate": "লাইভ আপডেট",
+      "statusDelay": "বিলম্ব",
+      "statusDelayMinutes": "{minutes} মিনিট বিলম্ব",
+      "statusLiveJourneyMinutes": "লাইভ যাত্রা {minutes} মিনিট",
+      "minutesValue": "{minutes} মিনিট",
+      "pinAria": "পরিবহন আপডেট পিন করুন",
+      "unpinAria": "পরিবহন আপডেট আনপিন করুন",
+      "toggleRowAria": "{route} এর বিস্তারিত দেখান বা লুকান। প্রদানকারী: {provider}। অবস্থা: {status}।",
+      "badge": "লাইভ আপডেট",
+      "unknownProvider": "অজানা প্রদানকারী",
+      "detailLabels": {
+        "provider": "প্রদানকারী",
+        "service": "সেবা",
+        "origin": "উৎপত্তি",
+        "destination": "গন্তব্য",
+        "nextStop": "পরবর্তী স্টপ",
+        "platform": "প্ল্যাটফর্ম",
+        "scheduled": "নির্ধারিত",
+        "estimated": "আনুমানিক",
+        "delay": "বিলম্ব",
+        "expectedJourney": "প্রত্যাশিত যাত্রা",
+        "liveJourney": "লাইভ যাত্রা",
+        "issued": "জারি",
+        "stops": "স্টপসমূহ",
+        "upcomingDepartures": "আসন্ন ছাড়ার সময়",
+        "source": "উৎস"
+      }
+    },
     "sample": {
       "one": "ব্ল্যাকপুলগামী ট্রেন ১২ মিনিট দেরিতে চলছে।",
       "oneTime": "১২ মিনিট আগে",
@@ -206,6 +249,8 @@
     }
   },
   "announce": {
+    "stopServicesOpened": "Opened service details for {stop}.",
+    "stopServicesClosed": "Closed stop service details.",
     "languageChanged": "ভাষা {locale} এ পরিবর্তন করা হয়েছে।",
     "journeySwapped": "প্রস্থান এবং আগমন স্টেশন অদলবদল.",
     "weatherUpdated": "{count} অবস্থানের জন্য আবহাওয়া আপডেট করা হয়েছে৷",
@@ -248,7 +293,6 @@
   },
   "locale": {
     "en-GB": "ইংরেজি (যুক্তরাজ্য)",
-    "en-US": "ইংরেজি (যুক্তরাষ্ট্র)",
     "cy-GB": "ওয়েলশ (যুক্তরাজ্য)",
     "fr-FR": "ফরাসি (ফ্রান্স)",
     "de-DE": "জার্মান (জার্মানি)",
@@ -310,6 +354,26 @@
       "waitSummary": "{at} এ পরিবর্তন করুন • {duration} অপেক্ষা করুন",
       "transportSummary": "{service} • {duration}",
       "stops": "{from} → {to}"
+    }
+  },
+  "stopServices": {
+    "title": "Stop services",
+    "subtitle": "Upcoming services",
+    "closeAria": "Close stop services modal",
+    "startMarker": "Start",
+    "endMarker": "End",
+    "defaultStopName": "Stop",
+    "selectedStop": "selected stop",
+    "loading": "Loading services…",
+    "noDataMessage": "Service information is currently unavailable for this stop. Please check again shortly.",
+    "genericServiceName": "Service",
+    "rowAria": "{service} to {destination}",
+    "tableAria": "Upcoming services for {stop}",
+    "headers": {
+      "atStop": "At stop",
+      "finalArrival": "Final arrival",
+      "service": "Service",
+      "finalDestination": "Final destination"
     }
   },
   "transport": {

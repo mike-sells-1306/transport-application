@@ -53,6 +53,49 @@
     "none": "Ainda não há notificações.",
     "announcementPrefix": "AVISO:",
     "viewMore": "Ver mais…",
+    "sections": {
+      "systemAnnouncements": "System Announcements",
+      "liveTransportUpdates": "Live Transport Updates"
+    },
+    "loadingSystemAnnouncements": "Loading system announcements…",
+    "loadingLiveTransportUpdates": "Loading live transport updates…",
+    "system": {
+      "signInToView": "Sign in to view system announcements.",
+      "none": "No system announcements right now.",
+      "badge": "System Announcement",
+      "sourceValue": "System announcement"
+    },
+    "live": {
+      "none": "No live transport updates right now.",
+      "unspecifiedArea": "Unspecified area",
+      "statusUpdate": "Live update",
+      "statusDelay": "Delay",
+      "statusDelayMinutes": "{minutes} min delay",
+      "statusLiveJourneyMinutes": "Live journey {minutes} min",
+      "minutesValue": "{minutes} min",
+      "pinAria": "Pin transport update",
+      "unpinAria": "Unpin transport update",
+      "toggleRowAria": "Toggle details for {route}. Provider: {provider}. Status: {status}.",
+      "badge": "Live update",
+      "unknownProvider": "Unknown provider",
+      "detailLabels": {
+        "provider": "Provider",
+        "service": "Service",
+        "origin": "Origin",
+        "destination": "Destination",
+        "nextStop": "Next stop",
+        "platform": "Platform",
+        "scheduled": "Scheduled",
+        "estimated": "Estimated",
+        "delay": "Delay",
+        "expectedJourney": "Expected journey",
+        "liveJourney": "Live journey",
+        "issued": "Issued",
+        "stops": "Stops",
+        "upcomingDepartures": "Upcoming departures",
+        "source": "Source"
+      }
+    },
     "sample": {
       "one": "Trem para Blackpool com atraso de 12 minutos.",
       "oneTime": "há 12 min",
@@ -206,6 +249,8 @@
     }
   },
   "announce": {
+    "stopServicesOpened": "Opened service details for {stop}.",
+    "stopServicesClosed": "Closed stop service details.",
     "languageChanged": "Idioma alterado para {locale}.",
     "journeySwapped": "As estações de partida e chegada foram trocadas.",
     "weatherUpdated": "Tempo atualizado para locais {count}.",
@@ -248,7 +293,6 @@
   },
   "locale": {
     "en-GB": "Inglês (Reino Unido)",
-    "en-US": "Inglês (Estados Unidos)",
     "cy-GB": "Galês (Reino Unido)",
     "fr-FR": "Francês (França)",
     "de-DE": "Alemão (Alemanha)",
@@ -310,6 +354,26 @@
       "waitSummary": "Alteração em {at} • {duration} aguarde",
       "transportSummary": "{service} • {duration}",
       "stops": "{from} → {to}"
+    }
+  },
+  "stopServices": {
+    "title": "Stop services",
+    "subtitle": "Upcoming services",
+    "closeAria": "Close stop services modal",
+    "startMarker": "Start",
+    "endMarker": "End",
+    "defaultStopName": "Stop",
+    "selectedStop": "selected stop",
+    "loading": "Loading services…",
+    "noDataMessage": "Service information is currently unavailable for this stop. Please check again shortly.",
+    "genericServiceName": "Service",
+    "rowAria": "{service} to {destination}",
+    "tableAria": "Upcoming services for {stop}",
+    "headers": {
+      "atStop": "At stop",
+      "finalArrival": "Final arrival",
+      "service": "Service",
+      "finalDestination": "Final destination"
     }
   },
   "transport": {

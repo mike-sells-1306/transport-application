@@ -61,6 +61,49 @@
     "none": "Aucune notification pour le moment.",
     "announcementPrefix": "ANNONCE :",
     "viewMore": "Voir plus…",
+    "sections": {
+      "systemAnnouncements": "Annonces système",
+      "liveTransportUpdates": "Mises à jour transport en direct"
+    },
+    "loadingSystemAnnouncements": "Chargement des annonces système…",
+    "loadingLiveTransportUpdates": "Chargement des mises à jour transport en direct…",
+    "system": {
+      "signInToView": "Connectez-vous pour voir les annonces système.",
+      "none": "Aucune annonce système pour le moment.",
+      "badge": "Annonce système",
+      "sourceValue": "Annonce système"
+    },
+    "live": {
+      "none": "Aucune mise à jour transport en direct pour le moment.",
+      "unspecifiedArea": "Zone non précisée",
+      "statusUpdate": "Mise à jour en direct",
+      "statusDelay": "Retard",
+      "statusDelayMinutes": "{minutes} min de retard",
+      "statusLiveJourneyMinutes": "Trajet en direct {minutes} min",
+      "minutesValue": "{minutes} min",
+      "pinAria": "Épingler la mise à jour transport",
+      "unpinAria": "Désépingler la mise à jour transport",
+      "toggleRowAria": "Afficher/masquer les détails de {route}. Opérateur : {provider}. Statut : {status}.",
+      "badge": "Mise à jour en direct",
+      "unknownProvider": "Opérateur inconnu",
+      "detailLabels": {
+        "provider": "Opérateur",
+        "service": "Service",
+        "origin": "Origine",
+        "destination": "Destination",
+        "nextStop": "Prochain arrêt",
+        "platform": "Quai",
+        "scheduled": "Prévu",
+        "estimated": "Estimé",
+        "delay": "Retard",
+        "expectedJourney": "Trajet prévu",
+        "liveJourney": "Trajet en direct",
+        "issued": "Publié",
+        "stops": "Arrêts",
+        "upcomingDepartures": "Prochains départs",
+        "source": "Source"
+      }
+    },
     "sample": {
       "one": "Train vers Blackpool retardé de 12 minutes.",
       "oneTime": "il y a 12 min",
@@ -168,6 +211,26 @@
       "stops": "{from} → {to}"
     }
   },
+  "stopServices": {
+    "title": "Services à l'arrêt",
+    "subtitle": "Services à venir",
+    "closeAria": "Fermer la fenêtre des services à l'arrêt",
+    "startMarker": "Départ",
+    "endMarker": "Arrivée",
+    "defaultStopName": "Arrêt",
+    "selectedStop": "arrêt sélectionné",
+    "loading": "Chargement des services…",
+    "noDataMessage": "Les informations de service sont actuellement indisponibles pour cet arrêt. Veuillez réessayer dans un instant.",
+    "genericServiceName": "Service",
+    "rowAria": "{service} vers {destination}",
+    "tableAria": "Services à venir pour {stop}",
+    "headers": {
+      "atStop": "À l'arrêt",
+      "finalArrival": "Arrivée finale",
+      "service": "Service",
+      "finalDestination": "Destination finale"
+    }
+  },
   "transport": {
     "bus": "Bus",
     "train": "Train",
@@ -209,7 +272,6 @@
   },
   "locale": {
     "en-GB": "Anglais (Royaume-Uni)",
-    "en-US": "Anglais (États-Unis)",
     "cy-GB": "Cymraeg (Royaume-Uni)",
     "fr-FR": "Français (France)",
     "de-DE": "Allemand (Allemagne)",
@@ -337,7 +399,9 @@
     "mapStyleChanged": "Style de carte changé en {style}.",
     "routesModalClosed": "Fenêtre des itinéraires fermée.",
     "sidebarCollapsed": "Barre latérale réduite.",
-    "sidebarExpanded": "Barre latérale développée."
+    "sidebarExpanded": "Barre latérale développée.",
+    "stopServicesOpened": "Détails de service ouverts pour {stop}.",
+    "stopServicesClosed": "Détails des services à l'arrêt fermés."
   },
   "autocomplete": {
     "noStops": "Aucun arrêt trouvé dans la région",
