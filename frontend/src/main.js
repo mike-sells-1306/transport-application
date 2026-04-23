@@ -740,14 +740,60 @@ function renderStopServicesModal(stop, services) {
   `;
 }
 
+function normalizeStopType(stopType) {
+  return String(stopType || '').trim().toLowerCase();
+}
+
+function classifyTransportStopMarker(stop) {
+  const stopType = normalizeStopType(stop?.stopType);
+  const stopName = String(stop?.name || '').trim().toLowerCase();
+
+  if (stopType === 'tram' || stopName.includes('tram')) {
+    return 'tram';
+  }
+
+  if (
+    stopType === 'rail'
+    || stopName.includes('railway station')
+    || stopName.includes('train station')
+    || (stopName.includes('rail') && stopName.includes('station'))
+  ) {
+    return 'rail-station';
+  }
+
+  if (
+    stopName.includes('bus station')
+    || stopName.includes('coach station')
+    || stopName.includes('interchange')
+  ) {
+    return 'bus-station';
+  }
+
+  return 'bus-stop';
+}
+
+function createTransportStopMarkerIcon(stop) {
+  const markerType = classifyTransportStopMarker(stop);
+  const markerGlyphByType = {
+    'bus-station': '🚌',
+    'bus-stop': '🚏',
+    'rail-station': '🚆',
+    tram: '🚊',
+  };
+  const markerGlyph = markerGlyphByType[markerType] || markerGlyphByType['bus-stop'];
+
+  return L.divIcon({
+    className: 'transport-stop-marker-wrapper',
+    html: `<span class="transport-stop-marker transport-stop-marker--${markerType}" aria-hidden="true">${markerGlyph}</span>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -12],
+  });
+}
+
 function createStopMarker(stop) {
-  const marker = L.circleMarker([stop.lat, stop.lon], {
-    radius: 5,
-    fillColor: '#1D6FD6',
-    color: '#0D3B80',
-    weight: 1.3,
-    opacity: 0.95,
-    fillOpacity: 0.8,
+  const marker = L.marker([stop.lat, stop.lon], {
+    icon: createTransportStopMarkerIcon(stop),
   });
 
   marker.on('click', async () => {
