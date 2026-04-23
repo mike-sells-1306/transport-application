@@ -1,0 +1,12 @@
+Transport Application Build and Run Instructions (from repository root)
+
+1) Build/setup backend dependencies:
+make install
+
+2) Load bus stops:
+make refresh-static
+
+3) Start the application:
+make run
+
+After step 3, open http://localhost:5000 in your browser.
