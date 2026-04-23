@@ -551,6 +551,12 @@ body.sidebar-minimized {
   transition: transform 0.16s ease, filter 0.16s ease;
 }
 
+.transport-stop-marker svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
 .transport-stop-marker--bus-station {
   background: #0d47a1;
 }
