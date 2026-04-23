@@ -43,7 +43,7 @@ You need:
 
 - A phone, tablet, or computer
 - Internet connection
-- A modern browser (Chrome, Edge, Firefox, Safari)
+- A browser (e.g. Chrome, Edge, Firefox, Safari)
 
 Recommended:
 
@@ -52,15 +52,7 @@ Recommended:
 
 ---
 
-## Opening the website
 
-1. Open your browser.
-2. Go to the Transport for North West website URL provided by your team/school/company.
-3. Wait for the map and sidebar to load.
-
-If the page does not load after 10-20 seconds, refresh once.
-
----
 
 ## Understanding the screen
 
@@ -95,7 +87,7 @@ When the homepage opens, you will see:
 6. Choose the correct place from suggestions.
 7. Click **Search routes**.
 
-If both places are valid, the route modal opens in the map area.
+If both places are valid, the route page opens in the map area.
 
 ### Swap start and destination
 
@@ -113,14 +105,14 @@ Always pick a suggestion from the dropdown list when it appears.
 
 ## How to read route results
 
-Route results are shown in a modal panel.
+Route results are shown in a routes panel.
 
 ![Route results and expanded details](images/user-manual/routeresults.png)
 
 ### What each route shows
 
 - Start time and end time
-- Total journey duration
+- Total journey length
 - Number of changes
 - Transport type(s) used (bus/rail/walk)
 
@@ -135,7 +127,7 @@ Inside route results, you can:
 
 ### Expand route details
 
-Click a route row to expand and view each journey leg, for example:
+Click a route row to expand and view each journey stage, for example:
 
 - Walk to stop
 - Bus service details
@@ -215,9 +207,9 @@ Tip: If text is hard to read, first try **Zoom** and **Font size** together.
 ### Open account login
 
 1. Click **Account** in the sidebar.
-2. Login modal opens.
+2. Login page opens.
 
-![Account login modal](images/user-manual/accountlogin.png)
+![Account login page](images/user-manual/accountlogin.png)
 
 ### Log in (existing account)
 
@@ -227,7 +219,7 @@ Tip: If text is hard to read, first try **Zoom** and **Font size** together.
 
 ### Create a new account
 
-1. In login modal, click **Create Account**.
+1. In login page, click **Create Account**.
 2. Fill in:
    - Username
    - Email
@@ -245,7 +237,7 @@ Use a strong password with:
 - A number
 - A symbol
 
-Do not reuse passwords from other sites.
+Try not to reuse passwords from other sites.
 
 ---
 
@@ -353,5 +345,3 @@ If you only read one section, read this:
 3. Check **weather** and **notifications** before leaving
 4. Set up **accessibility** options for comfort
 5. Create account to **save routes** and reuse later
-
-You are now ready to use the site confidently.
