@@ -740,14 +740,79 @@ function renderStopServicesModal(stop, services) {
   `;
 }
 
+function normalizeStopType(stopType) {
+  return String(stopType || '').trim().toLowerCase();
+}
+
+const TRANSPORT_STOP_MARKER_TYPES = {
+  BUS_STATION: 'bus-station',
+  BUS_STOP: 'bus-stop',
+  RAIL_STATION: 'rail-station',
+  TRAM: 'tram',
+};
+
+const TRANSPORT_STOP_MARKER_RULES = [
+  {
+    type: TRANSPORT_STOP_MARKER_TYPES.TRAM,
+    labels: ['tram'],
+    patterns: [/\btram\b/],
+  },
+  {
+    type: TRANSPORT_STOP_MARKER_TYPES.RAIL_STATION,
+    labels: ['rail'],
+    patterns: [/\brailway station\b/, /\btrain station\b/, /\brail station\b/],
+  },
+  {
+    type: TRANSPORT_STOP_MARKER_TYPES.BUS_STATION,
+    labels: ['bus-station'],
+    patterns: [/\bbus station\b/, /\bcoach station\b/, /\binterchange\b/],
+  },
+];
+
+const TRANSPORT_STOP_MARKER_LABELS = {
+  [TRANSPORT_STOP_MARKER_TYPES.BUS_STATION]: 'Bus station',
+  [TRANSPORT_STOP_MARKER_TYPES.BUS_STOP]: 'Bus stop',
+  [TRANSPORT_STOP_MARKER_TYPES.RAIL_STATION]: 'Rail station',
+  [TRANSPORT_STOP_MARKER_TYPES.TRAM]: 'Tram stop',
+};
+
+const TRANSPORT_STOP_MARKER_SVGS = {
+  [TRANSPORT_STOP_MARKER_TYPES.BUS_STATION]: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 2h12a4 4 0 0 1 4 4v9a3 3 0 0 1-3 3v2a1 1 0 1 1-2 0v-2H7v2a1 1 0 1 1-2 0v-2a3 3 0 0 1-3-3V6a4 4 0 0 1 4-4m0 3a1 1 0 0 0-1 1v8h14V6a1 1 0 0 0-1-1zm2 11a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3m8 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3"/></svg>',
+  [TRANSPORT_STOP_MARKER_TYPES.BUS_STOP]: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 2h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-6v3h-2v-3H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2m1 3v11h12V5zm6 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6"/></svg>',
+  [TRANSPORT_STOP_MARKER_TYPES.RAIL_STATION]: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 1 7 7v7a3 3 0 0 1-3 3l2 2a1 1 0 1 1-1.4 1.4L14 20h-4l-2.6 2.4A1 1 0 0 1 6 21l2-2a3 3 0 0 1-3-3V9a7 7 0 0 1 7-7m0 3a4 4 0 0 0-4 4v7h8V9a4 4 0 0 0-4-4m-2 6h4v2h-4z"/></svg>',
+  [TRANSPORT_STOP_MARKER_TYPES.TRAM]: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 2h8v2h-3v2h3a4 4 0 0 1 4 4v6a3 3 0 0 1-3 3l1.2 2.2a1 1 0 1 1-1.8.9L15 20H9l-1.4 2.1a1 1 0 1 1-1.7-1L7 19a3 3 0 0 1-3-3v-6a4 4 0 0 1 4-4h3V4H8zm-1 8v6h10v-6a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1m2 2h2v2H9zm4 0h2v2h-2z"/></svg>',
+};
+
+function classifyTransportStopMarker(stop) {
+  const stopType = normalizeStopType(stop?.stopType);
+  const stopName = String(stop?.name || '').trim().toLowerCase();
+
+  for (const rule of TRANSPORT_STOP_MARKER_RULES) {
+    if (rule.labels.includes(stopType) || rule.patterns.some(pattern => pattern.test(stopName))) {
+      return rule.type;
+    }
+  }
+
+  return TRANSPORT_STOP_MARKER_TYPES.BUS_STOP;
+}
+
+function createTransportStopMarkerIcon(stop) {
+  const markerType = classifyTransportStopMarker(stop);
+  const markerLabel = TRANSPORT_STOP_MARKER_LABELS[markerType] || TRANSPORT_STOP_MARKER_LABELS[TRANSPORT_STOP_MARKER_TYPES.BUS_STOP];
+  const markerSvg = TRANSPORT_STOP_MARKER_SVGS[markerType] || TRANSPORT_STOP_MARKER_SVGS[TRANSPORT_STOP_MARKER_TYPES.BUS_STOP];
+
+  return L.divIcon({
+    className: 'transport-stop-marker-wrapper',
+    html: `<span class="transport-stop-marker transport-stop-marker--${markerType}" role="img" aria-label="${markerLabel}">${markerSvg}</span>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -12],
+  });
+}
+
 function createStopMarker(stop) {
-  const marker = L.circleMarker([stop.lat, stop.lon], {
-    radius: 5,
-    fillColor: '#1D6FD6',
-    color: '#0D3B80',
-    weight: 1.3,
-    opacity: 0.95,
-    fillOpacity: 0.8,
+  const marker = L.marker([stop.lat, stop.lon], {
+    icon: createTransportStopMarkerIcon(stop),
   });
 
   marker.on('click', async () => {
