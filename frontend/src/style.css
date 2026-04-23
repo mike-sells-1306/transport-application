@@ -1965,12 +1965,22 @@ body.sidebar-minimized {
   top: 50%;
   transform: translate(-50%, -50%);
   z-index: 60;
-  width: min(820px, 90vw);
+  width: min(700px, 90vw);
   background: var(--red-light);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
+}
+
+.account-modal.account-modal-admin {
+  width: min(780px, 90vw);
+  min-height: 760px;
+}
+
+.account-modal.account-modal-local {
+  width: min(700px, 90vw);
+  min-height: 520px;
 }
 
 .account-modal-header {

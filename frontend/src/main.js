@@ -873,7 +873,7 @@ const FLOATING_PANEL_CONFIGS = [
   { id: 'support-panel', headerSelector: '.faq-header', minWidth: 540, minHeight: 300, resizable: true },
   { id: 'accessibility-panel', headerSelector: '.faq-header', minWidth: 500, minHeight: 320, resizable: true },
   { id: 'faq-panel', headerSelector: '.faq-header', minWidth: 540, minHeight: 400, resizable: true },
-  { id: 'account-modal', headerSelector: '.account-modal-header', minWidth: 600, minHeight: 400, resizable: true },
+  { id: 'account-modal', headerSelector: '.account-modal-header', minWidth: 600, minHeight: 520, resizable: true },
 ];
 
 const floatingPanelDefaults = new Map();
@@ -1071,6 +1071,35 @@ function resetFloatingPanelToDefault(panelId) {
 
   const clamped = clampFloatingPanelRect({ ...defaults }, bounds, config);
   setFloatingPanelRect(panel, clamped);
+}
+
+function syncAccountModalDefaultSize(isAdmin) {
+  const panel = document.getElementById('account-modal');
+  const defaults = floatingPanelDefaults.get('account-modal');
+  const bounds = getMapAreaBounds();
+
+  if (!panel || !defaults || !bounds) {
+    return;
+  }
+
+  const config = getFloatingPanelConfig('account-modal');
+  const nextWidth = isAdmin ? 780 : 700;
+  const nextHeight = isAdmin ? 760 : 520;
+
+  panel.classList.toggle('account-modal-admin', isAdmin);
+  panel.classList.toggle('account-modal-local', !isAdmin);
+
+  const nextRect = clampFloatingPanelRect({
+    ...defaults,
+    width: nextWidth,
+    height: nextHeight,
+  }, bounds, config);
+
+  floatingPanelDefaults.set('account-modal', nextRect);
+
+  if (!panel.classList.contains('hidden')) {
+    setFloatingPanelRect(panel, nextRect);
+  }
 }
 
 function clampVisibleFloatingPanels() {
@@ -3309,6 +3338,7 @@ function openAccountModal() {
   
   const accountModal = document.getElementById('account-modal');
   if (accountModal && accountModal.classList.contains('hidden')) {
+    syncAccountModalDefaultSize(Boolean(authState.user?.isAdmin));
     resetFloatingPanelToDefault('account-modal');
     accountModal.classList.remove('hidden');
   }
@@ -3357,9 +3387,14 @@ async function refreshAccountView() {
     const adminPanel = document.getElementById('admin-notification-panel');
     const adminForm = document.getElementById('admin-notification-form');
     const adminStatus = document.getElementById('admin-notification-status');
+    const deleteAccountButton = document.getElementById('delete-account-btn');
     if (adminPanel) {
       const isAdmin = Boolean(authState.user?.isAdmin);
       adminPanel.classList.toggle('hidden', !isAdmin);
+      deleteAccountButton?.classList.toggle('hidden', isAdmin);
+      document.getElementById('account-modal')?.classList.toggle('account-modal-admin', isAdmin);
+      document.getElementById('account-modal')?.classList.toggle('account-modal-local', !isAdmin);
+      syncAccountModalDefaultSize(isAdmin);
       if (!isAdmin) {
         adminForm?.reset();
         if (adminStatus) {
