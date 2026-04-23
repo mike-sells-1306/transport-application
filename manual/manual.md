@@ -1,4 +1,4 @@
-# Transport for North West — User Manual
+# Transport for North West - User Manual
 
 This manual is for everyday users who want very clear instructions.
 If you are not technical, follow the steps exactly and you will be fine.
@@ -58,7 +58,7 @@ Recommended:
 2. Go to the Transport for North West website URL provided by your team/school/company.
 3. Wait for the map and sidebar to load.
 
-If the page does not load after 10–20 seconds, refresh once.
+If the page does not load after 10-20 seconds, refresh once.
 
 ---
 
@@ -70,7 +70,7 @@ When the homepage opens, you will see:
 - A **main map area**
 - Top-right buttons for **weather** and **notifications**
 
-![Homepage with map and sidebar](images/user-manual/01-homepage-map-and-sidebar.png)
+![Homepage with map and sidebar](images/user-manual/homepagemap.png)
 
 ### Main areas explained
 
@@ -88,10 +88,10 @@ When the homepage opens, you will see:
 ### Simple journey search (step-by-step)
 
 1. Click inside the **From** box.
-2. Type your start place (for example, `Lancaster`).
+2. Type your start place (for example, `Lancaster Railway Station`).
 3. Choose the correct place from suggestions.
 4. Click inside the **To** box.
-5. Type your destination (for example, `Blackpool`).
+5. Type your destination (for example, `Lancaster Underpass`).
 6. Choose the correct place from suggestions.
 7. Click **Search routes**.
 
@@ -115,7 +115,7 @@ Always pick a suggestion from the dropdown list when it appears.
 
 Route results are shown in a modal panel.
 
-![Route results and expanded details](images/user-manual/02-route-results-and-details.png)
+![Route results and expanded details](images/user-manual/routeresults.png)
 
 ### What each route shows
 
@@ -156,7 +156,7 @@ Use **Download Routes** to export visible route options as a PDF file.
 4. Use the weather search box to find a specific location.
 5. Click a location row to expand detailed weather information.
 
-![Weather panel](images/user-manual/03-weather-panel.png)
+![Weather panel](images/user-manual/weather.png)
 
 Weather details can include:
 
@@ -177,7 +177,7 @@ Weather details can include:
    - **System Announcements**
    - **Live Transport Updates**
 
-![Notifications panel](images/user-manual/04-notifications-panel.png)
+![Notifications panel](images/user-manual/notification.png)
 
 Use this panel to check:
 
@@ -192,7 +192,7 @@ Use this panel to check:
 1. Click **Accessibility** in the sidebar.
 2. The accessibility panel opens.
 
-![Accessibility settings panel](images/user-manual/05-accessibility-panel.png)
+![Accessibility settings panel](images/user-manual/accessibility.png)
 
 ### Available settings
 
@@ -217,7 +217,7 @@ Tip: If text is hard to read, first try **Zoom** and **Font size** together.
 1. Click **Account** in the sidebar.
 2. Login modal opens.
 
-![Account login modal](images/user-manual/06-account-login.png)
+![Account login modal](images/user-manual/accountlogin.png)
 
 ### Log in (existing account)
 
@@ -234,7 +234,7 @@ Tip: If text is hard to read, first try **Zoom** and **Font size** together.
    - Password (minimum 8 characters)
 3. Click **Register**.
 
-![Create account form](images/user-manual/07-account-register.png)
+![Create account form](images/user-manual/accountregister.png)
 
 ### Password advice
 
@@ -253,7 +253,7 @@ Do not reuse passwords from other sites.
 
 After login/registration, account settings panel opens.
 
-![Account settings and saved routes](images/user-manual/08-account-settings-and-saved-routes.png)
+![Account settings and saved routes](images/user-manual/accountsetting.png)
 
 ### What you can do in account settings
 
