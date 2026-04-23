@@ -52,7 +52,14 @@ restart: down up
 
 # Local development (Linux/macOS)
 install:
-	@if [ ! -d "backend/.venv" ]; then cd backend && (python3 -m venv .venv || (echo "venv symlink creation failed; retrying with copied Python binaries..." && rm -rf .venv && python3 -m venv --copies .venv)); fi
+	@if [ ! -d "backend/.venv" ]; then \
+		cd backend; \
+		python3 -m venv .venv || { \
+			echo "venv creation failed (possibly due to symlink restrictions); retrying with --copies..."; \
+			rm -rf .venv; \
+			python3 -m venv --copies .venv; \
+		}; \
+	fi
 	cd backend && . .venv/bin/activate && pip install -r requirements.txt
 
 run:
@@ -85,4 +92,3 @@ run-win:
 
 test-win:
 	cd backend && .\.venv\Scripts\activate && set DATABASE_URL=sqlite:// && python -m pytest tests/ -v
-
