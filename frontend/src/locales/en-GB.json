@@ -183,6 +183,16 @@
     },
     "modeFiltersLabel": "Mode filters",
     "modeRail": "Rail",
+    "departureFilter": {
+      "label": "Departure time:",
+      "groupAria": "Departure time filter",
+      "modeAria": "Departure time filter mode",
+      "timeLabel": "Departure time value",
+      "timeAria": "Departure time value",
+      "any": "Any time",
+      "after": "After",
+      "before": "Before"
+    },
     "download": "Download Routes",
     "downloadAria": "Download displayed routes as PDF",
     "downloadTooltipEnabled": "Download all displayed route options",

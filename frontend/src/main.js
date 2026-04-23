@@ -221,8 +221,7 @@ async function setLocale(locale, options = {}) {
   updateRouteDownloadButtonState();
 
   if (currentRoutesData && !document.getElementById('route-modal')?.classList.contains('hidden')) {
-    const sortMethod = document.getElementById('sort')?.value || 'soonest_arrival';
-    renderRoutesTable(sortRoutes(sortMethod, currentRoutesData.routes));
+    renderRoutesTable(getCurrentSortedRoutes());
   }
 
   if (!document.getElementById('weather-panel')?.classList.contains('hidden')) {
@@ -862,6 +861,7 @@ const DEFAULT_ROUTE_MODES = new Set(['walk', 'bus', 'rail', 'train', 'wait']);
 let latestSystemAnnouncements = [];
 let latestTransportUpdates = [];
 let latestTransportUpdatesSignature = '';
+let latestTransportUpdatesLoaded = false;
 const TRANSPORT_PINNED_STORAGE_KEY = 'transportPinnedNotifications';
 const pinnedTransportNotificationIds = new Set(loadPinnedTransportNotificationIds());
 const transportNotificationExpandedState = new Map();
@@ -2856,9 +2856,30 @@ function renderSystemAnnouncementsList(notifications) {
   });
 }
 
-function renderLiveTransportUpdatesList(notifications) {
+function renderLiveTransportUpdatesList(notifications, options = {}) {
   const container = document.getElementById('live-transport-updates');
   if (!container) {
+    return;
+  }
+
+  const { loading = false } = options;
+
+  if (loading) {
+    clearNode(container);
+
+    const loadingNode = document.createElement('div');
+    loadingNode.className = 'notif-loading notif-loading-with-spinner';
+
+    const spinner = document.createElement('span');
+    spinner.className = 'notif-loading-spinner';
+    spinner.setAttribute('aria-hidden', 'true');
+
+    const label = document.createElement('span');
+    label.textContent = t('notifications.loadingLiveTransportUpdates');
+
+    loadingNode.appendChild(spinner);
+    loadingNode.appendChild(label);
+    container.appendChild(loadingNode);
     return;
   }
 
@@ -2922,11 +2943,15 @@ function renderLiveTransportUpdatesList(notifications) {
 
 function renderNotificationsPanel() {
   renderSystemAnnouncementsList(latestSystemAnnouncements);
-  renderLiveTransportUpdatesList(latestTransportUpdates);
+  renderLiveTransportUpdatesList(latestTransportUpdates, { loading: !latestTransportUpdatesLoaded });
 }
 
 async function refreshNotificationsPanel(options = {}) {
   const { announce = false } = options;
+
+  if (!latestTransportUpdatesLoaded) {
+    renderLiveTransportUpdatesList(latestTransportUpdates, { loading: true });
+  }
 
   const systemAnnouncementsPromise = authState.token
     ? apiRequest('/api/account/notifications').then(response => response.notifications || [])
@@ -2959,10 +2984,11 @@ async function refreshNotificationsPanel(options = {}) {
   const transportChanged = nextTransportSignature !== latestTransportUpdatesSignature;
   latestTransportUpdates = nextTransportUpdates;
   latestTransportUpdatesSignature = nextTransportSignature;
+  latestTransportUpdatesLoaded = true;
 
   renderSystemAnnouncementsList(latestSystemAnnouncements);
   if (transportChanged) {
-    renderLiveTransportUpdatesList(latestTransportUpdates);
+    renderLiveTransportUpdatesList(latestTransportUpdates, { loading: false });
   }
 
   if (announce) {
@@ -4466,8 +4492,8 @@ function displayRoutesModal(data) {
   // Update the modal header with from/to information
   updateRouteModalHeader();
 
-  // Routes are already sorted server-side using the selected sort mode.
-  renderRoutesTable(data.routes || []);
+  // Keep the UI filters (sort/modes/departure-time) consistent when rendering.
+  renderRoutesTable(getCurrentSortedRoutes());
   updateRouteDownloadButtonState();
 
   // Show the modal by removing the hidden class
@@ -4521,6 +4547,55 @@ function sortRoutes(sortMethod, routes) {
   }
 }
 
+function parseClockToMinutes(value) {
+  if (!value || typeof value !== 'string') return Number.NaN;
+  const [hh, mm] = value.split(':').map(Number);
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return Number.NaN;
+  return (hh * 60) + mm;
+}
+
+function routeHasRideLeg(route) {
+  const legs = Array.isArray(route?.legs) ? route.legs : [];
+  return legs.some(leg => {
+    const mode = String(leg?.mode || '').toLowerCase();
+    return mode === 'bus' || mode === 'train' || mode === 'rail';
+  });
+}
+
+function filterRoutesByDepartureTimeSelection(routes) {
+  const mode = document.getElementById('route-departure-filter-mode')?.value || 'any';
+  const selectedTime = document.getElementById('route-departure-filter-time')?.value || '';
+
+  if (mode === 'any' || !selectedTime) {
+    return routes || [];
+  }
+
+  const pivot = parseClockToMinutes(selectedTime);
+  if (!Number.isFinite(pivot)) {
+    return routes || [];
+  }
+
+  return (routes || []).filter(route => {
+    // Time filter is only intended for public transport (bus/rail) routes.
+    if (!routeHasRideLeg(route)) {
+      return true;
+    }
+
+    const departMins = parseClockToMinutes(String(route?.start_time || ''));
+    if (!Number.isFinite(departMins)) {
+      return false;
+    }
+
+    if (mode === 'after') {
+      return departMins >= pivot;
+    }
+    if (mode === 'before') {
+      return departMins <= pivot;
+    }
+    return true;
+  });
+}
+
 /**
  * Format a duration in minutes as human-readable text
  */
@@ -4539,7 +4614,9 @@ function getCurrentSortedRoutes() {
   }
 
   const sortMethod = document.getElementById('sort')?.value || 'soonest_arrival';
-  return filterRoutesByModeSelection(sortRoutes(sortMethod, currentRoutesData.routes));
+  const sorted = sortRoutes(sortMethod, currentRoutesData.routes);
+  const modeFiltered = filterRoutesByModeSelection(sorted);
+  return filterRoutesByDepartureTimeSelection(modeFiltered);
 }
 
 function updateRouteModalHeader() {
@@ -5339,6 +5416,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   const stopServicesModal = document.getElementById('stop-services-modal');
   const closeStopServicesModalBtn = document.getElementById('close-stop-services-modal');
   const sortSelect = document.getElementById('sort');
+  const routeDepartureFilterMode = document.getElementById('route-departure-filter-mode');
+  const routeDepartureFilterTime = document.getElementById('route-departure-filter-time');
   const downloadRoutesPdfBtn = document.getElementById('download-routes-pdf');
   
   if (closeRouteModalBtn && routeModal) {
@@ -5358,6 +5437,27 @@ document.addEventListener('DOMContentLoaded', async function() {
       // Re-plan using the selected backend sort mode.
       if (selectedStops.from && selectedStops.to) {
         searchRoutes();
+      }
+    });
+  }
+
+  if (routeDepartureFilterMode) {
+    routeDepartureFilterMode.addEventListener('change', () => {
+      if (currentRoutesData && Array.isArray(currentRoutesData.routes)) {
+        renderRoutesTable(getCurrentSortedRoutes());
+      }
+      const timeInput = document.getElementById('route-departure-filter-time');
+      if (timeInput) {
+        timeInput.disabled = routeDepartureFilterMode.value === 'any';
+      }
+    });
+  }
+
+  if (routeDepartureFilterTime) {
+    routeDepartureFilterTime.disabled = (routeDepartureFilterMode?.value || 'any') === 'any';
+    routeDepartureFilterTime.addEventListener('input', () => {
+      if (currentRoutesData && Array.isArray(currentRoutesData.routes)) {
+        renderRoutesTable(getCurrentSortedRoutes());
       }
     });
   }

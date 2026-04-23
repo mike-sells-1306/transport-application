@@ -104,6 +104,16 @@
           <option value="soonest_arrival" data-i18n="route.sort.arriveSoonest" selected>Arrive Soonest</option>
           <option value="fewest_changes" data-i18n="route.sort.fewestChanges">Fewest Changes</option>
         </select>
+        <div class="route-time-filter" role="group" aria-label="Departure time filter" data-i18n-aria-label="route.departureFilter.groupAria">
+          <label for="route-departure-filter-mode" data-i18n="route.departureFilter.label">Departure time:</label>
+          <select id="route-departure-filter-mode" aria-label="Departure time filter mode" data-i18n-aria-label="route.departureFilter.modeAria">
+            <option value="any" data-i18n="route.departureFilter.any" selected>Any time</option>
+            <option value="after" data-i18n="route.departureFilter.after">After</option>
+            <option value="before" data-i18n="route.departureFilter.before">Before</option>
+          </select>
+          <label for="route-departure-filter-time" class="visually-hidden" data-i18n="route.departureFilter.timeLabel">Departure time value</label>
+          <input id="route-departure-filter-time" type="time" aria-label="Departure time value" data-i18n-aria-label="route.departureFilter.timeAria" />
+        </div>
         <fieldset class="route-mode-filters" aria-label="Mode filters" data-i18n-aria-label="route.modeFiltersLabel">
           <legend class="visually-hidden" data-i18n="route.modeFiltersLabel">Mode filters</legend>
           <label><input type="checkbox" class="route-mode-filter" value="walk" checked /> <span data-i18n="transport.walk">Walk</span></label>

@@ -881,6 +881,39 @@ body.sidebar-minimized {
   align-items: center;
   gap: 3px;
 }
+
+.route-time-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+}
+
+.route-time-filter label {
+  font-size: 0.82rem;
+}
+
+.route-time-filter select,
+.route-time-filter input[type="time"] {
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--white);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 0.82rem;
+}
+
+.route-time-filter input[type="time"]:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.route-time-filter option {
+  color: #222;
+}
+
 .route-download-btn {
   margin-left: auto;
   border: 1px solid rgba(255, 255, 255, 0.6);
@@ -1708,6 +1741,30 @@ body.sidebar-minimized {
   text-align: center;
   padding: 12px 0;
 }
+
+.notif-loading-with-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.notif-loading-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(136, 136, 136, 0.28);
+  border-top-color: var(--red-main);
+  animation: notif-loading-spin 0.85s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes notif-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .notif-empty {
   padding-left: 4px;
   padding-right: 4px;
