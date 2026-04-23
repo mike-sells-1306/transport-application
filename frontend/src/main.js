@@ -764,7 +764,7 @@ const TRANSPORT_STOP_MARKER_RULES = [
   },
   {
     type: TRANSPORT_STOP_MARKER_TYPES.BUS_STATION,
-    labels: [],
+    labels: ['bus-station'],
     patterns: [/\bbus station\b/, /\bcoach station\b/, /\binterchange\b/],
   },
 ];
