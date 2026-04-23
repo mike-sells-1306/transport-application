@@ -780,11 +780,18 @@ function createTransportStopMarkerIcon(stop) {
     'rail-station': '🚆',
     tram: '🚊',
   };
+  const markerLabelByType = {
+    'bus-station': 'Bus station',
+    'bus-stop': 'Bus stop',
+    'rail-station': 'Rail station',
+    tram: 'Tram stop',
+  };
   const markerGlyph = markerGlyphByType[markerType] || markerGlyphByType['bus-stop'];
+  const markerLabel = markerLabelByType[markerType] || markerLabelByType['bus-stop'];
 
   return L.divIcon({
     className: 'transport-stop-marker-wrapper',
-    html: `<span class="transport-stop-marker transport-stop-marker--${markerType}" aria-hidden="true">${markerGlyph}</span>`,
+    html: `<span class="transport-stop-marker transport-stop-marker--${markerType}" role="img" aria-label="${markerLabel}">${markerGlyph}</span>`,
     iconSize: [28, 28],
     iconAnchor: [14, 14],
     popupAnchor: [0, -12],
